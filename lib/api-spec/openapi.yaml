@@ -3,20 +3,34 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: ClubHub API — multi-team soccer club management
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: me
+    description: Current user identity and access
+  - name: club
+    description: Club-level data and overview
+  - name: teams
+    description: Teams, seasons, and rosters
+  - name: people
+    description: People, memberships, and family links
+  - name: feed
+    description: Team posts and comments
+  - name: events
+    description: Scheduling and availability
+  - name: chats
+    description: Messaging
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,7 +38,727 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /me:
+    get:
+      operationId: getMe
+      tags: [me]
+      summary: Current signed-in user with roles, memberships and family links
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUser"
+    patch:
+      operationId: updateMe
+      tags: [me]
+      summary: Update the current user's own profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdate"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Person"
+
+  /club:
+    get:
+      operationId: getClub
+      tags: [club]
+      summary: Get the current club
+      responses:
+        "200":
+          description: Club
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Club"
+
+  /club/overview:
+    get:
+      operationId: getClubOverview
+      tags: [club]
+      summary: Club-wide dashboard overview (admin)
+      responses:
+        "200":
+          description: Overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubOverview"
+
+  /seasons:
+    get:
+      operationId: listSeasons
+      tags: [teams]
+      summary: List seasons
+      responses:
+        "200":
+          description: Seasons
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Season"
+
+  /teams:
+    get:
+      operationId: listTeams
+      tags: [teams]
+      summary: List teams visible to the current user
+      responses:
+        "200":
+          description: Teams
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Team"
+    post:
+      operationId: createTeam
+      tags: [teams]
+      summary: Create a team
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+
+  /teams/{teamId}:
+    get:
+      operationId: getTeam
+      tags: [teams]
+      summary: Get a team
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      responses:
+        "200":
+          description: Team
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateTeam
+      tags: [teams]
+      summary: Update a team
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /teams/{teamId}/summary:
+    get:
+      operationId: getTeamSummary
+      tags: [teams]
+      summary: Team dashboard summary (next event, availability, recent activity)
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      responses:
+        "200":
+          description: Team summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamSummary"
+
+  /teams/{teamId}/members:
+    get:
+      operationId: listTeamMembers
+      tags: [teams]
+      summary: List members of a team
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      responses:
+        "200":
+          description: Members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeamMember"
+    post:
+      operationId: addTeamMember
+      tags: [teams]
+      summary: Add a person to a team with a role
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamMemberInput"
+      responses:
+        "201":
+          description: Added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamMember"
+
+  /team-members/{memberId}:
+    patch:
+      operationId: updateTeamMember
+      tags: [teams]
+      summary: Update a team membership (role, number, position)
+      parameters:
+        - $ref: "#/components/parameters/MemberId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamMemberUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamMember"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: removeTeamMember
+      tags: [teams]
+      summary: Remove a person from a team
+      parameters:
+        - $ref: "#/components/parameters/MemberId"
+      responses:
+        "204":
+          description: Removed
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /people:
+    get:
+      operationId: listPeople
+      tags: [people]
+      summary: List all people in the club
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: role
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [manager, coach, player, parent]
+      responses:
+        "200":
+          description: People
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Person"
+    post:
+      operationId: createPerson
+      tags: [people]
+      summary: Create a person (player, parent, coach or manager)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PersonInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Person"
+
+  /people/{personId}:
+    get:
+      operationId: getPerson
+      tags: [people]
+      summary: Get a person's full profile with memberships and family links
+      parameters:
+        - $ref: "#/components/parameters/PersonId"
+      responses:
+        "200":
+          description: Person detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PersonDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updatePerson
+      tags: [people]
+      summary: Update a person's profile
+      parameters:
+        - $ref: "#/components/parameters/PersonId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PersonUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Person"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /guardianships:
+    post:
+      operationId: createGuardianship
+      tags: [people]
+      summary: Link a guardian to a player's lifelong account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GuardianshipInput"
+      responses:
+        "201":
+          description: Linked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Guardianship"
+
+  /guardianships/{guardianshipId}:
+    delete:
+      operationId: removeGuardianship
+      tags: [people]
+      summary: Remove a family link
+      parameters:
+        - $ref: "#/components/parameters/GuardianshipId"
+      responses:
+        "204":
+          description: Removed
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /feed:
+    get:
+      operationId: getFeed
+      tags: [feed]
+      summary: Aggregated recent posts across the user's teams
+      responses:
+        "200":
+          description: Feed
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+
+  /teams/{teamId}/posts:
+    get:
+      operationId: listTeamPosts
+      tags: [feed]
+      summary: List posts for a team
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      responses:
+        "200":
+          description: Posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+    post:
+      operationId: createPost
+      tags: [feed]
+      summary: Post to a team
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+
+  /posts/{postId}:
+    get:
+      operationId: getPost
+      tags: [feed]
+      summary: Get a post with its comments
+      parameters:
+        - $ref: "#/components/parameters/PostId"
+      responses:
+        "200":
+          description: Post detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updatePost
+      tags: [feed]
+      summary: Edit or pin a post
+      parameters:
+        - $ref: "#/components/parameters/PostId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deletePost
+      tags: [feed]
+      summary: Delete a post
+      parameters:
+        - $ref: "#/components/parameters/PostId"
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /posts/{postId}/comments:
+    post:
+      operationId: addComment
+      tags: [feed]
+      summary: Comment on a post
+      parameters:
+        - $ref: "#/components/parameters/PostId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+
+  /events/upcoming:
+    get:
+      operationId: listUpcomingEvents
+      tags: [events]
+      summary: Upcoming events across the user's teams
+      responses:
+        "200":
+          description: Upcoming events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+
+  /teams/{teamId}/events:
+    get:
+      operationId: listTeamEvents
+      tags: [events]
+      summary: List events for a team
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      responses:
+        "200":
+          description: Events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+    post:
+      operationId: createEvent
+      tags: [events]
+      summary: Schedule a training, game or event
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+
+  /events/{eventId}:
+    get:
+      operationId: getEvent
+      tags: [events]
+      summary: Get an event with availability detail
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      responses:
+        "200":
+          description: Event detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateEvent
+      tags: [events]
+      summary: Update an event
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteEvent
+      tags: [events]
+      summary: Delete an event
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /events/{eventId}/rsvp:
+    put:
+      operationId: setRsvp
+      tags: [events]
+      summary: Set availability for an event (self or on behalf of a linked player)
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RsvpInput"
+      responses:
+        "200":
+          description: RSVP saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rsvp"
+
+  /chats:
+    get:
+      operationId: listChats
+      tags: [chats]
+      summary: List chats for the current user
+      responses:
+        "200":
+          description: Chats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Chat"
+    post:
+      operationId: createChat
+      tags: [chats]
+      summary: Start a new chat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Chat"
+
+  /chats/{chatId}:
+    get:
+      operationId: getChat
+      tags: [chats]
+      summary: Get a chat with its members
+      parameters:
+        - $ref: "#/components/parameters/ChatId"
+      responses:
+        "200":
+          description: Chat detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /chats/{chatId}/messages:
+    get:
+      operationId: listMessages
+      tags: [chats]
+      summary: List messages in a chat
+      parameters:
+        - $ref: "#/components/parameters/ChatId"
+      responses:
+        "200":
+          description: Messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+    post:
+      operationId: sendMessage
+      tags: [chats]
+      summary: Send a message
+      parameters:
+        - $ref: "#/components/parameters/ChatId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageInput"
+      responses:
+        "201":
+          description: Sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+
 components:
+  parameters:
+    TeamId:
+      name: teamId
+      in: path
+      required: true
+      schema:
+        type: integer
+    MemberId:
+      name: memberId
+      in: path
+      required: true
+      schema:
+        type: integer
+    PersonId:
+      name: personId
+      in: path
+      required: true
+      schema:
+        type: integer
+    GuardianshipId:
+      name: guardianshipId
+      in: path
+      required: true
+      schema:
+        type: integer
+    PostId:
+      name: postId
+      in: path
+      required: true
+      schema:
+        type: integer
+    EventId:
+      name: eventId
+      in: path
+      required: true
+      schema:
+        type: integer
+    ChatId:
+      name: chatId
+      in: path
+      required: true
+      schema:
+        type: integer
+
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
   schemas:
     HealthStatus:
       type: object
@@ -34,3 +768,391 @@ components:
       required:
         - status
 
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    Person:
+      type: object
+      required: [id, firstName, lastName, fullName, isMinor]
+      properties:
+        id: { type: integer }
+        firstName: { type: string }
+        lastName: { type: string }
+        fullName: { type: string }
+        email: { type: ["string", "null"] }
+        phone: { type: ["string", "null"] }
+        avatarUrl: { type: ["string", "null"] }
+        dateOfBirth: { type: ["string", "null"] }
+        isMinor: { type: boolean }
+        hasLogin: { type: boolean }
+
+    Club:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        logoUrl: { type: ["string", "null"] }
+        primaryColor: { type: ["string", "null"] }
+
+    Season:
+      type: object
+      required: [id, name, isActive]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        startDate: { type: ["string", "null"] }
+        endDate: { type: ["string", "null"] }
+        isActive: { type: boolean }
+
+    Team:
+      type: object
+      required: [id, name, ageGroup, playerCount, staffCount]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        ageGroup: { type: string }
+        gender: { type: ["string", "null"] }
+        colorHex: { type: ["string", "null"] }
+        seasonId: { type: ["integer", "null"] }
+        seasonName: { type: ["string", "null"] }
+        playerCount: { type: integer }
+        staffCount: { type: integer }
+
+    TeamSummary:
+      type: object
+      required: [team, playerCount, goingCount, maybeCount, outCount, noResponseCount, recentPostCount]
+      properties:
+        team: { $ref: "#/components/schemas/Team" }
+        nextEvent: { $ref: "#/components/schemas/Event" }
+        playerCount: { type: integer }
+        goingCount: { type: integer }
+        maybeCount: { type: integer }
+        outCount: { type: integer }
+        noResponseCount: { type: integer }
+        recentPostCount: { type: integer }
+
+    TeamMembership:
+      type: object
+      required: [id, teamId, teamName, role]
+      properties:
+        id: { type: integer }
+        teamId: { type: integer }
+        teamName: { type: string }
+        role: { type: string, enum: [manager, coach, player] }
+        jerseyNumber: { type: ["integer", "null"] }
+        position: { type: ["string", "null"] }
+
+    TeamMember:
+      type: object
+      required: [id, teamId, role, person]
+      properties:
+        id: { type: integer }
+        teamId: { type: integer }
+        role: { type: string, enum: [manager, coach, player] }
+        jerseyNumber: { type: ["integer", "null"] }
+        position: { type: ["string", "null"] }
+        person: { $ref: "#/components/schemas/Person" }
+
+    Guardianship:
+      type: object
+      required: [id, relationship, canManage, guardian, player]
+      properties:
+        id: { type: integer }
+        relationship: { type: string, enum: [parent, guardian, other] }
+        canManage: { type: boolean }
+        guardian: { $ref: "#/components/schemas/Person" }
+        player: { $ref: "#/components/schemas/Person" }
+
+    CurrentUser:
+      type: object
+      required: [person, isClubAdmin, memberships, guardianOf]
+      properties:
+        person: { $ref: "#/components/schemas/Person" }
+        clubRole: { type: ["string", "null"], enum: [admin, member, null] }
+        isClubAdmin: { type: boolean }
+        memberships:
+          type: array
+          items: { $ref: "#/components/schemas/TeamMembership" }
+        guardianOf:
+          type: array
+          items: { $ref: "#/components/schemas/Person" }
+
+    PersonDetail:
+      type: object
+      required: [person, memberships, guardians, wards]
+      properties:
+        person: { $ref: "#/components/schemas/Person" }
+        memberships:
+          type: array
+          items: { $ref: "#/components/schemas/TeamMembership" }
+        guardians:
+          type: array
+          items: { $ref: "#/components/schemas/Guardianship" }
+        wards:
+          type: array
+          items: { $ref: "#/components/schemas/Guardianship" }
+
+    Post:
+      type: object
+      required: [id, teamId, teamName, body, pinned, createdAt, author, commentCount]
+      properties:
+        id: { type: integer }
+        teamId: { type: integer }
+        teamName: { type: string }
+        title: { type: ["string", "null"] }
+        body: { type: string }
+        pinned: { type: boolean }
+        createdAt: { type: string }
+        author: { $ref: "#/components/schemas/Person" }
+        commentCount: { type: integer }
+
+    PostDetail:
+      type: object
+      required: [post, comments]
+      properties:
+        post: { $ref: "#/components/schemas/Post" }
+        comments:
+          type: array
+          items: { $ref: "#/components/schemas/Comment" }
+
+    Comment:
+      type: object
+      required: [id, postId, body, createdAt, author]
+      properties:
+        id: { type: integer }
+        postId: { type: integer }
+        body: { type: string }
+        createdAt: { type: string }
+        author: { $ref: "#/components/schemas/Person" }
+
+    Event:
+      type: object
+      required: [id, teamId, teamName, type, title, startsAt, goingCount, maybeCount, outCount, noResponseCount]
+      properties:
+        id: { type: integer }
+        teamId: { type: integer }
+        teamName: { type: string }
+        type: { type: string, enum: [training, game, social, other] }
+        title: { type: string }
+        location: { type: ["string", "null"] }
+        opponent: { type: ["string", "null"] }
+        startsAt: { type: string }
+        endsAt: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
+        goingCount: { type: integer }
+        maybeCount: { type: integer }
+        outCount: { type: integer }
+        noResponseCount: { type: integer }
+        myRsvp: { type: ["string", "null"], enum: [going, maybe, out, null] }
+
+    EventDetail:
+      type: object
+      required: [event, rsvps]
+      properties:
+        event: { $ref: "#/components/schemas/Event" }
+        rsvps:
+          type: array
+          items: { $ref: "#/components/schemas/Rsvp" }
+
+    Rsvp:
+      type: object
+      required: [id, eventId, status, person]
+      properties:
+        id: { type: integer }
+        eventId: { type: integer }
+        status: { type: string, enum: [going, maybe, out] }
+        respondedAt: { type: ["string", "null"] }
+        person: { $ref: "#/components/schemas/Person" }
+
+    Chat:
+      type: object
+      required: [id, name, type, memberCount]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        type: { type: string, enum: [team, group, direct] }
+        teamId: { type: ["integer", "null"] }
+        teamName: { type: ["string", "null"] }
+        memberCount: { type: integer }
+        lastMessage: { $ref: "#/components/schemas/Message" }
+
+    ChatDetail:
+      type: object
+      required: [chat, members]
+      properties:
+        chat: { $ref: "#/components/schemas/Chat" }
+        members:
+          type: array
+          items: { $ref: "#/components/schemas/Person" }
+
+    Message:
+      type: object
+      required: [id, chatId, body, createdAt, author]
+      properties:
+        id: { type: integer }
+        chatId: { type: integer }
+        body: { type: string }
+        createdAt: { type: string }
+        author: { $ref: "#/components/schemas/Person" }
+
+    ClubOverview:
+      type: object
+      required: [club, teamCount, playerCount, coachCount, parentCount, upcomingEvents, recentPosts]
+      properties:
+        club: { $ref: "#/components/schemas/Club" }
+        teamCount: { type: integer }
+        playerCount: { type: integer }
+        coachCount: { type: integer }
+        parentCount: { type: integer }
+        upcomingEvents:
+          type: array
+          items: { $ref: "#/components/schemas/Event" }
+        recentPosts:
+          type: array
+          items: { $ref: "#/components/schemas/Post" }
+
+    ProfileUpdate:
+      type: object
+      properties:
+        firstName: { type: string, minLength: 1 }
+        lastName: { type: string, minLength: 1 }
+        phone: { type: string }
+        avatarUrl: { type: string }
+
+    TeamInput:
+      type: object
+      required: [name, ageGroup]
+      properties:
+        name: { type: string, minLength: 1 }
+        ageGroup: { type: string, minLength: 1 }
+        gender: { type: string }
+        colorHex: { type: string }
+        seasonId: { type: integer }
+
+    TeamUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        ageGroup: { type: string, minLength: 1 }
+        gender: { type: string }
+        colorHex: { type: string }
+        seasonId: { type: integer }
+
+    TeamMemberInput:
+      type: object
+      required: [personId, role]
+      properties:
+        personId: { type: integer }
+        role: { type: string, enum: [manager, coach, player] }
+        jerseyNumber: { type: integer }
+        position: { type: string }
+
+    TeamMemberUpdate:
+      type: object
+      properties:
+        role: { type: string, enum: [manager, coach, player] }
+        jerseyNumber: { type: integer }
+        position: { type: string }
+
+    PersonInput:
+      type: object
+      required: [firstName, lastName]
+      properties:
+        firstName: { type: string, minLength: 1 }
+        lastName: { type: string, minLength: 1 }
+        email: { type: string }
+        phone: { type: string }
+        dateOfBirth: { type: string }
+
+    PersonUpdate:
+      type: object
+      properties:
+        firstName: { type: string, minLength: 1 }
+        lastName: { type: string, minLength: 1 }
+        email: { type: string }
+        phone: { type: string }
+        dateOfBirth: { type: string }
+        avatarUrl: { type: string }
+
+    GuardianshipInput:
+      type: object
+      required: [guardianId, playerId, relationship]
+      properties:
+        guardianId: { type: integer }
+        playerId: { type: integer }
+        relationship: { type: string, enum: [parent, guardian, other] }
+        canManage: { type: boolean }
+
+    PostInput:
+      type: object
+      required: [body]
+      properties:
+        title: { type: string }
+        body: { type: string, minLength: 1 }
+        pinned: { type: boolean }
+
+    PostUpdate:
+      type: object
+      properties:
+        title: { type: string }
+        body: { type: string, minLength: 1 }
+        pinned: { type: boolean }
+
+    CommentInput:
+      type: object
+      required: [body]
+      properties:
+        body: { type: string, minLength: 1 }
+
+    EventInput:
+      type: object
+      required: [type, title, startsAt]
+      properties:
+        type: { type: string, enum: [training, game, social, other] }
+        title: { type: string, minLength: 1 }
+        location: { type: string }
+        opponent: { type: string }
+        startsAt: { type: string }
+        endsAt: { type: string }
+        notes: { type: string }
+
+    EventUpdate:
+      type: object
+      properties:
+        type: { type: string, enum: [training, game, social, other] }
+        title: { type: string, minLength: 1 }
+        location: { type: string }
+        opponent: { type: string }
+        startsAt: { type: string }
+        endsAt: { type: string }
+        notes: { type: string }
+
+    RsvpInput:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [going, maybe, out] }
+        onBehalfOfPersonId: { type: integer }
+
+    ChatInput:
+      type: object
+      required: [name, type, memberIds]
+      properties:
+        name: { type: string, minLength: 1 }
+        type: { type: string, enum: [team, group, direct] }
+        teamId: { type: integer }
+        memberIds:
+          type: array
+          items: { type: integer }
+
+    MessageInput:
+      type: object
+      required: [body]
+      properties:
+        body: { type: string, minLength: 1 }

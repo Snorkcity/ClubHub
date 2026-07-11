@@ -1,0 +1,239 @@
+import { useState } from "react";
+import { Link, useLocation } from "wouter";
+import { useClerk, useUser } from "@clerk/react";
+import { 
+  Home, Users, CalendarDays, MessageSquare, Settings, 
+  LogOut, Menu, X, ChevronDown, UserSquare2
+} from "lucide-react";
+import { useGetMe, useGetClub } from "@workspace/api-client-react";
+import { getGetMeQueryKey, getGetClubQueryKey } from "@workspace/api-client-react";
+
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { 
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, 
+  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+
+export default function Shell({ children }: { children: React.ReactNode }) {
+  const [location] = useLocation();
+  const { signOut } = useClerk();
+  const { user: clerkUser } = useUser();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // We use the same query keys that the generated hook uses internally 
+  const { data: me, isLoading: isLoadingMe } = useGetMe({ 
+    query: { queryKey: getGetMeQueryKey() } 
+  });
+  
+  const { data: club } = useGetClub({
+    query: { queryKey: getGetClubQueryKey() }
+  });
+
+  const navItems = [
+    { label: "Home", href: "/home", icon: Home },
+    { label: "Teams", href: "/teams", icon: Users },
+    { label: "Schedule", href: "/schedule", icon: CalendarDays },
+    { label: "Messages", href: "/messages", icon: MessageSquare },
+    { label: "Directory", href: "/people", icon: UserSquare2 },
+  ];
+
+  return (
+    <div className="min-h-screen bg-muted/20 flex flex-col md:flex-row">
+      {/* Sidebar for Desktop */}
+      <aside className="hidden md:flex flex-col w-72 bg-background border-r shrink-0 sticky top-0 h-screen">
+        <div className="h-16 flex items-center px-6 border-b shrink-0">
+          <Link href="/home" className="flex items-center gap-3 w-full">
+            {club?.logoUrl ? (
+              <img src={club.logoUrl} alt={club.name} className="h-8 w-8 object-contain" />
+            ) : (
+              <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center shrink-0">
+                <span className="text-primary-foreground font-display font-black text-lg leading-none">CH</span>
+              </div>
+            )}
+            <span className="font-display font-bold text-lg truncate">
+              {club?.name || "ClubHub"}
+            </span>
+          </Link>
+        </div>
+
+        <div className="flex-1 overflow-y-auto py-6 px-4 flex flex-col gap-1">
+          <div className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+            Menu
+          </div>
+          {navItems.map((item) => {
+            const isActive = location.startsWith(item.href);
+            return (
+              <Link 
+                key={item.href} 
+                href={item.href}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                  isActive 
+                    ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20" 
+                    : "text-foreground hover:bg-muted"
+                }`}
+              >
+                <item.icon className="h-5 w-5" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="p-4 border-t shrink-0">
+          <UserMenu me={me} clerkUser={clerkUser} onSignOut={() => signOut({ redirectUrl: "/" })} />
+        </div>
+      </aside>
+
+      {/* Mobile Header */}
+      <header className="md:hidden h-16 bg-background border-b flex items-center justify-between px-4 sticky top-0 z-40">
+        <Link href="/home" className="flex items-center gap-2">
+          <div className="h-8 w-8 bg-primary rounded flex items-center justify-center shrink-0">
+            <span className="text-primary-foreground font-display font-black text-sm leading-none">CH</span>
+          </div>
+          <span className="font-display font-bold text-lg truncate">
+            {club?.name || "ClubHub"}
+          </span>
+        </Link>
+        
+        <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        </Button>
+      </header>
+
+      {/* Mobile Navigation Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 top-16 z-40 bg-background flex flex-col animate-in fade-in slide-in-from-top-4 duration-200">
+          <div className="flex-1 px-4 py-6 flex flex-col gap-2">
+            {navItems.map((item) => {
+              const isActive = location.startsWith(item.href);
+              return (
+                <Link 
+                  key={item.href} 
+                  href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-4 px-4 py-4 rounded-2xl text-base font-medium transition-colors ${
+                    isActive 
+                      ? "bg-primary text-primary-foreground" 
+                      : "text-foreground hover:bg-muted"
+                  }`}
+                >
+                  <item.icon className="h-6 w-6" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+          <div className="p-6 border-t pb-10">
+            <UserMenu me={me} clerkUser={clerkUser} onSignOut={() => signOut({ redirectUrl: "/" })} mobile />
+          </div>
+        </div>
+      )}
+
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col w-full max-w-full overflow-hidden">
+        {children}
+      </main>
+    </div>
+  );
+}
+
+function UserMenu({ me, clerkUser, onSignOut, mobile = false }: { me: any, clerkUser: any, onSignOut: () => void, mobile?: boolean }) {
+  const avatarUrl = me?.person?.avatarUrl || clerkUser?.imageUrl;
+  const name = me?.person?.fullName || clerkUser?.fullName || "Loading...";
+  
+  if (mobile) {
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-3 mb-2">
+          <Avatar className="h-12 w-12 border-2 border-background shadow-sm">
+            <AvatarImage src={avatarUrl} />
+            <AvatarFallback className="bg-primary/10 text-primary font-bold">
+              {name.charAt(0)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col">
+            <span className="font-semibold text-base">{name}</span>
+            <span className="text-xs text-muted-foreground">{me?.isClubAdmin ? "Club Admin" : "Member"}</span>
+          </div>
+        </div>
+        <Button asChild variant="outline" className="w-full justify-start rounded-xl h-12">
+          <Link href="/settings">
+            <Settings className="h-5 w-5 mr-3 text-muted-foreground" />
+            Settings
+          </Link>
+        </Button>
+        <Button variant="ghost" onClick={onSignOut} className="w-full justify-start rounded-xl h-12 text-destructive hover:bg-destructive/10 hover:text-destructive">
+          <LogOut className="h-5 w-5 mr-3" />
+          Log out
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="w-full justify-start p-2 h-auto rounded-xl hover:bg-muted">
+          <div className="flex items-center gap-3 w-full">
+            <Avatar className="h-9 w-9 shrink-0 border border-border/50">
+              <AvatarImage src={avatarUrl} />
+              <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
+                {name.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col items-start flex-1 min-w-0">
+              <span className="font-semibold text-sm truncate w-full text-left">{name}</span>
+              <span className="text-xs text-muted-foreground truncate w-full text-left">
+                {me?.isClubAdmin ? "Club Admin" : "Member"}
+              </span>
+            </div>
+            <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+          </div>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-64 rounded-2xl p-2 shadow-xl border-border/50">
+        <DropdownMenuLabel className="font-normal p-2">
+          <div className="flex flex-col space-y-1">
+            <p className="text-sm font-medium leading-none">{name}</p>
+            <p className="text-xs leading-none text-muted-foreground">
+              {clerkUser?.primaryEmailAddress?.emailAddress}
+            </p>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        
+        {me?.guardianOf?.length > 0 && (
+          <>
+            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Family Accounts
+            </div>
+            {me.guardianOf.map((ward: any) => (
+              <DropdownMenuItem key={ward.id} className="rounded-xl py-2 cursor-pointer">
+                <Avatar className="h-6 w-6 mr-2 shrink-0">
+                  <AvatarImage src={ward.avatarUrl} />
+                  <AvatarFallback className="text-[10px]">{ward.firstName?.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col flex-1">
+                  <span className="text-sm">{ward.fullName}</span>
+                </div>
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+          </>
+        )}
+        
+        <DropdownMenuItem asChild className="rounded-xl py-2 cursor-pointer">
+          <Link href="/settings" className="flex items-center w-full">
+            <Settings className="mr-2 h-4 w-4 text-muted-foreground" />
+            <span>Settings</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onSignOut} className="rounded-xl py-2 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10">
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>Log out</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
