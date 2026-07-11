@@ -1,6 +1,6 @@
 import type { Request, RequestHandler } from "express";
-import { getAuth } from "@clerk/express";
-import { and, eq } from "drizzle-orm";
+import { getAuth, clerkClient } from "@clerk/express";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import {
   db,
   usersTable,
@@ -45,23 +45,67 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
     )[0];
 
     if (!user) {
-      const claims = (auth.sessionClaims ?? {}) as Record<string, unknown>;
-      const firstName =
-        (claims.firstName as string) ||
-        (claims.first_name as string) ||
-        "New";
-      const lastName =
-        (claims.lastName as string) ||
-        (claims.last_name as string) ||
-        "Member";
-      const email =
-        (claims.email as string) || (claims.primary_email as string) || null;
-      user = (
-        await db
-          .insert(usersTable)
-          .values({ clubId: club.id, clerkUserId, firstName, lastName, email })
-          .returning()
-      )[0];
+      // Pull identity from Clerk's backend so we can trust the email and,
+      // critically, its verification status (the session token may omit email
+      // entirely). This call only runs once per user — on first sign-in.
+      let firstName = "New";
+      let lastName = "Member";
+      let email: string | null = null;
+      let emailVerified = false;
+      try {
+        const clerkUser = await clerkClient.users.getUser(clerkUserId);
+        firstName = clerkUser.firstName || firstName;
+        lastName = clerkUser.lastName || lastName;
+        const primary = clerkUser.emailAddresses.find(
+          (e) => e.id === clerkUser.primaryEmailAddressId,
+        );
+        if (primary) {
+          email = primary.emailAddress;
+          emailVerified = primary.verification?.status === "verified";
+        }
+      } catch (err) {
+        req.log.warn({ err }, "Could not load Clerk user profile");
+      }
+
+      // Claim a pre-created (login-less) person by email so admins can seed
+      // people and have them attach to their real login on first sign-in.
+      // Guarded: only a *verified* email may claim, and we fail closed on any
+      // ambiguity (0 or >1 matches) rather than binding the wrong identity.
+      if (email && emailVerified) {
+        const candidates = await db
+          .select()
+          .from(usersTable)
+          .where(
+            and(
+              sql`lower(${usersTable.email}) = ${email.toLowerCase()}`,
+              isNull(usersTable.clerkUserId),
+              eq(usersTable.clubId, club.id),
+            ),
+          );
+        if (candidates.length === 1) {
+          user = (
+            await db
+              .update(usersTable)
+              .set({ clerkUserId })
+              .where(eq(usersTable.id, candidates[0].id))
+              .returning()
+          )[0];
+        } else if (candidates.length > 1) {
+          req.log.warn(
+            { email },
+            "Ambiguous email match on sign-in; creating a new account instead of auto-linking",
+          );
+        }
+      }
+
+      if (!user) {
+        user = (
+          await db
+            .insert(usersTable)
+            .values({ clubId: club.id, clerkUserId, firstName, lastName, email })
+            .returning()
+        )[0];
+      }
     }
 
     const admins = await db

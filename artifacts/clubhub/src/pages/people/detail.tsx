@@ -1,12 +1,13 @@
 import { useParams, Link } from "wouter";
 import { Mail, Phone, ShieldCheck, Users, ArrowLeft, CalendarDays } from "lucide-react";
-import { useGetPerson, getGetPersonQueryKey } from "@workspace/api-client-react";
+import { useGetPerson, getGetPersonQueryKey, useGetMe } from "@workspace/api-client-react";
 import { format } from "date-fns";
 
 import { LoadingScreen, ErrorState } from "@/components/ui/states";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { LinkGuardianDialog, RemoveGuardianButton } from "@/components/admin/family-admin";
 
 export default function PersonDetail() {
   const params = useParams();
@@ -15,11 +16,15 @@ export default function PersonDetail() {
   const { data, isLoading, error, refetch } = useGetPerson(personId, {
     query: { enabled: !!personId, queryKey: getGetPersonQueryKey(personId) }
   });
+  const { data: me } = useGetMe();
 
   if (isLoading) return <LoadingScreen message="Loading profile..." />;
   if (error || !data) return <ErrorState onRetry={() => refetch()} />;
 
   const { person, memberships, guardians, wards } = data;
+  const isAdmin = !!me?.isClubAdmin;
+  const guardianIds = guardians.map((g) => g.guardian.id);
+  const wardIds = wards.map((w) => w.player.id);
 
   return (
     <div className="flex-1 overflow-y-auto bg-muted/5">
@@ -102,13 +107,23 @@ export default function PersonDetail() {
           <div className="space-y-8">
             {/* Family (Guardians/Wards) */}
             <div className="space-y-4">
-              <h2 className="text-xl font-display font-bold flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" /> Family
-              </h2>
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-xl font-display font-bold flex items-center gap-2">
+                  <Users className="h-5 w-5 text-primary" /> Family
+                </h2>
+                {isAdmin && (
+                  <div className="flex items-center gap-1">
+                    <LinkGuardianDialog personId={personId} direction="addGuardian" excludeIds={guardianIds} />
+                    <LinkGuardianDialog personId={personId} direction="addPlayer" excludeIds={wardIds} />
+                  </div>
+                )}
+              </div>
               
               {guardians.length === 0 && wards.length === 0 ? (
                 <Card className="p-6 text-center border-dashed bg-muted/20 rounded-2xl">
-                  <p className="text-muted-foreground text-sm">No family members linked.</p>
+                  <p className="text-muted-foreground text-sm">
+                    No family members linked.{isAdmin ? " Use the buttons above to link a guardian or player." : ""}
+                  </p>
                 </Card>
               ) : (
                 <Card className="rounded-3xl border shadow-sm overflow-hidden flex flex-col divide-y">
@@ -117,16 +132,21 @@ export default function PersonDetail() {
                       <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Guardians</h3>
                       <div className="space-y-3">
                         {guardians.map(g => (
-                          <Link key={g.id} href={`/people/${g.guardian.id}`} className="flex items-center gap-3 hover:bg-background p-2 -mx-2 rounded-xl transition-colors">
-                            <Avatar className="h-10 w-10 border shadow-sm">
-                              <AvatarImage src={g.guardian.avatarUrl || undefined} />
-                              <AvatarFallback>{g.guardian.firstName?.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex flex-col">
-                              <span className="font-bold text-sm">{g.guardian.fullName}</span>
-                              <span className="text-xs text-muted-foreground capitalize">{g.relationship}</span>
-                            </div>
-                          </Link>
+                          <div key={g.id} className="flex items-center gap-3 p-2 -mx-2 rounded-xl hover:bg-background transition-colors">
+                            <Link href={`/people/${g.guardian.id}`} className="flex items-center gap-3 flex-1 min-w-0">
+                              <Avatar className="h-10 w-10 border shadow-sm">
+                                <AvatarImage src={g.guardian.avatarUrl || undefined} />
+                                <AvatarFallback>{g.guardian.firstName?.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                              <div className="flex flex-col min-w-0">
+                                <span className="font-bold text-sm truncate">{g.guardian.fullName}</span>
+                                <span className="text-xs text-muted-foreground capitalize">{g.relationship}</span>
+                              </div>
+                            </Link>
+                            {isAdmin && (
+                              <RemoveGuardianButton guardianshipId={g.id} personId={personId} otherId={g.guardian.id} />
+                            )}
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -137,16 +157,21 @@ export default function PersonDetail() {
                       <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Linked Players</h3>
                       <div className="space-y-3">
                         {wards.map(w => (
-                          <Link key={w.id} href={`/people/${w.player.id}`} className="flex items-center gap-3 hover:bg-muted p-2 -mx-2 rounded-xl transition-colors">
-                            <Avatar className="h-10 w-10 border shadow-sm">
-                              <AvatarImage src={w.player.avatarUrl || undefined} />
-                              <AvatarFallback>{w.player.firstName?.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex flex-col">
-                              <span className="font-bold text-sm">{w.player.fullName}</span>
-                              <span className="text-xs text-muted-foreground capitalize">{w.relationship}</span>
-                            </div>
-                          </Link>
+                          <div key={w.id} className="flex items-center gap-3 p-2 -mx-2 rounded-xl hover:bg-muted transition-colors">
+                            <Link href={`/people/${w.player.id}`} className="flex items-center gap-3 flex-1 min-w-0">
+                              <Avatar className="h-10 w-10 border shadow-sm">
+                                <AvatarImage src={w.player.avatarUrl || undefined} />
+                                <AvatarFallback>{w.player.firstName?.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                              <div className="flex flex-col min-w-0">
+                                <span className="font-bold text-sm truncate">{w.player.fullName}</span>
+                                <span className="text-xs text-muted-foreground capitalize">{w.relationship}</span>
+                              </div>
+                            </Link>
+                            {isAdmin && (
+                              <RemoveGuardianButton guardianshipId={w.id} personId={personId} otherId={w.player.id} />
+                            )}
+                          </div>
                         ))}
                       </div>
                     </div>

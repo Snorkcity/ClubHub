@@ -3,7 +3,7 @@ import { useParams, Link } from "wouter";
 import { format } from "date-fns";
 import { 
   CalendarDays, MapPin, Clock, Users, ArrowRight, ShieldCheck, 
-  MessageSquare, Pin, ChevronLeft, Calendar as CalendarIcon, UserPlus
+  MessageSquare, Pin, ChevronLeft, Calendar as CalendarIcon
 } from "lucide-react";
 import { 
   useGetTeam, useGetTeamSummary, useListTeamMembers, useGetMe,
@@ -16,6 +16,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AddMemberDialog, RemoveMemberButton } from "@/components/admin/team-roster-admin";
 
 export default function TeamDetail() {
   const params = useParams();
@@ -40,6 +41,7 @@ export default function TeamDetail() {
 
   const isManager = me?.isClubAdmin || me?.memberships.some((m: any) => m.teamId === teamId && m.role === 'manager');
   const isCoach = isManager || me?.memberships.some((m: any) => m.teamId === teamId && m.role === 'coach');
+  const existingUserIds = (members ?? []).map((m) => m.person.id);
 
   return (
     <div className="flex-1 overflow-y-auto bg-muted/5 relative">
@@ -178,9 +180,14 @@ export default function TeamDetail() {
               <div className="space-y-8">
                 {/* Staff */}
                 <div className="bg-card border rounded-3xl p-6 shadow-sm">
-                  <h3 className="text-lg font-display font-bold mb-4 flex items-center gap-2">
-                    <ShieldCheck className="h-5 w-5 text-primary" /> Staff
-                  </h3>
+                  <div className="flex items-center justify-between mb-4 gap-2">
+                    <h3 className="text-lg font-display font-bold flex items-center gap-2">
+                      <ShieldCheck className="h-5 w-5 text-primary" /> Staff
+                    </h3>
+                    {isManager && (
+                      <AddMemberDialog teamId={teamId} existingUserIds={existingUserIds} mode="staff" />
+                    )}
+                  </div>
                   
                   <div className="space-y-4">
                     {members?.filter(m => m.role === 'manager' || m.role === 'coach').map((staff) => (
@@ -193,6 +200,9 @@ export default function TeamDetail() {
                           <span className="font-semibold text-sm truncate">{staff.person.fullName}</span>
                           <span className="text-xs font-medium text-muted-foreground capitalize">{staff.role}</span>
                         </div>
+                        {isManager && (
+                          <RemoveMemberButton memberId={staff.id} teamId={teamId} name={staff.person.fullName} className="ml-auto" />
+                        )}
                       </div>
                     ))}
                     {members?.filter(m => m.role === 'manager' || m.role === 'coach').length === 0 && (
@@ -211,15 +221,17 @@ export default function TeamDetail() {
                   <Users className="h-5 w-5 text-primary" /> Player Roster
                 </h2>
                 {isManager && (
-                  <Button size="sm" variant="outline" className="rounded-xl">
-                    <UserPlus className="h-4 w-4 mr-2" /> Add Player
-                  </Button>
+                  <AddMemberDialog teamId={teamId} existingUserIds={existingUserIds} mode="player" />
                 )}
               </div>
               
               <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-px bg-border">
                 {members?.filter(m => m.role === 'player').map((player) => (
-                  <Link key={player.id} href={`/people/${player.person.id}`}>
+                  <div key={player.id} className="relative">
+                    {isManager && (
+                      <RemoveMemberButton memberId={player.id} teamId={teamId} name={player.person.fullName} className="absolute top-2 right-2 z-10 bg-card/80 backdrop-blur" />
+                    )}
+                    <Link href={`/people/${player.person.id}`}>
                     <div className="bg-card p-6 flex flex-col items-center text-center hover:bg-muted/30 transition-colors cursor-pointer group h-full">
                       <Avatar className="h-20 w-20 border-2 shadow-sm mb-4">
                         <AvatarImage src={player.person.avatarUrl || undefined} />
@@ -240,7 +252,8 @@ export default function TeamDetail() {
                         </div>
                       )}
                     </div>
-                  </Link>
+                    </Link>
+                  </div>
                 ))}
               </div>
               {members?.filter(m => m.role === 'player').length === 0 && (
