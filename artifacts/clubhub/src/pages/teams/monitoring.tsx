@@ -251,10 +251,11 @@ export default function TeamMonitoring() {
                 <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-1.5 py-0.5 text-[11px] font-bold text-red-700 align-middle">
                   <AlertTriangle className="h-3 w-3" /> ALERT
                 </span>{" "}
-                <span className="font-medium text-foreground">badges</span> show <em>change</em> — a
-                drop against that player's own 28-day normal. A badge can fire while cells still look green,
-                and that's the point: baselines differ. A hard self-marker who always logs 3s isn't struggling;
-                a player who always logs 5s sliding to 3.5 might be.
+                <span className="font-medium text-foreground">badges</span> show <em>change</em> — the player
+                has dropped below what's normal <em>for them</em>. Every player has their own "normal": one
+                might always answer 3s, another always 5s. So a badge can appear even when the cells are still
+                green — the score isn't bad yet, but it's unusually low for that player, and that's worth a
+                check-in.
               </p>
             </div>
             <div>
