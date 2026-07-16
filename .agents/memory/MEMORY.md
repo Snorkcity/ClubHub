@@ -1,3 +1,4 @@
 - [Lifelong identity model](lifelong-identity.md) — every player is one permanent account; guardians are linked (never child sub-profiles). Central architectural pillar for ClubHub.
 - [Repo build quirks](repo-build-quirks.md) — no tsx binary; run standalone TS via esbuild bundle; rebuild db declarations after schema changes so @workspace/db exports resolve.
 - [Account claiming by email](account-claiming.md) — first-login can claim a pre-created person by VERIFIED email, single-match only (fail closed); identity read from Clerk backend, not session claims.
+- [Player Monitoring design](player-monitoring-design.md) — agreed RPE/wellness module decisions: capture first, live baseline-relative dashboard, on-demand reports, 16+ opt-in cycle tracking.
