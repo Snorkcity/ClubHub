@@ -215,17 +215,25 @@ export default function TeamMonitoring() {
                       </div>
                     </td>
                     <td className="p-1">
-                      {p.windowExternalLoad ? (
+                      {p.windowLoad > 0 && p.sessions > 0 ? (
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div className="rounded-lg px-2 py-2 text-center text-sm tabular-nums bg-muted/40 cursor-default">
                               {p.windowLoad}
-                              <span className="text-sky-600 font-bold">*</span>
+                              {p.windowExternalLoad ? <span className="text-sky-600 font-bold">*</span> : null}
                             </div>
                           </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-xs text-xs">
-                            Includes {p.windowExternalLoad} load from sessions outside the club
-                            (rep, school, other) in this window.
+                          <TooltipContent side="top" className="max-w-xs text-xs space-y-1">
+                            <p>
+                              ≈ {Math.round(p.windowLoad / p.sessions)} per session — skipping one takes
+                              roughly that much off their total.
+                            </p>
+                            {p.windowExternalLoad ? (
+                              <p>
+                                Includes {p.windowExternalLoad} from sessions outside the club (rep,
+                                school, other).
+                              </p>
+                            ) : null}
                           </TooltipContent>
                         </Tooltip>
                       ) : (
@@ -296,7 +304,8 @@ export default function TeamMonitoring() {
                   <span className="text-foreground">Sustained high load</span> — ACWR only measures{" "}
                   <em>change</em>, so a player grinding heavy weeks for a month drifts back to green. This
                   flag catches that: it fires when their 4-week weekly average sits well above the squad's
-                  norm. Check in more often, or have them skip a session to bring it down.
+                  norm. Check in more often, or have them skip a session to bring it down — hover their
+                  Load number to see what one skipped session is worth (≈ their average per session).
                 </li>
                 <li>
                   <span className="text-foreground">
