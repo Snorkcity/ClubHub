@@ -1237,7 +1237,17 @@ export const GetCheckinStatusResponse = zod.object({
   "soreness": zod.number(),
   "stress": zod.number(),
   "mood": zod.number()
-}))
+})),
+  "recentExtraSessions": zod.array(zod.object({
+  "id": zod.number(),
+  "personId": zod.number(),
+  "sessionDate": zod.string(),
+  "kind": zod.enum(['rep', 'school', 'other']),
+  "label": zod.string().nullish(),
+  "rpe": zod.number(),
+  "minutes": zod.number(),
+  "load": zod.number()
+})).optional()
 }))
 })
 
@@ -1306,6 +1316,45 @@ export const SubmitRpeResponse = zod.object({
 
 
 /**
+ * @summary Log a session outside the club calendar (rep, school, other)
+ */
+export const logExtraSessionBodyLabelMax = 120;
+
+export const logExtraSessionBodyRpeMin = 0;
+export const logExtraSessionBodyRpeMax = 10;
+
+export const logExtraSessionBodyMinutesMax = 300;
+
+
+
+export const LogExtraSessionBody = zod.object({
+  "sessionDate": zod.string(),
+  "kind": zod.enum(['rep', 'school', 'other']),
+  "label": zod.string().max(logExtraSessionBodyLabelMax).optional(),
+  "rpe": zod.number().min(logExtraSessionBodyRpeMin).max(logExtraSessionBodyRpeMax),
+  "minutes": zod.number().min(1).max(logExtraSessionBodyMinutesMax),
+  "onBehalfOfPersonId": zod.number().optional()
+})
+
+export const LogExtraSessionResponse = zod.object({
+  "id": zod.number(),
+  "personId": zod.number(),
+  "sessionDate": zod.string(),
+  "kind": zod.enum(['rep', 'school', 'other']),
+  "label": zod.string().nullish(),
+  "rpe": zod.number(),
+  "minutes": zod.number(),
+  "load": zod.number()
+})
+
+
+/**
+ * @summary Delete an extra session you logged
+ */
+export const DeleteExtraSessionResponse = zod.void()
+
+
+/**
  * @summary Live player-monitoring dashboard for a team (staff only)
  */
 export const GetTeamMonitoringQueryParams = zod.object({
@@ -1340,7 +1389,9 @@ export const GetTeamMonitoringResponse = zod.object({
   "lastWellnessDate": zod.string().nullish(),
   "sessions": zod.number(),
   "windowLoad": zod.number(),
+  "windowExternalLoad": zod.number().optional(),
   "acuteLoad": zod.number().optional(),
+  "acuteExternalLoad": zod.number().optional(),
   "chronicWeeklyLoad": zod.number().nullish(),
   "acwr": zod.number().nullish(),
   "flags": zod.array(zod.object({

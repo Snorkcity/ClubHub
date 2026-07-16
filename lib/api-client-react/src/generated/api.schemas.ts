@@ -556,6 +556,53 @@ export interface RpeInput {
   onBehalfOfPersonId?: number;
 }
 
+export type ExtraSessionKind = typeof ExtraSessionKind[keyof typeof ExtraSessionKind];
+
+
+export const ExtraSessionKind = {
+  rep: 'rep',
+  school: 'school',
+  other: 'other',
+} as const;
+
+export interface ExtraSession {
+  id: number;
+  personId: number;
+  sessionDate: string;
+  kind: ExtraSessionKind;
+  label?: string | null;
+  rpe: number;
+  minutes: number;
+  load: number;
+}
+
+export type ExtraSessionInputKind = typeof ExtraSessionInputKind[keyof typeof ExtraSessionInputKind];
+
+
+export const ExtraSessionInputKind = {
+  rep: 'rep',
+  school: 'school',
+  other: 'other',
+} as const;
+
+export interface ExtraSessionInput {
+  sessionDate: string;
+  kind: ExtraSessionInputKind;
+  /** @maxLength 120 */
+  label?: string;
+  /**
+     * @minimum 0
+     * @maximum 10
+     */
+  rpe: number;
+  /**
+     * @minimum 1
+     * @maximum 300
+     */
+  minutes: number;
+  onBehalfOfPersonId?: number;
+}
+
 export interface PendingRpe {
   event: Event;
   defaultMinutes: number;
@@ -567,6 +614,7 @@ export interface CheckinSubject {
   todayWellness?: WellnessEntry;
   pendingRpe: PendingRpe[];
   weekWellness: WellnessEntry[];
+  recentExtraSessions?: ExtraSession[];
 }
 
 export interface CheckinStatus {
@@ -600,7 +648,9 @@ export interface PlayerMonitoring {
   lastWellnessDate?: string | null;
   sessions: number;
   windowLoad: number;
+  windowExternalLoad?: number;
   acuteLoad?: number;
+  acuteExternalLoad?: number;
   chronicWeeklyLoad?: number | null;
   acwr?: number | null;
   flags: MonitoringFlag[];

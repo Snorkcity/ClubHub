@@ -21,7 +21,9 @@ export interface PlayerMonitoring {
   lastWellnessDate?: string | null;
   sessions: number;
   windowLoad: number;
+  windowExternalLoad?: number;
   acuteLoad?: number;
+  acuteExternalLoad?: number;
   chronicWeeklyLoad?: number | null;
   acwr?: number | null;
   flags: MonitoringFlag[];

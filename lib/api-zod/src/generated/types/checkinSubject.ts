@@ -5,6 +5,7 @@
  * ClubHub API — multi-team soccer club management
  * OpenAPI spec version: 0.1.0
  */
+import type { ExtraSession } from './extraSession';
 import type { PendingRpe } from './pendingRpe';
 import type { Person } from './person';
 import type { WellnessEntry } from './wellnessEntry';
@@ -15,4 +16,5 @@ export interface CheckinSubject {
   todayWellness?: WellnessEntry;
   pendingRpe: PendingRpe[];
   weekWellness: WellnessEntry[];
+  recentExtraSessions?: ExtraSession[];
 }

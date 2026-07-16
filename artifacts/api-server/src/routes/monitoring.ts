@@ -8,10 +8,16 @@ import {
   rsvpsTable,
   rpeEntriesTable,
   wellnessEntriesTable,
+  extraSessionsTable,
   type RpeEntry,
   type WellnessEntry,
+  type ExtraSession,
 } from "@workspace/db";
-import { SubmitWellnessBody, SubmitRpeBody } from "@workspace/api-zod";
+import {
+  SubmitWellnessBody,
+  SubmitRpeBody,
+  LogExtraSessionBody,
+} from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
 import { buildEvents } from "../lib/build";
 import { getWardIds, canActFor } from "../lib/queries";
@@ -58,6 +64,19 @@ function toRpe(r: RpeEntry) {
     rpe: r.rpe,
     minutes: r.minutes,
     load: r.rpe * r.minutes,
+  };
+}
+
+function toExtraSession(s: ExtraSession) {
+  return {
+    id: s.id,
+    personId: s.userId,
+    sessionDate: s.sessionDate,
+    kind: s.kind as "rep" | "school" | "other",
+    label: s.label,
+    rpe: s.rpe,
+    minutes: s.minutes,
+    load: s.rpe * s.minutes,
   };
 }
 
@@ -170,6 +189,17 @@ router.get("/monitoring/checkin", requireAuth, async (req, res) => {
         )
     : [];
   const rsvpOut = new Set(outRsvps.map((r) => `${r.eventId}:${r.userId}`));
+  // Extra (non-club) sessions logged in the last 7 days.
+  const extras = await db
+    .select()
+    .from(extraSessionsTable)
+    .where(
+      and(
+        inArray(extraSessionsTable.userId, subjectIds),
+        gte(extraSessionsTable.sessionDate, weekStart),
+      ),
+    )
+    .orderBy(desc(extraSessionsTable.sessionDate), desc(extraSessionsTable.id));
   const builtEvents = await buildEvents(recentEvents, localUser.id);
   const builtById = new Map(builtEvents.map((e: { id: number }) => [e.id, e]));
 
@@ -198,6 +228,9 @@ router.get("/monitoring/checkin", requireAuth, async (req, res) => {
       todayWellness: today ? toWellness(today) : undefined,
       pendingRpe: pending,
       weekWellness: myWellness.map(toWellness),
+      recentExtraSessions: extras
+        .filter((s) => s.userId === id)
+        .map(toExtraSession),
     };
   });
 
@@ -306,6 +339,62 @@ router.put("/events/:eventId/rpe", requireAuth, async (req, res) => {
   return res.json(toRpe(entry));
 });
 
+/** Log a session outside the club calendar (rep squad, school sport, etc). */
+router.post("/extra-sessions", requireAuth, async (req, res) => {
+  const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
+  const body = LogExtraSessionBody.parse(req.body);
+  if (!ISO_DATE.test(body.sessionDate))
+    return res.status(400).json({ error: "sessionDate must be YYYY-MM-DD" });
+
+  // Same local-calendar-date rules as wellness, but allow a week of backfill —
+  // rep sessions are often logged later. Never the future.
+  const minDate = dateStr(daysAgo(7));
+  const maxDate = dateStr(new Date(Date.now() + 86400000));
+  if (body.sessionDate < minDate || body.sessionDate > maxDate)
+    return res
+      .status(400)
+      .json({ error: "Extra sessions can only be logged for the last week" });
+
+  const targetId = body.onBehalfOfPersonId ?? localUser.id;
+  if (
+    !(await canActFor(localUser.id, targetId, isClubAdmin)) ||
+    !(await isInClub(targetId, clubId))
+  )
+    return res.status(403).json({ error: "You cannot submit for this person" });
+
+  const [entry] = await db
+    .insert(extraSessionsTable)
+    .values({
+      userId: targetId,
+      sessionDate: body.sessionDate,
+      kind: body.kind,
+      label: body.label ?? null,
+      rpe: body.rpe,
+      minutes: body.minutes,
+      submittedById: localUser.id,
+    })
+    .returning();
+  return res.json(toExtraSession(entry));
+});
+
+/** Delete an extra session (the player it belongs to, or their guardian). */
+router.delete("/extra-sessions/:extraSessionId", requireAuth, async (req, res) => {
+  const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
+  const id = Number(req.params.extraSessionId);
+  const [entry] = await db
+    .select()
+    .from(extraSessionsTable)
+    .where(eq(extraSessionsTable.id, id));
+  if (!entry) return res.status(404).json({ error: "Not found" });
+  if (
+    !(await canActFor(localUser.id, entry.userId, isClubAdmin)) ||
+    !(await isInClub(entry.userId, clubId))
+  )
+    return res.status(403).json({ error: "You cannot delete this entry" });
+  await db.delete(extraSessionsTable).where(eq(extraSessionsTable.id, id));
+  return res.status(204).end();
+});
+
 /** Live monitoring dashboard for a team (staff only). */
 router.get("/teams/:teamId/monitoring", requireAuth, async (req, res) => {
   const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
@@ -365,6 +454,17 @@ router.get("/teams/:teamId/monitoring", requireAuth, async (req, res) => {
       ),
     );
 
+  // Extra (non-club) sessions count toward total workload too.
+  const extraRows = await db
+    .select()
+    .from(extraSessionsTable)
+    .where(
+      and(
+        inArray(extraSessionsTable.userId, playerIds),
+        gte(extraSessionsTable.sessionDate, since28),
+      ),
+    );
+
   const windowStart = dateStr(daysAgo(windowDays - 1)); // window includes today
   const result = players.map((p) => {
     const mine = wellness.filter((w) => w.userId === p.id);
@@ -387,18 +487,34 @@ router.get("/teams/:teamId/monitoring", requireAuth, async (req, res) => {
     );
 
     const myLoad = loadRows.filter((row) => row.r.userId === p.id);
+    const myExtras = extraRows.filter((s) => s.userId === p.id);
     const sum = (rows: typeof myLoad) =>
       rows.reduce((a, row) => a + row.r.rpe * row.r.minutes, 0);
-    const acute = sum(myLoad.filter((row) => row.startsAt >= daysAgo(7)));
-    const chronicTotal = sum(myLoad);
+    const sumExtras = (rows: typeof myExtras) =>
+      rows.reduce((a, s) => a + s.rpe * s.minutes, 0);
+    // Extra sessions store a local calendar day; anchor them at midday so
+    // they use the SAME rolling cutoffs as event timestamps everywhere.
+    const extraTime = (s: (typeof myExtras)[number]) =>
+      new Date(`${s.sessionDate}T12:00:00Z`).getTime();
+    const cut7 = daysAgo(7).getTime();
+    const cutWin = daysAgo(windowDays).getTime();
+    const extraAcute = sumExtras(myExtras.filter((s) => extraTime(s) >= cut7));
+    const acute =
+      sum(myLoad.filter((row) => row.startsAt >= daysAgo(7))) + extraAcute;
+    const chronicTotal = sum(myLoad) + sumExtras(myExtras);
     const chronicWeekly = chronicTotal > 0 ? chronicTotal / 4 : null;
-    const windowLoad = sum(
-      myLoad.filter((row) => row.startsAt >= daysAgo(windowDays)),
+    const windowExternalLoad = sumExtras(
+      myExtras.filter((s) => extraTime(s) >= cutWin),
     );
+    const windowLoad =
+      sum(myLoad.filter((row) => row.startsAt >= daysAgo(windowDays))) +
+      windowExternalLoad;
     // ACWR needs a meaningful chronic base: require >2 weeks of history.
-    const oldest = myLoad.length
-      ? Math.min(...myLoad.map((row) => row.startsAt.getTime()))
-      : null;
+    const allTimes = [
+      ...myLoad.map((row) => row.startsAt.getTime()),
+      ...myExtras.map(extraTime),
+    ];
+    const oldest = allTimes.length ? Math.min(...allTimes) : null;
     const hasChronicBase =
       chronicWeekly !== null &&
       oldest !== null &&
@@ -469,10 +585,13 @@ router.get("/teams/:teamId/monitoring", requireAuth, async (req, res) => {
       wellnessBaseline: baseline,
       wellnessCount: inWindow.length,
       lastWellnessDate: lastWellness,
-      sessions: myLoad.filter((row) => row.startsAt >= daysAgo(windowDays))
-        .length,
+      sessions:
+        myLoad.filter((row) => row.startsAt >= daysAgo(windowDays)).length +
+        myExtras.filter((s) => extraTime(s) >= cutWin).length,
       windowLoad,
+      windowExternalLoad,
       acuteLoad: acute,
+      acuteExternalLoad: extraAcute,
       chronicWeeklyLoad:
         chronicWeekly === null ? null : Math.round(chronicWeekly),
       acwr,

@@ -766,6 +766,40 @@ paths:
               schema:
                 $ref: "#/components/schemas/RpeEntry"
 
+  /extra-sessions:
+    post:
+      operationId: logExtraSession
+      tags: [monitoring]
+      summary: Log a session outside the club calendar (rep, school, other)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExtraSessionInput"
+      responses:
+        "200":
+          description: Extra session saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtraSession"
+
+  /extra-sessions/{extraSessionId}:
+    delete:
+      operationId: deleteExtraSession
+      tags: [monitoring]
+      summary: Delete an extra session you logged
+      parameters:
+        - name: extraSessionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   /teams/{teamId}/monitoring:
     get:
       operationId: getTeamMonitoring
@@ -1282,6 +1316,30 @@ components:
         minutes: { type: integer, minimum: 1, maximum: 300 }
         onBehalfOfPersonId: { type: integer }
 
+    ExtraSession:
+      type: object
+      required: [id, personId, sessionDate, kind, rpe, minutes, load]
+      properties:
+        id: { type: integer }
+        personId: { type: integer }
+        sessionDate: { type: string }
+        kind: { type: string, enum: [rep, school, other] }
+        label: { type: string, nullable: true }
+        rpe: { type: integer }
+        minutes: { type: integer }
+        load: { type: integer }
+
+    ExtraSessionInput:
+      type: object
+      required: [sessionDate, kind, rpe, minutes]
+      properties:
+        sessionDate: { type: string }
+        kind: { type: string, enum: [rep, school, other] }
+        label: { type: string, maxLength: 120 }
+        rpe: { type: integer, minimum: 0, maximum: 10 }
+        minutes: { type: integer, minimum: 1, maximum: 300 }
+        onBehalfOfPersonId: { type: integer }
+
     PendingRpe:
       type: object
       required: [event, defaultMinutes]
@@ -1307,6 +1365,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/WellnessEntry"
+        recentExtraSessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExtraSession"
 
     CheckinStatus:
       type: object
@@ -1342,7 +1404,9 @@ components:
         lastWellnessDate: { type: string, nullable: true }
         sessions: { type: integer }
         windowLoad: { type: integer }
+        windowExternalLoad: { type: integer }
         acuteLoad: { type: integer }
+        acuteExternalLoad: { type: integer }
         chronicWeeklyLoad: { type: number, nullable: true }
         acwr: { type: number, nullable: true }
         flags:

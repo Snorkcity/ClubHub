@@ -1,13 +1,16 @@
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { CheckCircle2, ClipboardCheck, Flame, Pencil } from "lucide-react";
+import { CheckCircle2, ClipboardCheck, Flame, Pencil, Plus, Trash2, Dumbbell } from "lucide-react";
 import {
   useGetCheckinStatus,
   getGetCheckinStatusQueryKey,
   useSubmitWellness,
   useSubmitRpe,
+  useLogExtraSession,
+  useDeleteExtraSession,
   type CheckinSubject,
   type PendingRpe,
+  type ExtraSessionInputKind,
 } from "@workspace/api-client-react";
 import { queryClient } from "@/lib/queryClient";
 import { LoadingScreen, ErrorState, EmptyState } from "@/components/ui/states";
@@ -217,6 +220,184 @@ function RpeCard({ subject, pending, date }: { subject: CheckinSubject; pending:
   );
 }
 
+const EXTRA_KINDS: { value: ExtraSessionInputKind; label: string }[] = [
+  { value: "rep", label: "Rep / academy" },
+  { value: "school", label: "School sport" },
+  { value: "other", label: "Other" },
+];
+
+function ExtraSessions({ subject, date }: { subject: CheckinSubject; date: string }) {
+  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+  const [kind, setKind] = useState<ExtraSessionInputKind>("rep");
+  const [label, setLabel] = useState("");
+  const [minutes, setMinutes] = useState(60);
+  const [rpe, setRpe] = useState<number | null>(null);
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: getGetCheckinStatusQueryKey({ date }) });
+
+  const create = useLogExtraSession({
+    mutation: {
+      onSuccess: () => {
+        invalidate();
+        setOpen(false);
+        setLabel("");
+        setRpe(null);
+        toast({ title: "Extra session logged", description: "It now counts toward the workload picture." });
+      },
+      onError: () => toast({ title: "Could not save", variant: "destructive" }),
+    },
+  });
+  const remove = useDeleteExtraSession({
+    mutation: {
+      onSuccess: invalidate,
+      onError: () => toast({ title: "Could not delete", variant: "destructive" }),
+    },
+  });
+
+  const recent = subject.recentExtraSessions ?? [];
+
+  return (
+    <div className="rounded-2xl border bg-card p-5 shadow-sm space-y-4">
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 rounded-xl bg-sky-100 flex items-center justify-center shrink-0">
+          <Dumbbell className="h-5 w-5 text-sky-600" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold">Played or trained outside the club?</p>
+          <p className="text-sm text-muted-foreground">Rep squad, school sport — it all counts.</p>
+        </div>
+        {!open && (
+          <Button variant="outline" size="sm" className="rounded-xl shrink-0" onClick={() => setOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Log
+          </Button>
+        )}
+      </div>
+
+      {recent.length > 0 && (
+        <ul className="space-y-2">
+          {recent.map((s) => (
+            <li key={s.id} className="flex items-center gap-3 rounded-xl bg-muted/40 px-3 py-2 text-sm">
+              <span className="font-medium capitalize shrink-0">
+                {EXTRA_KINDS.find((k) => k.value === s.kind)?.label ?? s.kind}
+              </span>
+              <span className="text-muted-foreground truncate">
+                {format(new Date(`${s.sessionDate}T12:00:00`), "EEE d MMM")} · {s.minutes} min · RPE {s.rpe}
+                {s.label ? ` · ${s.label}` : ""}
+              </span>
+              <button
+                type="button"
+                aria-label="Delete extra session"
+                className="ml-auto text-muted-foreground hover:text-destructive shrink-0"
+                onClick={() => remove.mutate({ extraSessionId: s.id })}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {open && (
+        <div className="space-y-4 pt-1">
+          <div className="flex gap-2 flex-wrap">
+            {EXTRA_KINDS.map((k) => (
+              <button
+                key={k.value}
+                type="button"
+                onClick={() => setKind(k.value)}
+                className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-colors ${
+                  kind === k.value
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-muted text-muted-foreground hover:bg-muted/70"
+                }`}
+              >
+                {k.label}
+              </button>
+            ))}
+          </div>
+          <input
+            type="text"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            maxLength={120}
+            placeholder="What was it? (optional)"
+            className="w-full h-11 rounded-xl border bg-background px-3 text-sm"
+          />
+          <div>
+            <div className="flex items-baseline justify-between mb-1.5">
+              <span className="text-sm font-medium">How long?</span>
+              <span className="text-xs text-muted-foreground">{minutes} min</span>
+            </div>
+            <div className="grid grid-cols-5 gap-1.5">
+              {[30, 45, 60, 90, 120].map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMinutes(m)}
+                  className={`h-10 rounded-xl text-sm font-bold transition-all active:scale-95 ${
+                    minutes === m
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted hover:bg-muted/70 text-muted-foreground"
+                  }`}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-sm font-medium mb-1.5">How hard was it?</p>
+            <div className="grid grid-cols-11 gap-1">
+              {Array.from({ length: 11 }, (_, v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setRpe(v)}
+                  className={`h-10 rounded-lg text-xs font-bold transition-all active:scale-95 ${
+                    rpe === v
+                      ? `${scaleColor(v, 10)} text-white shadow-sm`
+                      : "bg-muted hover:bg-muted/70 text-muted-foreground"
+                  }`}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1.5 h-4">
+              {rpe != null ? RPE_LABELS[rpe] : "0 = rest · 10 = hardest ever"}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" className="rounded-xl flex-1" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="rounded-xl flex-[2]"
+              disabled={rpe == null || create.isPending}
+              onClick={() =>
+                create.mutate({
+                  data: {
+                    sessionDate: date,
+                    kind,
+                    rpe: rpe!,
+                    minutes,
+                    ...(label.trim() ? { label: label.trim() } : {}),
+                    ...(subject.isSelf ? {} : { onBehalfOfPersonId: subject.person.id }),
+                  },
+                })
+              }
+            >
+              {create.isPending ? "Saving..." : "Log session"}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function WeekStrip({ subject }: { subject: CheckinSubject }) {
   const days = useMemo(() => {
     const out: { date: string; label: string; avg: number | null }[] = [];
@@ -314,6 +495,8 @@ export default function Checkin() {
         ))}
 
         <WellnessForm key={`${active.person.id}:${active.todayWellness?.id ?? "new"}`} subject={active} date={date} />
+
+        <ExtraSessions key={`extra:${active.person.id}`} subject={active} date={date} />
 
         <WeekStrip subject={active} />
       </div>

@@ -14,3 +14,4 @@ export * from "./chatMembers";
 export * from "./messages";
 export * from "./rpeEntries";
 export * from "./wellnessEntries";
+export * from "./extraSessions";

@@ -33,6 +33,8 @@ import type {
   EventDetail,
   EventInput,
   EventUpdate,
+  ExtraSession,
+  ExtraSessionInput,
   GetCheckinStatusParams,
   GetTeamMonitoringParams,
   Guardianship,
@@ -3298,6 +3300,148 @@ export const useSubmitRpe = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getSubmitRpeMutationOptions(options));
+    }
+
+export const getLogExtraSessionUrl = () => {
+
+
+
+
+  return `/api/extra-sessions`
+}
+
+/**
+ * @summary Log a session outside the club calendar (rep, school, other)
+ */
+export const logExtraSession = async (extraSessionInput: ExtraSessionInput, options?: RequestInit): Promise<ExtraSession> => {
+
+  return customFetch<ExtraSession>(getLogExtraSessionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(extraSessionInput)
+  }
+);}
+
+
+
+
+
+export const getLogExtraSessionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logExtraSession>>, TError,{data: BodyType<ExtraSessionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof logExtraSession>>, TError,{data: BodyType<ExtraSessionInput>}, TContext> => {
+
+const mutationKey = ['logExtraSession'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof logExtraSession>>, {data: BodyType<ExtraSessionInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  logExtraSession(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LogExtraSessionMutationResult = NonNullable<Awaited<ReturnType<typeof logExtraSession>>>
+    export type LogExtraSessionMutationBody = BodyType<ExtraSessionInput>
+    export type LogExtraSessionMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Log a session outside the club calendar (rep, school, other)
+ */
+export const useLogExtraSession = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logExtraSession>>, TError,{data: BodyType<ExtraSessionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof logExtraSession>>,
+        TError,
+        {data: BodyType<ExtraSessionInput>},
+        TContext
+      > => {
+      return useMutation(getLogExtraSessionMutationOptions(options));
+    }
+
+export const getDeleteExtraSessionUrl = (extraSessionId: number,) => {
+
+
+
+
+  return `/api/extra-sessions/${extraSessionId}`
+}
+
+/**
+ * @summary Delete an extra session you logged
+ */
+export const deleteExtraSession = async (extraSessionId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteExtraSessionUrl(extraSessionId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteExtraSessionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteExtraSession>>, TError,{extraSessionId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteExtraSession>>, TError,{extraSessionId: number}, TContext> => {
+
+const mutationKey = ['deleteExtraSession'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteExtraSession>>, {extraSessionId: number}> = (props) => {
+          const {extraSessionId} = props ?? {};
+
+          return  deleteExtraSession(extraSessionId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteExtraSessionMutationResult = NonNullable<Awaited<ReturnType<typeof deleteExtraSession>>>
+
+    export type DeleteExtraSessionMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete an extra session you logged
+ */
+export const useDeleteExtraSession = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteExtraSession>>, TError,{extraSessionId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteExtraSession>>,
+        TError,
+        {extraSessionId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteExtraSessionMutationOptions(options));
     }
 
 export const getGetTeamMonitoringUrl = (teamId: number,

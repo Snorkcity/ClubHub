@@ -215,9 +215,24 @@ export default function TeamMonitoring() {
                       </div>
                     </td>
                     <td className="p-1">
-                      <div className="rounded-lg px-2 py-2 text-center text-sm tabular-nums bg-muted/40">
-                        {p.windowLoad}
-                      </div>
+                      {p.windowExternalLoad ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="rounded-lg px-2 py-2 text-center text-sm tabular-nums bg-muted/40 cursor-default">
+                              {p.windowLoad}
+                              <span className="text-sky-600 font-bold">*</span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs text-xs">
+                            Includes {p.windowExternalLoad} load from sessions outside the club
+                            (rep, school, other) in this window.
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <div className="rounded-lg px-2 py-2 text-center text-sm tabular-nums bg-muted/40">
+                          {p.windowLoad}
+                        </div>
+                      )}
                     </td>
                     <Cell value={p.acwr} tone={acwrTone(p.acwr)} />
                   </tr>
@@ -276,6 +291,13 @@ export default function TeamMonitoring() {
                 <li>
                   <span className="text-foreground">ACWR above ~1.3</span> — this week's workload is spiking well
                   beyond their recent norm, which is when injury risk climbs.
+                </li>
+                <li>
+                  <span className="text-foreground">
+                    A <span className="text-sky-600 font-bold">*</span> on Load
+                  </span>{" "}
+                  — part of that workload came from outside the club (rep squad, school sport). Hover to see
+                  how much. Rep players carry hidden load — that's exactly who this board is for.
                 </li>
               </ul>
             </div>
