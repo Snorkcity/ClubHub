@@ -28,6 +28,24 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
     if (!clerkUserId) {
       // TEMP DEBUG: why is Clerk rejecting the session?
       const cookie = req.headers.cookie ?? "";
+      // decode the session JWT (no verification) to see issuer/expiry
+      let tokenInfo: Record<string, unknown> | undefined;
+      const m = cookie.match(/(?:^|;\s*)__session(?:_[^=]+)?=([^;]+)/);
+      if (m) {
+        try {
+          const [h, p] = m[1].split(".");
+          const header = JSON.parse(Buffer.from(h, "base64url").toString());
+          const payload = JSON.parse(Buffer.from(p, "base64url").toString());
+          tokenInfo = {
+            kid: header.kid,
+            iss: payload.iss,
+            azp: payload.azp,
+            expInSec: payload.exp - Math.floor(Date.now() / 1000),
+          };
+        } catch (e) {
+          tokenInfo = { decodeError: String(e) };
+        }
+      }
       req.log.warn(
         {
           authDebug: {
