@@ -116,7 +116,7 @@ export default function TeamMonitoring() {
             </Badge>
           </div>
           <p className="text-muted-foreground mt-1">
-            Wellness averages and session load, coloured against each player's own norm.
+            Green = fine, amber = caution, red = concern. WATCH/ALERT badges flag drops against a player's own 28-day norm.
           </p>
         </header>
 
