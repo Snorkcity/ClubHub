@@ -1,0 +1,41 @@
+The key decisions we arrived at were:
+
+RPE is completed after training sessions and matches (roughly three times per week).
+Wellness is completed almost daily, with both able to be completed from the same screen.
+Session Load is automatically calculated as RPE × session duration (minutes).
+The dashboard opens to a live snapshot rather than scheduled reports, with time filters such as 24 hours, 7 days, 14 days and 28 days.
+Reporting is available separately when a coach wants to generate a report.
+
+Earlier, when we were designing the dashboard, we also discussed:
+
+Combining subjective wellness with objective GPS metrics.
+Player names listed down the left, metrics across the top with colour-coded indicators.
+Including menstrual cycle tracking.
+Using a simple algorithm (to be defined with your physio/lecturer) to flag players who may be at risk.
+And yes, I remember referencing the AIS
+
+The main references we discussed were based on the approach used by the Australian Institute of Sport (AIS) and high-performance environments generally:
+
+Daily wellness questionnaires should be very short (around 30–60 seconds).
+Session RPE should be collected 15–30 minutes after training or a match, rather than immediately at the final whistle, to improve consistency.
+Wellness and training load are more valuable when trended over time than as isolated values.
+Coaches should focus on changes from an athlete's normal baseline, not just absolute scores.
+Combining internal load (RPE) with external load (GPS or minutes) provides a much clearer picture of readiness than either alone.
+
+I also remember saying that your app could become more than just a coaching tool. It could become a player management platform where coaches see, on one screen:
+
+Availability
+Attendance
+RPE
+Wellness
+GPS
+Injuries
+Minutes played
+Training load
+AI-generated risk indicators
+
+I still think that's the right direction. It aligns with how many professional clubs monitor players, but you've simplified it enough that community and NPL clubs can actually use it.
+
+Confidence: 1.00
+
+Source: Australian Institute of Sport – Athlete Health & Performance Resources
