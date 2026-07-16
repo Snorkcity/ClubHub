@@ -57,6 +57,7 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
             hasAuthHeader: Boolean(req.headers.authorization),
             host: req.headers.host,
             xForwardedHost: req.headers["x-forwarded-host"],
+            tokenInfo,
           },
         },
         "Unauthorized request",
