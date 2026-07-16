@@ -46,6 +46,12 @@ app.use(
       getClerkProxyHost(req) ?? "",
       process.env.CLERK_PUBLISHABLE_KEY,
     ),
+    // Dev only: tolerate large client clock drift. A client whose clock runs
+    // slow presents session tokens the (correct) server clock sees as already
+    // expired, locking the user out. Keep production strict (default 5s).
+    ...(process.env.NODE_ENV !== "production"
+      ? { clockSkewInMs: 30 * 60 * 1000 }
+      : {}),
   })),
 );
 
