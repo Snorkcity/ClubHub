@@ -232,6 +232,56 @@ export default function TeamMonitoring() {
           (higher is better). Load = RPE × minutes (sRPE). Flags compare each player against their own 28-day
           baseline — thresholds are a draft pending physio review.
         </p>
+
+        <details className="rounded-2xl border border-border bg-card group">
+          <summary className="cursor-pointer select-none px-4 py-3 font-display font-semibold text-sm flex items-center justify-between">
+            How to read this board
+            <span className="text-muted-foreground text-xs font-normal group-open:hidden">tap to expand</span>
+          </summary>
+          <div className="px-4 pb-4 space-y-3 text-sm text-muted-foreground">
+            <div>
+              <p className="font-semibold text-foreground">Two different signals</p>
+              <p>
+                <span className="font-medium text-foreground">Cell colours</span> show a player's current state
+                (green = fine, amber = caution, red = concern).{" "}
+                <span className="font-medium text-foreground">WATCH/ALERT badges</span> show <em>change</em> — a
+                drop against that player's own 28-day normal. A badge can fire while cells still look green,
+                and that's the point: baselines differ. A hard self-marker who always logs 3s isn't struggling;
+                a player who always logs 5s sliding to 3.5 might be.
+              </p>
+            </div>
+            <div>
+              <p className="font-semibold text-foreground">Read the two halves together</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>
+                  <span className="text-foreground">High load + wellness steady</span> — working hard and coping.
+                  No action needed.
+                </li>
+                <li>
+                  <span className="text-foreground">High load + wellness dropping</span> — classic overload
+                  pattern. Consider easing their next few sessions.
+                </li>
+                <li>
+                  <span className="text-foreground">Normal load + wellness dropping</span> — the cause is likely
+                  off the pitch: sleep, school, growth, something at home.
+                </li>
+                <li>
+                  <span className="text-foreground">ACWR above ~1.3</span> — this week's workload is spiking well
+                  beyond their recent norm, which is when injury risk climbs.
+                </li>
+              </ul>
+            </div>
+            <div>
+              <p className="font-semibold text-foreground">Talking to the player</p>
+              <p>
+                The board flags, the conversation diagnoses. Don't lead with the numbers — open with
+                "how are you travelling this week?" and let them tell you. Use the specific red item (sleep,
+                soreness, mood) to guide your questions, not as an accusation. A flag is a prompt to check in,
+                never a verdict.
+              </p>
+            </div>
+          </div>
+        </details>
       </div>
     </div>
   );
