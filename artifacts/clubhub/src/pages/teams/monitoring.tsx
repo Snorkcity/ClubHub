@@ -244,7 +244,14 @@ export default function TeamMonitoring() {
               <p>
                 <span className="font-medium text-foreground">Cell colours</span> show a player's current state
                 (green = fine, amber = caution, red = concern).{" "}
-                <span className="font-medium text-foreground">WATCH/ALERT badges</span> show <em>change</em> — a
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold text-amber-700 align-middle">
+                  <Eye className="h-3 w-3" /> WATCH
+                </span>{" "}
+                and{" "}
+                <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-1.5 py-0.5 text-[11px] font-bold text-red-700 align-middle">
+                  <AlertTriangle className="h-3 w-3" /> ALERT
+                </span>{" "}
+                <span className="font-medium text-foreground">badges</span> show <em>change</em> — a
                 drop against that player's own 28-day normal. A badge can fire while cells still look green,
                 and that's the point: baselines differ. A hard self-marker who always logs 3s isn't struggling;
                 a player who always logs 5s sliding to 3.5 might be.
