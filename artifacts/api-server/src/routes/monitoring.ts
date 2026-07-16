@@ -599,6 +599,43 @@ router.get("/teams/:teamId/monitoring", requireAuth, async (req, res) => {
     };
   });
 
+  // Sustained-high-load flag: ACWR normalises to ~1.0 when a player grinds
+  // heavy weeks for a month straight, so it goes green even though the
+  // absolute workload is huge. Compare each player's 4-week weekly average
+  // against the squad median instead (self-calibrating; needs no fixed
+  // ceiling). Requires >=4 players with real load so one busy player in a
+  // tiny sample doesn't flag themselves.
+  const chronicVals = result
+    .map((x) => x.chronicWeeklyLoad)
+    .filter((v): v is number => v !== null && v > 0)
+    .sort((a, b) => a - b);
+  if (chronicVals.length >= 4) {
+    const mid = chronicVals.length / 2;
+    const squadMedian =
+      chronicVals.length % 2
+        ? chronicVals[Math.floor(mid)]
+        : (chronicVals[mid - 1] + chronicVals[mid]) / 2;
+    if (squadMedian > 0) {
+      for (const x of result) {
+        const cw = x.chronicWeeklyLoad;
+        if (cw === null) continue;
+        const ratio = cw / squadMedian;
+        if (ratio >= 2)
+          x.flags.push({
+            metric: "load",
+            severity: "alert",
+            message: `Sustained high load: ~${cw}/week, ${Math.round(ratio * 10) / 10}× the squad norm (~${Math.round(squadMedian)})`,
+          });
+        else if (ratio >= 1.5)
+          x.flags.push({
+            metric: "load",
+            severity: "watch",
+            message: `Sustained high load: ~${cw}/week, ${Math.round(ratio * 10) / 10}× the squad norm (~${Math.round(squadMedian)})`,
+          });
+      }
+    }
+  }
+
   // Flagged players first, then alphabetically.
   result.sort((a, b) => {
     const sev = (x: typeof a) =>

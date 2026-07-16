@@ -26,3 +26,8 @@ description: Product decisions for the RPE/wellness monitoring module (capture, 
 **Status (July 2026):** capture (daily wellness + post-session RPE, guardian on-behalf supported) and the staff dashboard (window filters, baseline-relative flags, rolling ACWR with >2-week chronic-base guard) are BUILT. Wellness scores stored 1–5 where higher is always better (soreness 5 = no soreness). Teams 4 (U13 Rovers) & 5 (U13 Falcons) carry ~5 weeks of seeded test data with two story players: player1@ = load-spike ALERT, player2@ = wellness WATCH. Flag thresholds are a draft pending physio review. Still to build: AI summary layer, reports.
 
 **Long-term direction:** one player-management screen combining availability, attendance, RPE, wellness, GPS, injuries, minutes played, load, AI risk indicators. References: AIS athlete-monitoring conventions, Foster sRPE, Gabbett ACWR (contested in recent literature — verify with live sources when designing flags).
+
+## Sustained-high-load flag (added July 2026)
+Rule: flag a player when their 4-week average weekly load (club + external sessions) is >=1.5x squad median (watch) or >=2x (alert). Requires >=4 squad players with nonzero chronic load.
+**Why:** Scott spotted ACWR's blind spot — a player grinding heavy weeks for a month drifts back to ~1.0 (green) because chronic load ratchets up. Squad-median comparison is self-calibrating; a fixed weekly ceiling was deferred pending physio input (like the other thresholds).
+**How to apply:** any new load metric must consider both change (ACWR) and absolute level; Scott's intent is flags trigger check-ins or a skipped session, not automatic restrictions.

@@ -293,6 +293,12 @@ export default function TeamMonitoring() {
                   beyond their recent norm, which is when injury risk climbs.
                 </li>
                 <li>
+                  <span className="text-foreground">Sustained high load</span> — ACWR only measures{" "}
+                  <em>change</em>, so a player grinding heavy weeks for a month drifts back to green. This
+                  flag catches that: it fires when their 4-week weekly average sits well above the squad's
+                  norm. Check in more often, or have them skip a session to bring it down.
+                </li>
+                <li>
                   <span className="text-foreground">
                     A <span className="text-sky-600 font-bold">*</span> on Load
                   </span>{" "}
