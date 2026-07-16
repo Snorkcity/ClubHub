@@ -57,6 +57,16 @@ export default defineConfig({
       prettier: true,
       override: {
         zod: {
+          // Path-param schemas are unused by the server and their names collide
+          // with the generated query-param *types* (e.g. GetTeamMonitoringParams)
+          // on endpoints that have both path and query params.
+          generate: {
+            param: false,
+            query: true,
+            header: true,
+            body: true,
+            response: true,
+          },
           coerce: {
             query: ['boolean', 'number', 'string'],
             param: ['boolean', 'number', 'string'],

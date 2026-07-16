@@ -213,10 +213,6 @@ export const CreateTeamResponse = zod.object({
 /**
  * @summary Get a team
  */
-export const GetTeamParams = zod.object({
-  "teamId": zod.coerce.number()
-})
-
 export const GetTeamResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
@@ -233,10 +229,6 @@ export const GetTeamResponse = zod.object({
 /**
  * @summary Update a team
  */
-export const UpdateTeamParams = zod.object({
-  "teamId": zod.coerce.number()
-})
-
 
 
 
@@ -265,10 +257,6 @@ export const UpdateTeamResponse = zod.object({
 /**
  * @summary Team dashboard summary (next event, availability, recent activity)
  */
-export const GetTeamSummaryParams = zod.object({
-  "teamId": zod.coerce.number()
-})
-
 export const GetTeamSummaryResponse = zod.object({
   "team": zod.object({
   "id": zod.number(),
@@ -310,10 +298,6 @@ export const GetTeamSummaryResponse = zod.object({
 /**
  * @summary List members of a team
  */
-export const ListTeamMembersParams = zod.object({
-  "teamId": zod.coerce.number()
-})
-
 export const ListTeamMembersResponseItem = zod.object({
   "id": zod.number(),
   "teamId": zod.number(),
@@ -339,10 +323,6 @@ export const ListTeamMembersResponse = zod.array(ListTeamMembersResponseItem)
 /**
  * @summary Add a person to a team with a role
  */
-export const AddTeamMemberParams = zod.object({
-  "teamId": zod.coerce.number()
-})
-
 export const AddTeamMemberBody = zod.object({
   "personId": zod.number(),
   "role": zod.enum(['manager', 'coach', 'player']),
@@ -374,10 +354,6 @@ export const AddTeamMemberResponse = zod.object({
 /**
  * @summary Update a team membership (role, number, position)
  */
-export const UpdateTeamMemberParams = zod.object({
-  "memberId": zod.coerce.number()
-})
-
 export const UpdateTeamMemberBody = zod.object({
   "role": zod.enum(['manager', 'coach', 'player']).optional(),
   "jerseyNumber": zod.number().optional(),
@@ -408,10 +384,6 @@ export const UpdateTeamMemberResponse = zod.object({
 /**
  * @summary Remove a person from a team
  */
-export const RemoveTeamMemberParams = zod.object({
-  "memberId": zod.coerce.number()
-})
-
 export const RemoveTeamMemberResponse = zod.void()
 
 
@@ -470,10 +442,6 @@ export const CreatePersonResponse = zod.object({
 /**
  * @summary Get a person's full profile with memberships and family links
  */
-export const GetPersonParams = zod.object({
-  "personId": zod.coerce.number()
-})
-
 export const GetPersonResponse = zod.object({
   "person": zod.object({
   "id": zod.number(),
@@ -559,10 +527,6 @@ export const GetPersonResponse = zod.object({
 /**
  * @summary Update a person's profile
  */
-export const UpdatePersonParams = zod.object({
-  "personId": zod.coerce.number()
-})
-
 
 
 
@@ -634,10 +598,6 @@ export const CreateGuardianshipResponse = zod.object({
 /**
  * @summary Remove a family link
  */
-export const RemoveGuardianshipParams = zod.object({
-  "guardianshipId": zod.coerce.number()
-})
-
 export const RemoveGuardianshipResponse = zod.void()
 
 
@@ -672,10 +632,6 @@ export const GetFeedResponse = zod.array(GetFeedResponseItem)
 /**
  * @summary List posts for a team
  */
-export const ListTeamPostsParams = zod.object({
-  "teamId": zod.coerce.number()
-})
-
 export const ListTeamPostsResponseItem = zod.object({
   "id": zod.number(),
   "teamId": zod.number(),
@@ -704,10 +660,6 @@ export const ListTeamPostsResponse = zod.array(ListTeamPostsResponseItem)
 /**
  * @summary Post to a team
  */
-export const CreatePostParams = zod.object({
-  "teamId": zod.coerce.number()
-})
-
 
 
 
@@ -744,10 +696,6 @@ export const CreatePostResponse = zod.object({
 /**
  * @summary Get a post with its comments
  */
-export const GetPostParams = zod.object({
-  "postId": zod.coerce.number()
-})
-
 export const GetPostResponse = zod.object({
   "post": zod.object({
   "id": zod.number(),
@@ -795,10 +743,6 @@ export const GetPostResponse = zod.object({
 /**
  * @summary Edit or pin a post
  */
-export const UpdatePostParams = zod.object({
-  "postId": zod.coerce.number()
-})
-
 
 
 
@@ -835,20 +779,12 @@ export const UpdatePostResponse = zod.object({
 /**
  * @summary Delete a post
  */
-export const DeletePostParams = zod.object({
-  "postId": zod.coerce.number()
-})
-
 export const DeletePostResponse = zod.void()
 
 
 /**
  * @summary Comment on a post
  */
-export const AddCommentParams = zod.object({
-  "postId": zod.coerce.number()
-})
-
 
 
 
@@ -902,10 +838,6 @@ export const ListUpcomingEventsResponse = zod.array(ListUpcomingEventsResponseIt
 /**
  * @summary List events for a team
  */
-export const ListTeamEventsParams = zod.object({
-  "teamId": zod.coerce.number()
-})
-
 export const ListTeamEventsResponseItem = zod.object({
   "id": zod.number(),
   "teamId": zod.number(),
@@ -929,10 +861,6 @@ export const ListTeamEventsResponse = zod.array(ListTeamEventsResponseItem)
 /**
  * @summary Schedule a training, game or event
  */
-export const CreateEventParams = zod.object({
-  "teamId": zod.coerce.number()
-})
-
 
 
 
@@ -968,10 +896,6 @@ export const CreateEventResponse = zod.object({
 /**
  * @summary Get an event with availability detail
  */
-export const GetEventParams = zod.object({
-  "eventId": zod.coerce.number()
-})
-
 export const GetEventResponse = zod.object({
   "event": zod.object({
   "id": zod.number(),
@@ -1014,10 +938,6 @@ export const GetEventResponse = zod.object({
 /**
  * @summary Update an event
  */
-export const UpdateEventParams = zod.object({
-  "eventId": zod.coerce.number()
-})
-
 
 
 
@@ -1053,20 +973,12 @@ export const UpdateEventResponse = zod.object({
 /**
  * @summary Delete an event
  */
-export const DeleteEventParams = zod.object({
-  "eventId": zod.coerce.number()
-})
-
 export const DeleteEventResponse = zod.void()
 
 
 /**
  * @summary Set availability for an event (self or on behalf of a linked player)
  */
-export const SetRsvpParams = zod.object({
-  "eventId": zod.coerce.number()
-})
-
 export const SetRsvpBody = zod.object({
   "status": zod.enum(['going', 'maybe', 'out']),
   "onBehalfOfPersonId": zod.number().optional()
@@ -1168,10 +1080,6 @@ export const CreateChatResponse = zod.object({
 /**
  * @summary Get a chat with its members
  */
-export const GetChatParams = zod.object({
-  "chatId": zod.coerce.number()
-})
-
 export const GetChatResponse = zod.object({
   "chat": zod.object({
   "id": zod.number(),
@@ -1217,10 +1125,6 @@ export const GetChatResponse = zod.object({
 /**
  * @summary List messages in a chat
  */
-export const ListMessagesParams = zod.object({
-  "chatId": zod.coerce.number()
-})
-
 export const ListMessagesResponseItem = zod.object({
   "id": zod.number(),
   "chatId": zod.number(),
@@ -1245,10 +1149,6 @@ export const ListMessagesResponse = zod.array(ListMessagesResponseItem)
 /**
  * @summary Send a message
  */
-export const SendMessageParams = zod.object({
-  "chatId": zod.coerce.number()
-})
-
 
 
 
@@ -1273,6 +1173,182 @@ export const SendMessageResponse = zod.object({
   "isMinor": zod.boolean(),
   "hasLogin": zod.boolean().optional()
 })
+})
+
+
+/**
+ * @summary Wellness/RPE check-in status for the current user and their linked players
+ */
+export const GetCheckinStatusQueryParams = zod.object({
+  "date": zod.coerce.string().describe('The local calendar date to check in for (YYYY-MM-DD)')
+})
+
+export const GetCheckinStatusResponse = zod.object({
+  "subjects": zod.array(zod.object({
+  "person": zod.object({
+  "id": zod.number(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "fullName": zod.string(),
+  "email": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "dateOfBirth": zod.string().nullish(),
+  "isMinor": zod.boolean(),
+  "hasLogin": zod.boolean().optional()
+}),
+  "isSelf": zod.boolean(),
+  "todayWellness": zod.object({
+  "id": zod.number(),
+  "personId": zod.number(),
+  "entryDate": zod.string(),
+  "sleepQuality": zod.number(),
+  "energy": zod.number(),
+  "soreness": zod.number(),
+  "stress": zod.number(),
+  "mood": zod.number()
+}).optional(),
+  "pendingRpe": zod.array(zod.object({
+  "event": zod.object({
+  "id": zod.number(),
+  "teamId": zod.number(),
+  "teamName": zod.string(),
+  "type": zod.enum(['training', 'game', 'social', 'other']),
+  "title": zod.string(),
+  "location": zod.string().nullish(),
+  "opponent": zod.string().nullish(),
+  "startsAt": zod.string(),
+  "endsAt": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "goingCount": zod.number(),
+  "maybeCount": zod.number(),
+  "outCount": zod.number(),
+  "noResponseCount": zod.number(),
+  "myRsvp": zod.union([zod.literal('going'),zod.literal('maybe'),zod.literal('out'),zod.literal(null)]).nullish()
+}),
+  "defaultMinutes": zod.number()
+})),
+  "weekWellness": zod.array(zod.object({
+  "id": zod.number(),
+  "personId": zod.number(),
+  "entryDate": zod.string(),
+  "sleepQuality": zod.number(),
+  "energy": zod.number(),
+  "soreness": zod.number(),
+  "stress": zod.number(),
+  "mood": zod.number()
+}))
+}))
+})
+
+
+/**
+ * @summary Submit the daily wellness check (self or on behalf of a linked player)
+ */
+export const submitWellnessBodySleepQualityMax = 5;
+
+export const submitWellnessBodyEnergyMax = 5;
+
+export const submitWellnessBodySorenessMax = 5;
+
+export const submitWellnessBodyStressMax = 5;
+
+export const submitWellnessBodyMoodMax = 5;
+
+
+
+export const SubmitWellnessBody = zod.object({
+  "entryDate": zod.string(),
+  "sleepQuality": zod.number().min(1).max(submitWellnessBodySleepQualityMax),
+  "energy": zod.number().min(1).max(submitWellnessBodyEnergyMax),
+  "soreness": zod.number().min(1).max(submitWellnessBodySorenessMax),
+  "stress": zod.number().min(1).max(submitWellnessBodyStressMax),
+  "mood": zod.number().min(1).max(submitWellnessBodyMoodMax),
+  "onBehalfOfPersonId": zod.number().optional()
+})
+
+export const SubmitWellnessResponse = zod.object({
+  "id": zod.number(),
+  "personId": zod.number(),
+  "entryDate": zod.string(),
+  "sleepQuality": zod.number(),
+  "energy": zod.number(),
+  "soreness": zod.number(),
+  "stress": zod.number(),
+  "mood": zod.number()
+})
+
+
+/**
+ * @summary Submit post-session RPE for an event (self or on behalf of a linked player)
+ */
+export const submitRpeBodyRpeMin = 0;
+export const submitRpeBodyRpeMax = 10;
+
+export const submitRpeBodyMinutesMax = 300;
+
+
+
+export const SubmitRpeBody = zod.object({
+  "rpe": zod.number().min(submitRpeBodyRpeMin).max(submitRpeBodyRpeMax),
+  "minutes": zod.number().min(1).max(submitRpeBodyMinutesMax).optional(),
+  "onBehalfOfPersonId": zod.number().optional()
+})
+
+export const SubmitRpeResponse = zod.object({
+  "id": zod.number(),
+  "eventId": zod.number(),
+  "personId": zod.number(),
+  "rpe": zod.number(),
+  "minutes": zod.number(),
+  "load": zod.number()
+})
+
+
+/**
+ * @summary Live player-monitoring dashboard for a team (staff only)
+ */
+export const GetTeamMonitoringQueryParams = zod.object({
+  "window": zod.coerce.number().optional().describe('Window in days (1, 7, 14 or 28); defaults to 7')
+})
+
+export const GetTeamMonitoringResponse = zod.object({
+  "teamId": zod.number(),
+  "windowDays": zod.number(),
+  "generatedAt": zod.string(),
+  "players": zod.array(zod.object({
+  "person": zod.object({
+  "id": zod.number(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "fullName": zod.string(),
+  "email": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "dateOfBirth": zod.string().nullish(),
+  "isMinor": zod.boolean(),
+  "hasLogin": zod.boolean().optional()
+}),
+  "sleepQuality": zod.number().nullish(),
+  "energy": zod.number().nullish(),
+  "soreness": zod.number().nullish(),
+  "stress": zod.number().nullish(),
+  "mood": zod.number().nullish(),
+  "wellnessComposite": zod.number().nullish(),
+  "wellnessBaseline": zod.number().nullish(),
+  "wellnessCount": zod.number(),
+  "lastWellnessDate": zod.string().nullish(),
+  "sessions": zod.number(),
+  "windowLoad": zod.number(),
+  "acuteLoad": zod.number().optional(),
+  "chronicWeeklyLoad": zod.number().nullish(),
+  "acwr": zod.number().nullish(),
+  "flags": zod.array(zod.object({
+  "metric": zod.string(),
+  "severity": zod.enum(['watch', 'alert']),
+  "message": zod.string()
+}))
+}))
 })
 
 

@@ -77,9 +77,9 @@ export default function TeamDetail() {
               <div className="text-2xl font-display font-bold">{summary.playerCount}</div>
               <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Players</div>
             </div>
-            {isManager && (
-              <Button variant="outline" className="rounded-xl ml-auto md:ml-4">
-                Manage Team
+            {isCoach && (
+              <Button asChild variant="outline" className="rounded-xl ml-auto md:ml-4">
+                <Link href={`/teams/${teamId}/monitoring`}>Monitoring</Link>
               </Button>
             )}
           </div>

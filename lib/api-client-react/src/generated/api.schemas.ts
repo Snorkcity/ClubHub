@@ -492,6 +492,127 @@ export interface MessageInput {
   body: string;
 }
 
+export interface WellnessEntry {
+  id: number;
+  personId: number;
+  entryDate: string;
+  sleepQuality: number;
+  energy: number;
+  soreness: number;
+  stress: number;
+  mood: number;
+}
+
+export interface WellnessInput {
+  entryDate: string;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  sleepQuality: number;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  energy: number;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  soreness: number;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  stress: number;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  mood: number;
+  onBehalfOfPersonId?: number;
+}
+
+export interface RpeEntry {
+  id: number;
+  eventId: number;
+  personId: number;
+  rpe: number;
+  minutes: number;
+  load: number;
+}
+
+export interface RpeInput {
+  /**
+     * @minimum 0
+     * @maximum 10
+     */
+  rpe: number;
+  /**
+     * @minimum 1
+     * @maximum 300
+     */
+  minutes?: number;
+  onBehalfOfPersonId?: number;
+}
+
+export interface PendingRpe {
+  event: Event;
+  defaultMinutes: number;
+}
+
+export interface CheckinSubject {
+  person: Person;
+  isSelf: boolean;
+  todayWellness?: WellnessEntry;
+  pendingRpe: PendingRpe[];
+  weekWellness: WellnessEntry[];
+}
+
+export interface CheckinStatus {
+  subjects: CheckinSubject[];
+}
+
+export type MonitoringFlagSeverity = typeof MonitoringFlagSeverity[keyof typeof MonitoringFlagSeverity];
+
+
+export const MonitoringFlagSeverity = {
+  watch: 'watch',
+  alert: 'alert',
+} as const;
+
+export interface MonitoringFlag {
+  metric: string;
+  severity: MonitoringFlagSeverity;
+  message: string;
+}
+
+export interface PlayerMonitoring {
+  person: Person;
+  sleepQuality?: number | null;
+  energy?: number | null;
+  soreness?: number | null;
+  stress?: number | null;
+  mood?: number | null;
+  wellnessComposite?: number | null;
+  wellnessBaseline?: number | null;
+  wellnessCount: number;
+  lastWellnessDate?: string | null;
+  sessions: number;
+  windowLoad: number;
+  acuteLoad?: number;
+  chronicWeeklyLoad?: number | null;
+  acwr?: number | null;
+  flags: MonitoringFlag[];
+}
+
+export interface TeamMonitoring {
+  teamId: number;
+  windowDays: number;
+  generatedAt: string;
+  players: PlayerMonitoring[];
+}
+
 /**
  * Resource not found
  */
@@ -511,4 +632,18 @@ export const ListPeopleRole = {
   player: 'player',
   parent: 'parent',
 } as const;
+
+export type GetCheckinStatusParams = {
+/**
+ * The local calendar date to check in for (YYYY-MM-DD)
+ */
+date: string;
+};
+
+export type GetTeamMonitoringParams = {
+/**
+ * Window in days (1, 7, 14 or 28); defaults to 7
+ */
+window?: number;
+};
 

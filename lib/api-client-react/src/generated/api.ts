@@ -23,6 +23,7 @@ import type {
   Chat,
   ChatDetail,
   ChatInput,
+  CheckinStatus,
   Club,
   ClubOverview,
   Comment,
@@ -32,6 +33,8 @@ import type {
   EventDetail,
   EventInput,
   EventUpdate,
+  GetCheckinStatusParams,
+  GetTeamMonitoringParams,
   Guardianship,
   GuardianshipInput,
   HealthStatus,
@@ -48,6 +51,8 @@ import type {
   PostInput,
   PostUpdate,
   ProfileUpdate,
+  RpeEntry,
+  RpeInput,
   Rsvp,
   RsvpInput,
   Season,
@@ -56,8 +61,11 @@ import type {
   TeamMember,
   TeamMemberInput,
   TeamMemberUpdate,
+  TeamMonitoring,
   TeamSummary,
-  TeamUpdate
+  TeamUpdate,
+  WellnessEntry,
+  WellnessInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -3064,4 +3072,320 @@ export const useSendMessage = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getSendMessageMutationOptions(options));
     }
+
+export const getGetCheckinStatusUrl = (params: GetCheckinStatusParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/monitoring/checkin?${stringifiedParams}` : `/api/monitoring/checkin`
+}
+
+/**
+ * @summary Wellness/RPE check-in status for the current user and their linked players
+ */
+export const getCheckinStatus = async (params: GetCheckinStatusParams, options?: RequestInit): Promise<CheckinStatus> => {
+
+  return customFetch<CheckinStatus>(getGetCheckinStatusUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCheckinStatusQueryKey = (params?: GetCheckinStatusParams,) => {
+    return [
+    `/api/monitoring/checkin`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetCheckinStatusQueryOptions = <TData = Awaited<ReturnType<typeof getCheckinStatus>>, TError = ErrorType<unknown>>(params: GetCheckinStatusParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCheckinStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCheckinStatusQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCheckinStatus>>> = ({ signal }) => getCheckinStatus(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCheckinStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCheckinStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getCheckinStatus>>>
+export type GetCheckinStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Wellness/RPE check-in status for the current user and their linked players
+ */
+
+export function useGetCheckinStatus<TData = Awaited<ReturnType<typeof getCheckinStatus>>, TError = ErrorType<unknown>>(
+ params: GetCheckinStatusParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCheckinStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCheckinStatusQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSubmitWellnessUrl = () => {
+
+
+
+
+  return `/api/wellness`
+}
+
+/**
+ * @summary Submit the daily wellness check (self or on behalf of a linked player)
+ */
+export const submitWellness = async (wellnessInput: WellnessInput, options?: RequestInit): Promise<WellnessEntry> => {
+
+  return customFetch<WellnessEntry>(getSubmitWellnessUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(wellnessInput)
+  }
+);}
+
+
+
+
+
+export const getSubmitWellnessMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitWellness>>, TError,{data: BodyType<WellnessInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitWellness>>, TError,{data: BodyType<WellnessInput>}, TContext> => {
+
+const mutationKey = ['submitWellness'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitWellness>>, {data: BodyType<WellnessInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  submitWellness(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitWellnessMutationResult = NonNullable<Awaited<ReturnType<typeof submitWellness>>>
+    export type SubmitWellnessMutationBody = BodyType<WellnessInput>
+    export type SubmitWellnessMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Submit the daily wellness check (self or on behalf of a linked player)
+ */
+export const useSubmitWellness = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitWellness>>, TError,{data: BodyType<WellnessInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitWellness>>,
+        TError,
+        {data: BodyType<WellnessInput>},
+        TContext
+      > => {
+      return useMutation(getSubmitWellnessMutationOptions(options));
+    }
+
+export const getSubmitRpeUrl = (eventId: number,) => {
+
+
+
+
+  return `/api/events/${eventId}/rpe`
+}
+
+/**
+ * @summary Submit post-session RPE for an event (self or on behalf of a linked player)
+ */
+export const submitRpe = async (eventId: number,
+    rpeInput: RpeInput, options?: RequestInit): Promise<RpeEntry> => {
+
+  return customFetch<RpeEntry>(getSubmitRpeUrl(eventId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(rpeInput)
+  }
+);}
+
+
+
+
+
+export const getSubmitRpeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitRpe>>, TError,{eventId: number;data: BodyType<RpeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitRpe>>, TError,{eventId: number;data: BodyType<RpeInput>}, TContext> => {
+
+const mutationKey = ['submitRpe'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitRpe>>, {eventId: number;data: BodyType<RpeInput>}> = (props) => {
+          const {eventId,data} = props ?? {};
+
+          return  submitRpe(eventId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitRpeMutationResult = NonNullable<Awaited<ReturnType<typeof submitRpe>>>
+    export type SubmitRpeMutationBody = BodyType<RpeInput>
+    export type SubmitRpeMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Submit post-session RPE for an event (self or on behalf of a linked player)
+ */
+export const useSubmitRpe = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitRpe>>, TError,{eventId: number;data: BodyType<RpeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitRpe>>,
+        TError,
+        {eventId: number;data: BodyType<RpeInput>},
+        TContext
+      > => {
+      return useMutation(getSubmitRpeMutationOptions(options));
+    }
+
+export const getGetTeamMonitoringUrl = (teamId: number,
+    params?: GetTeamMonitoringParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/teams/${teamId}/monitoring?${stringifiedParams}` : `/api/teams/${teamId}/monitoring`
+}
+
+/**
+ * @summary Live player-monitoring dashboard for a team (staff only)
+ */
+export const getTeamMonitoring = async (teamId: number,
+    params?: GetTeamMonitoringParams, options?: RequestInit): Promise<TeamMonitoring> => {
+
+  return customFetch<TeamMonitoring>(getGetTeamMonitoringUrl(teamId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTeamMonitoringQueryKey = (teamId: number,
+    params?: GetTeamMonitoringParams,) => {
+    return [
+    `/api/teams/${teamId}/monitoring`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetTeamMonitoringQueryOptions = <TData = Awaited<ReturnType<typeof getTeamMonitoring>>, TError = ErrorType<unknown>>(teamId: number,
+    params?: GetTeamMonitoringParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTeamMonitoring>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTeamMonitoringQueryKey(teamId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTeamMonitoring>>> = ({ signal }) => getTeamMonitoring(teamId,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: teamId !== null && teamId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTeamMonitoring>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTeamMonitoringQueryResult = NonNullable<Awaited<ReturnType<typeof getTeamMonitoring>>>
+export type GetTeamMonitoringQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Live player-monitoring dashboard for a team (staff only)
+ */
+
+export function useGetTeamMonitoring<TData = Awaited<ReturnType<typeof getTeamMonitoring>>, TError = ErrorType<unknown>>(
+ teamId: number,
+    params?: GetTeamMonitoringParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTeamMonitoring>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTeamMonitoringQueryOptions(teamId,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 

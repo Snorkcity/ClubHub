@@ -706,6 +706,87 @@ paths:
               schema:
                 $ref: "#/components/schemas/Message"
 
+  /monitoring/checkin:
+    get:
+      operationId: getCheckinStatus
+      tags: [monitoring]
+      summary: Wellness/RPE check-in status for the current user and their linked players
+      parameters:
+        - name: date
+          in: query
+          required: true
+          description: The local calendar date to check in for (YYYY-MM-DD)
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Check-in subjects
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckinStatus"
+
+  /wellness:
+    put:
+      operationId: submitWellness
+      tags: [monitoring]
+      summary: Submit the daily wellness check (self or on behalf of a linked player)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WellnessInput"
+      responses:
+        "200":
+          description: Wellness entry saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WellnessEntry"
+
+  /events/{eventId}/rpe:
+    put:
+      operationId: submitRpe
+      tags: [monitoring]
+      summary: Submit post-session RPE for an event (self or on behalf of a linked player)
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RpeInput"
+      responses:
+        "200":
+          description: RPE entry saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RpeEntry"
+
+  /teams/{teamId}/monitoring:
+    get:
+      operationId: getTeamMonitoring
+      tags: [monitoring]
+      summary: Live player-monitoring dashboard for a team (staff only)
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+        - name: window
+          in: query
+          required: false
+          description: Window in days (1, 7, 14 or 28); defaults to 7
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Team monitoring snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamMonitoring"
+
 components:
   parameters:
     TeamId:
@@ -1156,3 +1237,127 @@ components:
       required: [body]
       properties:
         body: { type: string, minLength: 1 }
+
+    WellnessEntry:
+      type: object
+      required: [id, personId, entryDate, sleepQuality, energy, soreness, stress, mood]
+      properties:
+        id: { type: integer }
+        personId: { type: integer }
+        entryDate: { type: string }
+        sleepQuality: { type: integer }
+        energy: { type: integer }
+        soreness: { type: integer }
+        stress: { type: integer }
+        mood: { type: integer }
+
+    WellnessInput:
+      type: object
+      required: [entryDate, sleepQuality, energy, soreness, stress, mood]
+      properties:
+        entryDate: { type: string }
+        sleepQuality: { type: integer, minimum: 1, maximum: 5 }
+        energy: { type: integer, minimum: 1, maximum: 5 }
+        soreness: { type: integer, minimum: 1, maximum: 5 }
+        stress: { type: integer, minimum: 1, maximum: 5 }
+        mood: { type: integer, minimum: 1, maximum: 5 }
+        onBehalfOfPersonId: { type: integer }
+
+    RpeEntry:
+      type: object
+      required: [id, eventId, personId, rpe, minutes, load]
+      properties:
+        id: { type: integer }
+        eventId: { type: integer }
+        personId: { type: integer }
+        rpe: { type: integer }
+        minutes: { type: integer }
+        load: { type: integer }
+
+    RpeInput:
+      type: object
+      required: [rpe]
+      properties:
+        rpe: { type: integer, minimum: 0, maximum: 10 }
+        minutes: { type: integer, minimum: 1, maximum: 300 }
+        onBehalfOfPersonId: { type: integer }
+
+    PendingRpe:
+      type: object
+      required: [event, defaultMinutes]
+      properties:
+        event:
+          $ref: "#/components/schemas/Event"
+        defaultMinutes: { type: integer }
+
+    CheckinSubject:
+      type: object
+      required: [person, isSelf, pendingRpe, weekWellness]
+      properties:
+        person:
+          $ref: "#/components/schemas/Person"
+        isSelf: { type: boolean }
+        todayWellness:
+          $ref: "#/components/schemas/WellnessEntry"
+        pendingRpe:
+          type: array
+          items:
+            $ref: "#/components/schemas/PendingRpe"
+        weekWellness:
+          type: array
+          items:
+            $ref: "#/components/schemas/WellnessEntry"
+
+    CheckinStatus:
+      type: object
+      required: [subjects]
+      properties:
+        subjects:
+          type: array
+          items:
+            $ref: "#/components/schemas/CheckinSubject"
+
+    MonitoringFlag:
+      type: object
+      required: [metric, severity, message]
+      properties:
+        metric: { type: string }
+        severity: { type: string, enum: [watch, alert] }
+        message: { type: string }
+
+    PlayerMonitoring:
+      type: object
+      required: [person, wellnessCount, sessions, windowLoad, flags]
+      properties:
+        person:
+          $ref: "#/components/schemas/Person"
+        sleepQuality: { type: number, nullable: true }
+        energy: { type: number, nullable: true }
+        soreness: { type: number, nullable: true }
+        stress: { type: number, nullable: true }
+        mood: { type: number, nullable: true }
+        wellnessComposite: { type: number, nullable: true }
+        wellnessBaseline: { type: number, nullable: true }
+        wellnessCount: { type: integer }
+        lastWellnessDate: { type: string, nullable: true }
+        sessions: { type: integer }
+        windowLoad: { type: integer }
+        acuteLoad: { type: integer }
+        chronicWeeklyLoad: { type: number, nullable: true }
+        acwr: { type: number, nullable: true }
+        flags:
+          type: array
+          items:
+            $ref: "#/components/schemas/MonitoringFlag"
+
+    TeamMonitoring:
+      type: object
+      required: [teamId, windowDays, generatedAt, players]
+      properties:
+        teamId: { type: integer }
+        windowDays: { type: integer }
+        generatedAt: { type: string }
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlayerMonitoring"

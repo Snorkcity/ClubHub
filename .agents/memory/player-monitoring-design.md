@@ -23,4 +23,6 @@ description: Product decisions for the RPE/wellness monitoring module (capture, 
 - Menstrual-cycle tracking: 16+ only, opt-in, player-visible by default with explicit consent. Under 16 gets standard wellness only.
 - Parents are involved for young players (guardianship model supports parent submitting on behalf).
 
+**Status (July 2026):** capture (daily wellness + post-session RPE, guardian on-behalf supported) and the staff dashboard (window filters, baseline-relative flags, rolling ACWR with >2-week chronic-base guard) are BUILT. Wellness scores stored 1–5 where higher is always better (soreness 5 = no soreness). Teams 4 (U13 Rovers) & 5 (U13 Falcons) carry ~5 weeks of seeded test data with two story players: player1@ = load-spike ALERT, player2@ = wellness WATCH. Flag thresholds are a draft pending physio review. Still to build: AI summary layer, reports.
+
 **Long-term direction:** one player-management screen combining availability, attendance, RPE, wellness, GPS, injuries, minutes played, load, AI risk indicators. References: AIS athlete-monitoring conventions, Foster sRPE, Gabbett ACWR (contested in recent literature — verify with live sources when designing flags).

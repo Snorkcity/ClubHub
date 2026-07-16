@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useClerk, useUser } from "@clerk/react";
 import { 
   Home, Users, CalendarDays, MessageSquare, Settings, 
-  LogOut, Menu, X, ChevronDown, UserSquare2
+  LogOut, Menu, X, ChevronDown, UserSquare2, ClipboardCheck
 } from "lucide-react";
 import { useGetMe, useGetClub } from "@workspace/api-client-react";
 import { getGetMeQueryKey, getGetClubQueryKey } from "@workspace/api-client-react";
@@ -34,6 +34,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     { label: "Home", href: "/home", icon: Home },
     { label: "Teams", href: "/teams", icon: Users },
     { label: "Schedule", href: "/schedule", icon: CalendarDays },
+    { label: "Check-in", href: "/checkin", icon: ClipboardCheck },
     { label: "Messages", href: "/messages", icon: MessageSquare },
     { label: "Directory", href: "/people", icon: UserSquare2 },
   ];
