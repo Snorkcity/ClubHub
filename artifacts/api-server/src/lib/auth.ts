@@ -26,42 +26,6 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
     const auth = getAuth(req);
     const clerkUserId = auth?.userId;
     if (!clerkUserId) {
-      // TEMP DEBUG: why is Clerk rejecting the session?
-      const cookie = req.headers.cookie ?? "";
-      // decode the session JWT (no verification) to see issuer/expiry
-      let tokenInfo: Record<string, unknown> | undefined;
-      const m = cookie.match(/(?:^|;\s*)__session(?:_[^=]+)?=([^;]+)/);
-      if (m) {
-        try {
-          const [h, p] = m[1].split(".");
-          const header = JSON.parse(Buffer.from(h, "base64url").toString());
-          const payload = JSON.parse(Buffer.from(p, "base64url").toString());
-          tokenInfo = {
-            kid: header.kid,
-            iss: payload.iss,
-            azp: payload.azp,
-            expInSec: payload.exp - Math.floor(Date.now() / 1000),
-          };
-        } catch (e) {
-          tokenInfo = { decodeError: String(e) };
-        }
-      }
-      req.log.warn(
-        {
-          authDebug: {
-            sessionStatus: (auth as { sessionStatus?: string } | undefined)
-              ?.sessionStatus,
-            tokenType: (auth as { tokenType?: string } | undefined)?.tokenType,
-            hasSessionCookie: cookie.includes("__session"),
-            hasClientUat: cookie.includes("__client_uat"),
-            hasAuthHeader: Boolean(req.headers.authorization),
-            host: req.headers.host,
-            xForwardedHost: req.headers["x-forwarded-host"],
-            tokenInfo,
-          },
-        },
-        "Unauthorized request",
-      );
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
