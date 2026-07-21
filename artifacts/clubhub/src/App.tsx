@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { ClerkProvider, SignIn, SignUp, Show, useClerk } from '@clerk/react';
+import { ClerkProvider, SignIn, SignUp, Show, useClerk, useAuth } from '@clerk/react';
+import { setAuthTokenGetter } from '@workspace/api-client-react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from 'wouter';
@@ -105,6 +106,23 @@ function SignUpPage() {
   );
 }
 
+// Always send the ACTIVE Clerk user's fresh token on API requests instead of
+// relying on the session cookie, which can go stale when switching accounts
+// (previously caused the API to answer as the old user after a switch).
+let latestGetToken: (() => Promise<string | null>) | null = null;
+setAuthTokenGetter(() => (latestGetToken ? latestGetToken() : null));
+
+function ApiAuthBinder() {
+  const { getToken } = useAuth();
+  latestGetToken = getToken;
+  useEffect(() => {
+    return () => {
+      latestGetToken = null;
+    };
+  }, []);
+  return null;
+}
+
 function ClerkQueryClientCacheInvalidator() {
   const { addListener } = useClerk();
   const queryClient = useQueryClient();
@@ -187,6 +205,7 @@ function ClerkProviderWithRoutes() {
       routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
     >
       <QueryClientProvider client={queryClient}>
+        <ApiAuthBinder />
         <ClerkQueryClientCacheInvalidator />
         <Switch>
           <Route path="/" component={HomeRedirect} />
