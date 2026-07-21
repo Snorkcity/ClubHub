@@ -148,7 +148,7 @@ router.get("/monitoring/checkin", requireAuth, async (req, res) => {
     )
     .orderBy(desc(wellnessEntriesTable.entryDate));
 
-  // Recent finished sessions (last 48h) that still need an RPE.
+  // Recent finished sessions (last 72h) that still need an RPE.
   const allTeamIds = [...new Set(playerRows.map((r) => r.teamId))];
   const recentEvents = await db
     .select()
@@ -157,7 +157,7 @@ router.get("/monitoring/checkin", requireAuth, async (req, res) => {
       and(
         inArray(eventsTable.teamId, allTeamIds),
         inArray(eventsTable.type, ["training", "game"]),
-        gte(eventsTable.startsAt, daysAgo(2)),
+        gte(eventsTable.startsAt, daysAgo(3)),
         lte(eventsTable.startsAt, new Date()),
       ),
     )
