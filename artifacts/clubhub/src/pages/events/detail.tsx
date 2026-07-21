@@ -2,11 +2,12 @@ import { useParams, Link } from "wouter";
 import { format } from "date-fns";
 import { 
   CalendarDays, MapPin, Clock, Users, ArrowLeft,
-  CheckCircle2, HelpCircle, XCircle, FileQuestion, MessageSquare
+  CheckCircle2, HelpCircle, XCircle, FileQuestion, MessageSquare, Timer
 } from "lucide-react";
 import { 
   useGetEvent, useSetRsvp, 
-  getGetEventQueryKey, getListUpcomingEventsQueryKey
+  getGetEventQueryKey, getListUpcomingEventsQueryKey,
+  useGetMe, getGetMeQueryKey
 } from "@workspace/api-client-react";
 import { queryClient } from "@/lib/queryClient";
 
@@ -25,11 +26,18 @@ export default function EventDetail() {
   });
   
   const setRsvp = useSetRsvp();
+  const { data: me } = useGetMe({ query: { queryKey: getGetMeQueryKey() } });
 
   if (isLoading) return <LoadingScreen message="Loading event details..." />;
   if (error || !eventData) return <ErrorState onRetry={() => refetch()} />;
 
   const { event, rsvps } = eventData;
+  const isStaff =
+    !!me?.isClubAdmin ||
+    !!me?.memberships?.some(
+      (m: any) =>
+        m.teamId === event.teamId && (m.role === "coach" || m.role === "manager"),
+    );
 
   function handleRsvp(status: 'going' | 'maybe' | 'out') {
     if (event.myRsvp === status) return;
@@ -76,6 +84,14 @@ export default function EventDetail() {
               <h1 className="text-3xl md:text-5xl font-display font-bold tracking-tight mb-6">
                 {event.title}
               </h1>
+
+              {isStaff && event.type === "game" && (
+                <Button asChild variant="outline" className="rounded-xl mb-6 font-bold">
+                  <Link href={`/events/${eventId}/timekeeping`}>
+                    <Timer className="h-4 w-4 mr-2" /> Track game time
+                  </Link>
+                </Button>
+              )}
               
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="flex items-center gap-3">

@@ -22,6 +22,8 @@ tags:
     description: Team posts and comments
   - name: events
     description: Scheduling and availability
+  - name: timekeeping
+    description: Game-time (player minutes) tracking
   - name: chats
     description: Messaging
 
@@ -821,6 +823,86 @@ paths:
               schema:
                 $ref: "#/components/schemas/TeamMonitoring"
 
+  /events/{eventId}/timekeeping:
+    get:
+      operationId: getTimekeeping
+      tags: [timekeeping]
+      summary: Live game-time tracking state for a game (staff only)
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      responses:
+        "200":
+          description: Timekeeping state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimekeepingState"
+
+  /events/{eventId}/timekeeping/periods/start:
+    post:
+      operationId: startPeriod
+      tags: [timekeeping]
+      summary: Start the next period (half) of the game clock (staff only)
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      responses:
+        "200":
+          description: Updated timekeeping state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimekeepingState"
+
+  /events/{eventId}/timekeeping/periods/end:
+    post:
+      operationId: endPeriod
+      tags: [timekeeping]
+      summary: End the running period (half) of the game clock (staff only)
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      responses:
+        "200":
+          description: Updated timekeeping state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimekeepingState"
+
+  /events/{eventId}/timekeeping/players/{userId}/toggle:
+    post:
+      operationId: togglePlayerOnPitch
+      tags: [timekeeping]
+      summary: Toggle a player ON/OFF the pitch (staff only)
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated timekeeping state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimekeepingState"
+
+  /teams/{teamId}/timekeeping/season:
+    get:
+      operationId: getSeasonMinutes
+      tags: [timekeeping]
+      summary: Season game-minutes totals per player (staff only)
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      responses:
+        "200":
+          description: Season minutes summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SeasonMinutes"
+
 components:
   parameters:
     TeamId:
@@ -1425,3 +1507,59 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/PlayerMonitoring"
+
+    GamePeriod:
+      type: object
+      required: [periodNumber, startedAt]
+      properties:
+        periodNumber: { type: integer }
+        startedAt: { type: string }
+        endedAt: { type: string, nullable: true }
+
+    TimekeepingPlayer:
+      type: object
+      required: [person, onPitch, secondsPlayed]
+      properties:
+        person:
+          $ref: "#/components/schemas/Person"
+        jerseyNumber: { type: integer, nullable: true }
+        position: { type: string, nullable: true }
+        onPitch: { type: boolean }
+        secondsPlayed: { type: integer }
+
+    TimekeepingState:
+      type: object
+      required: [clockRunning, periodsPlayed, periods, players]
+      properties:
+        clockRunning: { type: boolean }
+        currentPeriodNumber: { type: integer, nullable: true }
+        periodsPlayed: { type: integer }
+        periods:
+          type: array
+          items:
+            $ref: "#/components/schemas/GamePeriod"
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimekeepingPlayer"
+
+    SeasonMinutesPlayer:
+      type: object
+      required: [person, totalSeconds, gamesPlayed]
+      properties:
+        person:
+          $ref: "#/components/schemas/Person"
+        jerseyNumber: { type: integer, nullable: true }
+        position: { type: string, nullable: true }
+        totalSeconds: { type: integer }
+        gamesPlayed: { type: integer }
+
+    SeasonMinutes:
+      type: object
+      required: [trackedGames, players]
+      properties:
+        trackedGames: { type: integer }
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/SeasonMinutesPlayer"

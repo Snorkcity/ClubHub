@@ -30,14 +30,25 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     query: { queryKey: getGetClubQueryKey() }
   });
 
+  // Staff (club admins, coaches, managers) see the full menu; players get a
+  // simpler app: Home, Schedule, Check-in and Messages.
+  const isStaff =
+    !!me?.isClubAdmin ||
+    !!me?.memberships?.some((m: any) => m.role === "coach" || m.role === "manager");
+
   const navItems = [
     { label: "Home", href: "/home", icon: Home },
-    { label: "Teams", href: "/teams", icon: Users },
+    ...(isStaff ? [{ label: "Teams", href: "/teams", icon: Users }] : []),
     { label: "Schedule", href: "/schedule", icon: CalendarDays },
     { label: "Check-in", href: "/checkin", icon: ClipboardCheck },
     { label: "Messages", href: "/messages", icon: MessageSquare },
-    { label: "Directory", href: "/people", icon: UserSquare2 },
+    ...(isStaff ? [{ label: "Directory", href: "/people", icon: UserSquare2 }] : []),
   ];
+
+  // Bottom tab bar (mobile): max 5 items, Heja-style.
+  const tabItems = isStaff
+    ? navItems.filter((i) => i.label !== "Check-in")
+    : navItems;
 
   return (
     <div className="min-h-screen bg-muted/20 flex flex-col md:flex-row">
@@ -132,9 +143,31 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col w-full max-w-full overflow-hidden">
+      <main className="flex-1 flex flex-col w-full max-w-full overflow-hidden pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
         {children}
       </main>
+
+      {/* Mobile Bottom Tab Bar (Heja-style) */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-background border-t flex items-stretch pb-[env(safe-area-inset-bottom)]">
+        {tabItems.map((item) => {
+          const isActive = location.startsWith(item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setMobileMenuOpen(false)}
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-14 ${
+                isActive ? "text-primary" : "text-muted-foreground"
+              }`}
+            >
+              <item.icon className={`h-6 w-6 ${isActive ? "" : "opacity-80"}`} strokeWidth={isActive ? 2.4 : 2} />
+              <span className={`text-[11px] leading-none ${isActive ? "font-bold" : "font-medium"}`}>
+                {item.label}
+              </span>
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 }

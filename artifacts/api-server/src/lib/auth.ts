@@ -26,26 +26,6 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
     const auth = getAuth(req);
     const clerkUserId = auth?.userId;
     if (!clerkUserId) {
-      // TEMP DEBUG: decode session JWT to see why it's rejected
-      const m = (req.headers.cookie ?? "").match(
-        /(?:^|;\s*)__session(?:_[^=]+)?=([^;]+)/,
-      );
-      let tokenInfo: Record<string, unknown> | undefined;
-      if (m) {
-        try {
-          const p = JSON.parse(
-            Buffer.from(m[1].split(".")[1], "base64url").toString(),
-          );
-          tokenInfo = {
-            sub: p.sub,
-            iss: p.iss,
-            expInSec: p.exp - Math.floor(Date.now() / 1000),
-          };
-        } catch (e) {
-          tokenInfo = { decodeError: String(e) };
-        }
-      }
-      req.log.warn({ tokenInfo }, "Unauthorized request");
       res.status(401).json({ error: "Unauthorized" });
       return;
     }

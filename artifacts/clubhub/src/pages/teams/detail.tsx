@@ -78,9 +78,14 @@ export default function TeamDetail() {
               <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Players</div>
             </div>
             {isCoach && (
-              <Button asChild variant="outline" className="rounded-xl ml-auto md:ml-4">
-                <Link href={`/teams/${teamId}/monitoring`}>Monitoring</Link>
-              </Button>
+              <div className="flex gap-2 ml-auto md:ml-4">
+                <Button asChild variant="outline" className="rounded-xl">
+                  <Link href={`/teams/${teamId}/monitoring`}>Monitoring</Link>
+                </Button>
+                <Button asChild variant="outline" className="rounded-xl">
+                  <Link href={`/teams/${teamId}/minutes`}>Minutes</Link>
+                </Button>
+              </div>
             )}
           </div>
         </div>

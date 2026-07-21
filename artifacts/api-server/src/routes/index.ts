@@ -9,6 +9,7 @@ import feedRouter from "./feed";
 import eventsRouter from "./events";
 import chatsRouter from "./chats";
 import monitoringRouter from "./monitoring";
+import timekeepingRouter from "./timekeeping";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(feedRouter);
 router.use(eventsRouter);
 router.use(chatsRouter);
 router.use(monitoringRouter);
+router.use(timekeepingRouter);
 
 export default router;

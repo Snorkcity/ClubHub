@@ -1403,3 +1403,161 @@ export const GetTeamMonitoringResponse = zod.object({
 })
 
 
+/**
+ * @summary Live game-time tracking state for a game (staff only)
+ */
+export const GetTimekeepingResponse = zod.object({
+  "clockRunning": zod.boolean(),
+  "currentPeriodNumber": zod.number().nullish(),
+  "periodsPlayed": zod.number(),
+  "periods": zod.array(zod.object({
+  "periodNumber": zod.number(),
+  "startedAt": zod.string(),
+  "endedAt": zod.string().nullish()
+})),
+  "players": zod.array(zod.object({
+  "person": zod.object({
+  "id": zod.number(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "fullName": zod.string(),
+  "email": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "dateOfBirth": zod.string().nullish(),
+  "isMinor": zod.boolean(),
+  "hasLogin": zod.boolean().optional()
+}),
+  "jerseyNumber": zod.number().nullish(),
+  "position": zod.string().nullish(),
+  "onPitch": zod.boolean(),
+  "secondsPlayed": zod.number()
+}))
+})
+
+
+/**
+ * @summary Start the next period (half) of the game clock (staff only)
+ */
+export const StartPeriodResponse = zod.object({
+  "clockRunning": zod.boolean(),
+  "currentPeriodNumber": zod.number().nullish(),
+  "periodsPlayed": zod.number(),
+  "periods": zod.array(zod.object({
+  "periodNumber": zod.number(),
+  "startedAt": zod.string(),
+  "endedAt": zod.string().nullish()
+})),
+  "players": zod.array(zod.object({
+  "person": zod.object({
+  "id": zod.number(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "fullName": zod.string(),
+  "email": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "dateOfBirth": zod.string().nullish(),
+  "isMinor": zod.boolean(),
+  "hasLogin": zod.boolean().optional()
+}),
+  "jerseyNumber": zod.number().nullish(),
+  "position": zod.string().nullish(),
+  "onPitch": zod.boolean(),
+  "secondsPlayed": zod.number()
+}))
+})
+
+
+/**
+ * @summary End the running period (half) of the game clock (staff only)
+ */
+export const EndPeriodResponse = zod.object({
+  "clockRunning": zod.boolean(),
+  "currentPeriodNumber": zod.number().nullish(),
+  "periodsPlayed": zod.number(),
+  "periods": zod.array(zod.object({
+  "periodNumber": zod.number(),
+  "startedAt": zod.string(),
+  "endedAt": zod.string().nullish()
+})),
+  "players": zod.array(zod.object({
+  "person": zod.object({
+  "id": zod.number(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "fullName": zod.string(),
+  "email": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "dateOfBirth": zod.string().nullish(),
+  "isMinor": zod.boolean(),
+  "hasLogin": zod.boolean().optional()
+}),
+  "jerseyNumber": zod.number().nullish(),
+  "position": zod.string().nullish(),
+  "onPitch": zod.boolean(),
+  "secondsPlayed": zod.number()
+}))
+})
+
+
+/**
+ * @summary Toggle a player ON/OFF the pitch (staff only)
+ */
+export const TogglePlayerOnPitchResponse = zod.object({
+  "clockRunning": zod.boolean(),
+  "currentPeriodNumber": zod.number().nullish(),
+  "periodsPlayed": zod.number(),
+  "periods": zod.array(zod.object({
+  "periodNumber": zod.number(),
+  "startedAt": zod.string(),
+  "endedAt": zod.string().nullish()
+})),
+  "players": zod.array(zod.object({
+  "person": zod.object({
+  "id": zod.number(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "fullName": zod.string(),
+  "email": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "dateOfBirth": zod.string().nullish(),
+  "isMinor": zod.boolean(),
+  "hasLogin": zod.boolean().optional()
+}),
+  "jerseyNumber": zod.number().nullish(),
+  "position": zod.string().nullish(),
+  "onPitch": zod.boolean(),
+  "secondsPlayed": zod.number()
+}))
+})
+
+
+/**
+ * @summary Season game-minutes totals per player (staff only)
+ */
+export const GetSeasonMinutesResponse = zod.object({
+  "trackedGames": zod.number(),
+  "players": zod.array(zod.object({
+  "person": zod.object({
+  "id": zod.number(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "fullName": zod.string(),
+  "email": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "dateOfBirth": zod.string().nullish(),
+  "isMinor": zod.boolean(),
+  "hasLogin": zod.boolean().optional()
+}),
+  "jerseyNumber": zod.number().nullish(),
+  "position": zod.string().nullish(),
+  "totalSeconds": zod.number(),
+  "gamesPlayed": zod.number()
+}))
+})
+
+

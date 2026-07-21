@@ -17,6 +17,8 @@ import TeamDetail from "@/pages/teams/detail";
 import TeamMonitoring from "@/pages/teams/monitoring";
 import Checkin from "@/pages/checkin";
 import EventDetail from "@/pages/events/detail";
+import EventTimekeeping from "@/pages/events/timekeeping";
+import TeamMinutes from "@/pages/teams/minutes";
 import Schedule from "@/pages/schedule";
 import Messages from "@/pages/messages/index";
 import PeopleList from "@/pages/people/index";
@@ -216,8 +218,10 @@ function ClerkProviderWithRoutes() {
           <ProtectedRoute path="/teams" component={TeamsList} />
           <ProtectedRoute path="/teams/:teamId" component={TeamDetail} />
           <ProtectedRoute path="/teams/:teamId/monitoring" component={TeamMonitoring} />
+          <ProtectedRoute path="/teams/:teamId/minutes" component={TeamMinutes} />
           <ProtectedRoute path="/checkin" component={Checkin} />
           <ProtectedRoute path="/events/:eventId" component={EventDetail} />
+          <ProtectedRoute path="/events/:eventId/timekeeping" component={EventTimekeeping} />
           <ProtectedRoute path="/schedule" component={Schedule} />
           <ProtectedRoute path="/messages" component={Messages} />
           <ProtectedRoute path="/people" component={PeopleList} />

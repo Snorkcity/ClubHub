@@ -58,6 +58,7 @@ import type {
   Rsvp,
   RsvpInput,
   Season,
+  SeasonMinutes,
   Team,
   TeamInput,
   TeamMember,
@@ -66,6 +67,7 @@ import type {
   TeamMonitoring,
   TeamSummary,
   TeamUpdate,
+  TimekeepingState,
   WellnessEntry,
   WellnessInput
 } from './api.schemas';
@@ -3521,6 +3523,375 @@ export function useGetTeamMonitoring<TData = Awaited<ReturnType<typeof getTeamMo
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetTeamMonitoringQueryOptions(teamId,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetTimekeepingUrl = (eventId: number,) => {
+
+
+
+
+  return `/api/events/${eventId}/timekeeping`
+}
+
+/**
+ * @summary Live game-time tracking state for a game (staff only)
+ */
+export const getTimekeeping = async (eventId: number, options?: RequestInit): Promise<TimekeepingState> => {
+
+  return customFetch<TimekeepingState>(getGetTimekeepingUrl(eventId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTimekeepingQueryKey = (eventId: number,) => {
+    return [
+    `/api/events/${eventId}/timekeeping`
+    ] as const;
+    }
+
+
+export const getGetTimekeepingQueryOptions = <TData = Awaited<ReturnType<typeof getTimekeeping>>, TError = ErrorType<unknown>>(eventId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTimekeeping>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTimekeepingQueryKey(eventId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTimekeeping>>> = ({ signal }) => getTimekeeping(eventId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: eventId !== null && eventId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTimekeeping>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTimekeepingQueryResult = NonNullable<Awaited<ReturnType<typeof getTimekeeping>>>
+export type GetTimekeepingQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Live game-time tracking state for a game (staff only)
+ */
+
+export function useGetTimekeeping<TData = Awaited<ReturnType<typeof getTimekeeping>>, TError = ErrorType<unknown>>(
+ eventId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTimekeeping>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTimekeepingQueryOptions(eventId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getStartPeriodUrl = (eventId: number,) => {
+
+
+
+
+  return `/api/events/${eventId}/timekeeping/periods/start`
+}
+
+/**
+ * @summary Start the next period (half) of the game clock (staff only)
+ */
+export const startPeriod = async (eventId: number, options?: RequestInit): Promise<TimekeepingState> => {
+
+  return customFetch<TimekeepingState>(getStartPeriodUrl(eventId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getStartPeriodMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startPeriod>>, TError,{eventId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startPeriod>>, TError,{eventId: number}, TContext> => {
+
+const mutationKey = ['startPeriod'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startPeriod>>, {eventId: number}> = (props) => {
+          const {eventId} = props ?? {};
+
+          return  startPeriod(eventId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartPeriodMutationResult = NonNullable<Awaited<ReturnType<typeof startPeriod>>>
+
+    export type StartPeriodMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Start the next period (half) of the game clock (staff only)
+ */
+export const useStartPeriod = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startPeriod>>, TError,{eventId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startPeriod>>,
+        TError,
+        {eventId: number},
+        TContext
+      > => {
+      return useMutation(getStartPeriodMutationOptions(options));
+    }
+
+export const getEndPeriodUrl = (eventId: number,) => {
+
+
+
+
+  return `/api/events/${eventId}/timekeeping/periods/end`
+}
+
+/**
+ * @summary End the running period (half) of the game clock (staff only)
+ */
+export const endPeriod = async (eventId: number, options?: RequestInit): Promise<TimekeepingState> => {
+
+  return customFetch<TimekeepingState>(getEndPeriodUrl(eventId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getEndPeriodMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof endPeriod>>, TError,{eventId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof endPeriod>>, TError,{eventId: number}, TContext> => {
+
+const mutationKey = ['endPeriod'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof endPeriod>>, {eventId: number}> = (props) => {
+          const {eventId} = props ?? {};
+
+          return  endPeriod(eventId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type EndPeriodMutationResult = NonNullable<Awaited<ReturnType<typeof endPeriod>>>
+
+    export type EndPeriodMutationError = ErrorType<unknown>
+
+    /**
+ * @summary End the running period (half) of the game clock (staff only)
+ */
+export const useEndPeriod = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof endPeriod>>, TError,{eventId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof endPeriod>>,
+        TError,
+        {eventId: number},
+        TContext
+      > => {
+      return useMutation(getEndPeriodMutationOptions(options));
+    }
+
+export const getTogglePlayerOnPitchUrl = (eventId: number,
+    userId: number,) => {
+
+
+
+
+  return `/api/events/${eventId}/timekeeping/players/${userId}/toggle`
+}
+
+/**
+ * @summary Toggle a player ON/OFF the pitch (staff only)
+ */
+export const togglePlayerOnPitch = async (eventId: number,
+    userId: number, options?: RequestInit): Promise<TimekeepingState> => {
+
+  return customFetch<TimekeepingState>(getTogglePlayerOnPitchUrl(eventId,userId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getTogglePlayerOnPitchMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof togglePlayerOnPitch>>, TError,{eventId: number;userId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof togglePlayerOnPitch>>, TError,{eventId: number;userId: number}, TContext> => {
+
+const mutationKey = ['togglePlayerOnPitch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof togglePlayerOnPitch>>, {eventId: number;userId: number}> = (props) => {
+          const {eventId,userId} = props ?? {};
+
+          return  togglePlayerOnPitch(eventId,userId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TogglePlayerOnPitchMutationResult = NonNullable<Awaited<ReturnType<typeof togglePlayerOnPitch>>>
+
+    export type TogglePlayerOnPitchMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Toggle a player ON/OFF the pitch (staff only)
+ */
+export const useTogglePlayerOnPitch = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof togglePlayerOnPitch>>, TError,{eventId: number;userId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof togglePlayerOnPitch>>,
+        TError,
+        {eventId: number;userId: number},
+        TContext
+      > => {
+      return useMutation(getTogglePlayerOnPitchMutationOptions(options));
+    }
+
+export const getGetSeasonMinutesUrl = (teamId: number,) => {
+
+
+
+
+  return `/api/teams/${teamId}/timekeeping/season`
+}
+
+/**
+ * @summary Season game-minutes totals per player (staff only)
+ */
+export const getSeasonMinutes = async (teamId: number, options?: RequestInit): Promise<SeasonMinutes> => {
+
+  return customFetch<SeasonMinutes>(getGetSeasonMinutesUrl(teamId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSeasonMinutesQueryKey = (teamId: number,) => {
+    return [
+    `/api/teams/${teamId}/timekeeping/season`
+    ] as const;
+    }
+
+
+export const getGetSeasonMinutesQueryOptions = <TData = Awaited<ReturnType<typeof getSeasonMinutes>>, TError = ErrorType<unknown>>(teamId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSeasonMinutes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSeasonMinutesQueryKey(teamId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSeasonMinutes>>> = ({ signal }) => getSeasonMinutes(teamId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: teamId !== null && teamId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSeasonMinutes>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSeasonMinutesQueryResult = NonNullable<Awaited<ReturnType<typeof getSeasonMinutes>>>
+export type GetSeasonMinutesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Season game-minutes totals per player (staff only)
+ */
+
+export function useGetSeasonMinutes<TData = Awaited<ReturnType<typeof getSeasonMinutes>>, TError = ErrorType<unknown>>(
+ teamId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSeasonMinutes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSeasonMinutesQueryOptions(teamId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

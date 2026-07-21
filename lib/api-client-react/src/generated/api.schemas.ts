@@ -663,6 +663,41 @@ export interface TeamMonitoring {
   players: PlayerMonitoring[];
 }
 
+export interface GamePeriod {
+  periodNumber: number;
+  startedAt: string;
+  endedAt?: string | null;
+}
+
+export interface TimekeepingPlayer {
+  person: Person;
+  jerseyNumber?: number | null;
+  position?: string | null;
+  onPitch: boolean;
+  secondsPlayed: number;
+}
+
+export interface TimekeepingState {
+  clockRunning: boolean;
+  currentPeriodNumber?: number | null;
+  periodsPlayed: number;
+  periods: GamePeriod[];
+  players: TimekeepingPlayer[];
+}
+
+export interface SeasonMinutesPlayer {
+  person: Person;
+  jerseyNumber?: number | null;
+  position?: string | null;
+  totalSeconds: number;
+  gamesPlayed: number;
+}
+
+export interface SeasonMinutes {
+  trackedGames: number;
+  players: SeasonMinutesPlayer[];
+}
+
 /**
  * Resource not found
  */
