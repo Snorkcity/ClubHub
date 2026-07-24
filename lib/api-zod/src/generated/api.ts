@@ -1049,7 +1049,8 @@ export const ListChatsResponseItem = zod.object({
   "isMinor": zod.boolean(),
   "hasLogin": zod.boolean().optional()
 })
-}).optional()
+}).optional(),
+  "myLastReadAt": zod.string().nullish()
 })
 export const ListChatsResponse = zod.array(ListChatsResponseItem)
 
@@ -1091,7 +1092,8 @@ export const CreateChatResponse = zod.object({
   "isMinor": zod.boolean(),
   "hasLogin": zod.boolean().optional()
 })
-}).optional()
+}).optional(),
+  "myLastReadAt": zod.string().nullish()
 })
 
 
@@ -1123,7 +1125,8 @@ export const GetChatResponse = zod.object({
   "isMinor": zod.boolean(),
   "hasLogin": zod.boolean().optional()
 })
-}).optional()
+}).optional(),
+  "myLastReadAt": zod.string().nullish()
 }),
   "members": zod.array(zod.object({
   "id": zod.number(),
@@ -1136,6 +1139,10 @@ export const GetChatResponse = zod.object({
   "dateOfBirth": zod.string().nullish(),
   "isMinor": zod.boolean(),
   "hasLogin": zod.boolean().optional()
+})),
+  "reads": zod.array(zod.object({
+  "userId": zod.number(),
+  "lastReadAt": zod.string().nullish()
 }))
 })
 
@@ -1192,6 +1199,12 @@ export const SendMessageResponse = zod.object({
   "hasLogin": zod.boolean().optional()
 })
 })
+
+
+/**
+ * @summary Mark a chat as read up to now (read receipts)
+ */
+export const MarkChatReadResponse = zod.void()
 
 
 /**

@@ -18,4 +18,6 @@ export interface Chat {
   teamName?: string | null;
   memberCount: number;
   lastMessage?: Message;
+  /** @nullable */
+  myLastReadAt?: string | null;
 }

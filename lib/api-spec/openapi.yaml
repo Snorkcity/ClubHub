@@ -734,6 +734,17 @@ paths:
               schema:
                 $ref: "#/components/schemas/Message"
 
+  /chats/{chatId}/read:
+    post:
+      operationId: markChatRead
+      tags: [chats]
+      summary: Mark a chat as read up to now (read receipts)
+      parameters:
+        - $ref: "#/components/parameters/ChatId"
+      responses:
+        "204":
+          description: Marked read
+
   /monitoring/checkin:
     get:
       operationId: getCheckinStatus
@@ -1204,15 +1215,26 @@ components:
         teamName: { type: ["string", "null"] }
         memberCount: { type: integer }
         lastMessage: { $ref: "#/components/schemas/Message" }
+        myLastReadAt: { type: ["string", "null"] }
+
+    ChatMemberRead:
+      type: object
+      required: [userId]
+      properties:
+        userId: { type: integer }
+        lastReadAt: { type: ["string", "null"] }
 
     ChatDetail:
       type: object
-      required: [chat, members]
+      required: [chat, members, reads]
       properties:
         chat: { $ref: "#/components/schemas/Chat" }
         members:
           type: array
           items: { $ref: "#/components/schemas/Person" }
+        reads:
+          type: array
+          items: { $ref: "#/components/schemas/ChatMemberRead" }
 
     Message:
       type: object

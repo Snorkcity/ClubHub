@@ -6,9 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Chat } from './chat';
+import type { ChatMemberRead } from './chatMemberRead';
 import type { Person } from './person';
 
 export interface ChatDetail {
   chat: Chat;
   members: Person[];
+  reads: ChatMemberRead[];
 }

@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { format } from "date-fns";
 import { MessageSquare, Users, Hash, Plus, MessageCircle } from "lucide-react";
-import { useListChats, getListChatsQueryKey } from "@workspace/api-client-react";
+import { useListChats, getListChatsQueryKey, useGetMe, getGetMeQueryKey } from "@workspace/api-client-react";
 
 import { LoadingScreen, ErrorState, EmptyState } from "@/components/ui/states";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,8 @@ export default function Messages() {
   const { data: chats, isLoading, error, refetch } = useListChats({ 
     query: { queryKey: getListChatsQueryKey() } 
   });
+  const { data: me } = useGetMe({ query: { queryKey: getGetMeQueryKey() } });
+  const myId = me?.person?.id;
 
   if (isLoading) return <LoadingScreen message="Loading messages..." />;
   if (error || !chats) return <ErrorState onRetry={() => refetch()} />;
@@ -45,7 +47,7 @@ export default function Messages() {
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider pl-1">Team Chats</h2>
                 <div className="bg-card border rounded-3xl overflow-hidden shadow-sm flex flex-col divide-y">
                   {teamChats.map(chat => (
-                    <ChatRow key={chat.id} chat={chat} />
+                    <ChatRow key={chat.id} chat={chat} myId={myId} />
                   ))}
                 </div>
               </div>
@@ -56,7 +58,7 @@ export default function Messages() {
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider pl-1">Direct & Groups</h2>
                 <div className="bg-card border rounded-3xl overflow-hidden shadow-sm flex flex-col divide-y">
                   {otherChats.map(chat => (
-                    <ChatRow key={chat.id} chat={chat} />
+                    <ChatRow key={chat.id} chat={chat} myId={myId} />
                   ))}
                 </div>
               </div>
@@ -68,11 +70,17 @@ export default function Messages() {
   );
 }
 
-function ChatRow({ chat }: { chat: any }) {
+function ChatRow({ chat, myId }: { chat: any; myId?: number }) {
   const isTeam = chat.type === 'team';
-  
+  // Unread: last message is from someone else and newer than my last read.
+  const unread =
+    !!chat.lastMessage &&
+    chat.lastMessage.author.id !== myId &&
+    (!chat.myLastReadAt ||
+      new Date(chat.lastMessage.createdAt) > new Date(chat.myLastReadAt));
+
   return (
-    <div className="p-4 hover:bg-muted/30 transition-colors cursor-pointer group">
+    <Link href={`/messages/${chat.id}`} className="block p-4 hover:bg-muted/30 transition-colors cursor-pointer group">
       <div className="flex items-center gap-4">
         {isTeam ? (
           <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
@@ -98,14 +106,17 @@ function ChatRow({ chat }: { chat: any }) {
           
           <div className="flex items-center gap-2">
             {chat.lastMessage ? (
-              <p className="text-sm text-muted-foreground truncate flex-1 font-medium">
+              <p className={`text-sm truncate flex-1 ${unread ? "text-foreground font-semibold" : "text-muted-foreground font-medium"}`}>
                 <span className="text-foreground">{chat.lastMessage.author.firstName}: </span>
                 {chat.lastMessage.body}
               </p>
             ) : (
               <p className="text-sm text-muted-foreground/60 italic flex-1">No messages yet</p>
             )}
-            
+
+            {unread && (
+              <span className="h-2.5 w-2.5 rounded-full bg-destructive shrink-0" />
+            )}
             {isTeam && (
               <span className="flex items-center text-xs font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
                 <Users className="h-3 w-3 mr-1" /> {chat.memberCount}
@@ -114,6 +125,6 @@ function ChatRow({ chat }: { chat: any }) {
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }

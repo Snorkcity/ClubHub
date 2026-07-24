@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, unique } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, timestamp, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -15,6 +15,8 @@ export const chatMembersTable = pgTable(
     userId: integer("user_id")
       .notNull()
       .references(() => usersTable.id),
+    // Read receipts: last time this member viewed the chat. Null = never.
+    lastReadAt: timestamp("last_read_at", { withTimezone: true }),
   },
   (t) => [unique().on(t.chatId, t.userId)],
 );

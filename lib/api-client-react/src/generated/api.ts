@@ -3226,6 +3226,77 @@ export const useSendMessage = <TError = ErrorType<unknown>,
       return useMutation(getSendMessageMutationOptions(options));
     }
 
+export const getMarkChatReadUrl = (chatId: number,) => {
+
+
+
+
+  return `/api/chats/${chatId}/read`
+}
+
+/**
+ * @summary Mark a chat as read up to now (read receipts)
+ */
+export const markChatRead = async (chatId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getMarkChatReadUrl(chatId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getMarkChatReadMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markChatRead>>, TError,{chatId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markChatRead>>, TError,{chatId: number}, TContext> => {
+
+const mutationKey = ['markChatRead'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markChatRead>>, {chatId: number}> = (props) => {
+          const {chatId} = props ?? {};
+
+          return  markChatRead(chatId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkChatReadMutationResult = NonNullable<Awaited<ReturnType<typeof markChatRead>>>
+
+    export type MarkChatReadMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Mark a chat as read up to now (read receipts)
+ */
+export const useMarkChatRead = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markChatRead>>, TError,{chatId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markChatRead>>,
+        TError,
+        {chatId: number},
+        TContext
+      > => {
+      return useMutation(getMarkChatReadMutationOptions(options));
+    }
+
 export const getGetCheckinStatusUrl = (params: GetCheckinStatusParams,) => {
   const normalizedParams = new URLSearchParams();
 

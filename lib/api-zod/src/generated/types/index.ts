@@ -10,6 +10,7 @@ export * from './chat';
 export * from './chatDetail';
 export * from './chatInput';
 export * from './chatInputType';
+export * from './chatMemberRead';
 export * from './chatType';
 export * from './checkinStatus';
 export * from './checkinSubject';

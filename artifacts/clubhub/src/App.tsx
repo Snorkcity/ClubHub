@@ -22,6 +22,7 @@ import EventTimekeeping from "@/pages/events/timekeeping";
 import TeamMinutes from "@/pages/teams/minutes";
 import Schedule from "@/pages/schedule";
 import Messages from "@/pages/messages/index";
+import ChatPage from "@/pages/messages/chat";
 import PeopleList from "@/pages/people/index";
 import PersonDetail from "@/pages/people/detail";
 import Settings from "@/pages/settings";
@@ -230,6 +231,7 @@ function ClerkProviderWithRoutes() {
           <ProtectedRoute path="/events/:eventId/timekeeping" component={EventTimekeeping} />
           <ProtectedRoute path="/schedule" component={Schedule} />
           <ProtectedRoute path="/messages" component={Messages} />
+          <ProtectedRoute path="/messages/:chatId" component={ChatPage} />
           <ProtectedRoute path="/people" component={PeopleList} />
           <ProtectedRoute path="/people/:personId" component={PersonDetail} />
           <ProtectedRoute path="/settings" component={Settings} />

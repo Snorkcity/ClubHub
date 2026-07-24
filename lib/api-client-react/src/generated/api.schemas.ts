@@ -281,11 +281,20 @@ export interface Chat {
   teamName?: string | null;
   memberCount: number;
   lastMessage?: Message;
+  /** @nullable */
+  myLastReadAt?: string | null;
+}
+
+export interface ChatMemberRead {
+  userId: number;
+  /** @nullable */
+  lastReadAt?: string | null;
 }
 
 export interface ChatDetail {
   chat: Chat;
   members: Person[];
+  reads: ChatMemberRead[];
 }
 
 export interface ClubOverview {

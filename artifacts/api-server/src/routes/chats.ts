@@ -48,8 +48,11 @@ router.get("/chats", requireAuth, async (req, res) => {
     .from(chatMembersTable)
     .where(inArray(chatMembersTable.chatId, chatIds));
   const countByChat: Record<number, number> = {};
-  for (const m of memberRows)
+  const myReadByChat: Record<number, Date | null> = {};
+  for (const m of memberRows) {
     countByChat[m.chatId] = (countByChat[m.chatId] ?? 0) + 1;
+    if (m.userId === localUser.id) myReadByChat[m.chatId] = m.lastReadAt;
+  }
 
   const lastMsgs = await db
     .select()
@@ -80,6 +83,7 @@ router.get("/chats", requireAuth, async (req, res) => {
         last && authorById[last.authorId]
           ? messageDto(last, authorById[last.authorId])
           : undefined,
+      myLastReadAt: iso(myReadByChat[c.id] ?? null),
     };
   });
   result.sort((a, b) => {
@@ -147,7 +151,7 @@ router.get("/chats/:chatId", requireAuth, async (req, res) => {
   if (!row) return res.status(404).json({ error: "Chat not found" });
 
   const members = await db
-    .select({ u: usersTable })
+    .select({ u: usersTable, cm: chatMembersTable })
     .from(chatMembersTable)
     .innerJoin(usersTable, eq(chatMembersTable.userId, usersTable.id))
     .where(eq(chatMembersTable.chatId, chatId));
@@ -163,7 +167,29 @@ router.get("/chats/:chatId", requireAuth, async (req, res) => {
       lastMessage: undefined,
     },
     members: members.map((m) => toPerson(m.u)),
+    // Read receipts: when each member last viewed this chat.
+    reads: members.map((m) => ({
+      userId: m.cm.userId,
+      lastReadAt: iso(m.cm.lastReadAt),
+    })),
   });
+});
+
+router.post("/chats/:chatId/read", requireAuth, async (req, res) => {
+  const { localUser } = req as AuthedRequest;
+  const chatId = Number(req.params.chatId);
+  if (!(await isChatMember(localUser.id, chatId)))
+    return res.status(403).json({ error: "You are not a member of this chat" });
+  await db
+    .update(chatMembersTable)
+    .set({ lastReadAt: new Date() })
+    .where(
+      and(
+        eq(chatMembersTable.chatId, chatId),
+        eq(chatMembersTable.userId, localUser.id),
+      ),
+    );
+  return res.status(204).end();
 });
 
 router.get("/chats/:chatId/messages", requireAuth, async (req, res) => {
