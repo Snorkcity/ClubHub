@@ -1,3 +1,4 @@
+- [Railway is production](railway-prod.md) — Replit=dev, Railway=prod; push to GitHub auto-deploys; keep packageManager pin and VITE_API_URL base-URL logic intact.
 - [Lifelong identity model](lifelong-identity.md) — every player is one permanent account; guardians are linked (never child sub-profiles). Central architectural pillar for ClubHub.
 - [Repo build quirks](repo-build-quirks.md) — no tsx binary; run standalone TS via esbuild bundle; rebuild db declarations after schema changes so @workspace/db exports resolve.
 - [Account claiming by email](account-claiming.md) — first-login can claim a pre-created person by VERIFIED email, single-match only (fail closed); identity read from Clerk backend, not session claims.
