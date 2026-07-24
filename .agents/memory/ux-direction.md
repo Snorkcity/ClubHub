@@ -18,3 +18,6 @@ Patterns to adopt (from user's Heja screenshots, July 2026):
 - Simple 4-tab bottom nav on mobile: Team / Schedule / Messages / You.
 
 **Why:** user finds the current admin-centric interface overwhelming; role-appropriate simplicity is the fix. Plan is a "Heja familiarity pass" after the GitHub/Railway migration, with canvas layout comparisons first.
+
+## App icon (July 24, 2026)
+Scott chose the sport-neutral "team huddle" mark (three figures circling, navy #0b1f4b / lime / white) — deliberately not soccer-specific so ClubHub can expand to other sports. The maskable (Android) icon variant must keep the artwork inside ~75% of the canvas because Android crops/squishes into a circle or squircle.
