@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
 import { format } from "date-fns";
 import { 
@@ -7,7 +8,9 @@ import {
 } from "lucide-react";
 import { 
   useGetTeam, useGetTeamSummary, useListTeamMembers, useGetMe, useListTeamPosts,
-  getGetTeamQueryKey, getGetTeamSummaryQueryKey, getListTeamMembersQueryKey, getListTeamPostsQueryKey
+  useMarkTeamSeen,
+  getGetTeamQueryKey, getGetTeamSummaryQueryKey, getListTeamMembersQueryKey, getListTeamPostsQueryKey,
+  getListTeamUnreadsQueryKey
 } from "@workspace/api-client-react";
 import { PostCard } from "@/components/feed/post-card";
 import { PostComposer } from "@/components/feed/post-composer";
@@ -23,6 +26,21 @@ import { AddMemberDialog, RemoveMemberButton } from "@/components/admin/team-ros
 export default function TeamDetail() {
   const params = useParams();
   const teamId = Number(params.teamId);
+
+  // Viewing a team's page marks its content as seen (clears unread badges).
+  const queryClient = useQueryClient();
+  const markSeen = useMarkTeamSeen({
+    mutation: {
+      onSuccess: () =>
+        queryClient.invalidateQueries({ queryKey: getListTeamUnreadsQueryKey() }),
+    },
+  });
+  const markSeenMutate = markSeen.mutate;
+  useEffect(() => {
+    if (!teamId) return;
+    const t = setTimeout(() => markSeenMutate({ teamId }), 2000);
+    return () => clearTimeout(t);
+  }, [teamId, markSeenMutate]);
 
   const { data: team, isLoading: teamLoading, error, refetch } = useGetTeam(teamId, { 
     query: { enabled: !!teamId, queryKey: getGetTeamQueryKey(teamId) } 

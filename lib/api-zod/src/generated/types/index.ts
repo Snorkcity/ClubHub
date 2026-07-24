@@ -79,6 +79,7 @@ export * from './teamMemberUpdate';
 export * from './teamMemberUpdateRole';
 export * from './teamMonitoring';
 export * from './teamSummary';
+export * from './teamUnread';
 export * from './teamUpdate';
 export * from './timekeepingPlayer';
 export * from './timekeepingState';

@@ -381,6 +381,32 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /unreads:
+    get:
+      operationId: listTeamUnreads
+      tags: [feed]
+      summary: Unread post/message counts per team for the current user
+      responses:
+        "200":
+          description: Unread counts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeamUnread"
+
+  /teams/{teamId}/seen:
+    post:
+      operationId: markTeamSeen
+      tags: [feed]
+      summary: Mark a team's content as seen up to now
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      responses:
+        "204":
+          description: Marked seen
+
   /feed:
     get:
       operationId: getFeed
@@ -1285,6 +1311,15 @@ components:
         playerId: { type: integer }
         relationship: { type: string, enum: [parent, guardian, other] }
         canManage: { type: boolean }
+
+    TeamUnread:
+      type: object
+      required: [teamId, teamName, unreadPosts, unreadMessages]
+      properties:
+        teamId: { type: integer }
+        teamName: { type: string }
+        unreadPosts: { type: integer }
+        unreadMessages: { type: integer }
 
     PostInput:
       type: object

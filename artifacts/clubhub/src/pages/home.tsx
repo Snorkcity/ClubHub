@@ -1,4 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useActiveTeam } from "@/lib/active-team";
+import {
+  useMarkTeamSeen,
+  getListTeamUnreadsQueryKey,
+} from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { format, isToday, isTomorrow } from "date-fns";
 import { 
@@ -127,6 +133,25 @@ function AdminDashboard() {
   );
 }
 
+/** Marks the given team's content as seen shortly after viewing, then
+ * refreshes unread badges. */
+function useMarkActiveTeamSeen(teamId: number | null) {
+  const queryClient = useQueryClient();
+  const markSeen = useMarkTeamSeen({
+    mutation: {
+      onSuccess: () =>
+        queryClient.invalidateQueries({ queryKey: getListTeamUnreadsQueryKey() }),
+    },
+  });
+  const mutate = markSeen.mutate;
+  useEffect(() => {
+    if (teamId == null) return;
+    // Small delay so a quick tab-through doesn't clear the badge.
+    const t = setTimeout(() => mutate({ teamId }), 2000);
+    return () => clearTimeout(t);
+  }, [teamId, mutate]);
+}
+
 function MemberDashboard({ me }: { me: any }) {
   const { data: events, isLoading: eventsLoading } = useListUpcomingEvents({ 
     query: { queryKey: getListUpcomingEventsQueryKey() } 
@@ -140,7 +165,16 @@ function MemberDashboard({ me }: { me: any }) {
     query: { queryKey: getListTeamsQueryKey() }
   });
 
+  // Active team: filter the feed and mark that team's content as seen.
+  const { activeTeamId } = useActiveTeam();
+  useMarkActiveTeamSeen(activeTeamId);
+
   if (eventsLoading || feedLoading || teamsLoading) return <LoadingScreen message="Loading dashboard..." />;
+
+  const visibleFeed =
+    activeTeamId == null
+      ? feed
+      : feed?.filter((p: any) => p.teamId === activeTeamId);
 
   const nextEvent = events?.[0];
 
@@ -195,7 +229,7 @@ function MemberDashboard({ me }: { me: any }) {
           
           <PostComposer variant="card" />
 
-          {!feed || feed.length === 0 ? (
+          {!visibleFeed || visibleFeed.length === 0 ? (
             <EmptyState 
               title="No updates yet" 
               message="When coaches or managers post updates to your teams, they will appear here."
@@ -203,7 +237,7 @@ function MemberDashboard({ me }: { me: any }) {
             />
           ) : (
             <div className="space-y-4">
-              {feed.map((post) => (
+              {visibleFeed.map((post) => (
                 <PostCard key={post.id} post={post} />
               ))}
             </div>

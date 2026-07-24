@@ -66,6 +66,7 @@ import type {
   TeamMemberUpdate,
   TeamMonitoring,
   TeamSummary,
+  TeamUnread,
   TeamUpdate,
   TimekeepingState,
   WellnessEntry,
@@ -1665,6 +1666,154 @@ export const useRemoveGuardianship = <TError = ErrorType<NotFoundResponse>,
         TContext
       > => {
       return useMutation(getRemoveGuardianshipMutationOptions(options));
+    }
+
+export const getListTeamUnreadsUrl = () => {
+
+
+
+
+  return `/api/unreads`
+}
+
+/**
+ * @summary Unread post/message counts per team for the current user
+ */
+export const listTeamUnreads = async ( options?: RequestInit): Promise<TeamUnread[]> => {
+
+  return customFetch<TeamUnread[]>(getListTeamUnreadsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTeamUnreadsQueryKey = () => {
+    return [
+    `/api/unreads`
+    ] as const;
+    }
+
+
+export const getListTeamUnreadsQueryOptions = <TData = Awaited<ReturnType<typeof listTeamUnreads>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTeamUnreads>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTeamUnreadsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTeamUnreads>>> = ({ signal }) => listTeamUnreads({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTeamUnreads>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTeamUnreadsQueryResult = NonNullable<Awaited<ReturnType<typeof listTeamUnreads>>>
+export type ListTeamUnreadsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Unread post/message counts per team for the current user
+ */
+
+export function useListTeamUnreads<TData = Awaited<ReturnType<typeof listTeamUnreads>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTeamUnreads>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTeamUnreadsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getMarkTeamSeenUrl = (teamId: number,) => {
+
+
+
+
+  return `/api/teams/${teamId}/seen`
+}
+
+/**
+ * @summary Mark a team's content as seen up to now
+ */
+export const markTeamSeen = async (teamId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getMarkTeamSeenUrl(teamId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getMarkTeamSeenMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markTeamSeen>>, TError,{teamId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markTeamSeen>>, TError,{teamId: number}, TContext> => {
+
+const mutationKey = ['markTeamSeen'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markTeamSeen>>, {teamId: number}> = (props) => {
+          const {teamId} = props ?? {};
+
+          return  markTeamSeen(teamId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkTeamSeenMutationResult = NonNullable<Awaited<ReturnType<typeof markTeamSeen>>>
+
+    export type MarkTeamSeenMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Mark a team's content as seen up to now
+ */
+export const useMarkTeamSeen = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markTeamSeen>>, TError,{teamId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markTeamSeen>>,
+        TError,
+        {teamId: number},
+        TContext
+      > => {
+      return useMutation(getMarkTeamSeenMutationOptions(options));
     }
 
 export const getGetFeedUrl = () => {

@@ -5,7 +5,13 @@ import {
   postsTable,
   commentsTable,
   usersTable,
+  teamsTable,
+  teamReadsTable,
+  chatsTable,
+  chatMembersTable,
+  messagesTable,
 } from "@workspace/db";
+import { and, gt, ne } from "drizzle-orm";
 import { CreatePostBody, UpdatePostBody, AddCommentBody } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
 import { buildPosts } from "../lib/build";
@@ -18,6 +24,111 @@ const router: IRouter = Router();
 // Pinned posts only stay on top for 2 days, then fall back into date order.
 // Re-pinning updates pinnedAt and restarts the clock.
 const activePin: SQL = sql`(${postsTable.pinned} and ${postsTable.pinnedAt} > now() - interval '2 days')`;
+
+router.get("/unreads", requireAuth, async (req, res) => {
+  const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
+  const visible = await getVisibleTeamIds(clubId, localUser.id, isClubAdmin);
+  if (visible.length === 0) return res.json([]);
+
+  const [teams, reads] = await Promise.all([
+    db
+      .select({ id: teamsTable.id, name: teamsTable.name })
+      .from(teamsTable)
+      .where(inArray(teamsTable.id, visible)),
+    db
+      .select()
+      .from(teamReadsTable)
+      .where(
+        and(
+          eq(teamReadsTable.userId, localUser.id),
+          inArray(teamReadsTable.teamId, visible),
+        ),
+      ),
+  ]);
+  const lastSeen: Record<number, Date> = {};
+  for (const r of reads) lastSeen[r.teamId] = r.lastSeenAt;
+  // Teams never opened: only count content from the last 14 days so a new
+  // user isn't greeted with months of "unread". Teams opened before use
+  // their own lastSeenAt, even if older than 14 days.
+  const fallback = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+  const thresholdFor = (teamId: number) => lastSeen[teamId] ?? fallback;
+  // Fetch rows newer than the OLDEST per-team threshold, then compare
+  // per-team in code — so an old lastSeenAt still counts everything since.
+  const minThreshold = teams.reduce(
+    (min, t) => (thresholdFor(t.id) < min ? thresholdFor(t.id) : min),
+    fallback,
+  );
+
+  const [postCounts, messageCounts] = await Promise.all([
+    db
+      .select({ teamId: postsTable.teamId, createdAt: postsTable.createdAt })
+      .from(postsTable)
+      .where(
+        and(
+          inArray(postsTable.teamId, visible),
+          ne(postsTable.authorId, localUser.id),
+          gt(postsTable.createdAt, minThreshold),
+        ),
+      ),
+    db
+      .select({
+        teamId: chatsTable.teamId,
+        createdAt: messagesTable.createdAt,
+      })
+      .from(messagesTable)
+      .innerJoin(chatsTable, eq(messagesTable.chatId, chatsTable.id))
+      .innerJoin(
+        chatMembersTable,
+        and(
+          eq(chatMembersTable.chatId, chatsTable.id),
+          eq(chatMembersTable.userId, localUser.id),
+        ),
+      )
+      .where(
+        and(
+          inArray(chatsTable.teamId, visible),
+          ne(messagesTable.authorId, localUser.id),
+          gt(messagesTable.createdAt, minThreshold),
+        ),
+      ),
+  ]);
+
+  const unreadPosts: Record<number, number> = {};
+  for (const p of postCounts) {
+    if (p.createdAt > thresholdFor(p.teamId))
+      unreadPosts[p.teamId] = (unreadPosts[p.teamId] ?? 0) + 1;
+  }
+  const unreadMessages: Record<number, number> = {};
+  for (const m of messageCounts) {
+    if (m.teamId == null) continue;
+    if (m.createdAt > thresholdFor(m.teamId))
+      unreadMessages[m.teamId] = (unreadMessages[m.teamId] ?? 0) + 1;
+  }
+
+  return res.json(
+    teams.map((t) => ({
+      teamId: t.id,
+      teamName: t.name,
+      unreadPosts: unreadPosts[t.id] ?? 0,
+      unreadMessages: unreadMessages[t.id] ?? 0,
+    })),
+  );
+});
+
+router.post("/teams/:teamId/seen", requireAuth, async (req, res) => {
+  const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
+  const teamId = Number(req.params.teamId);
+  if (!(await canAccessTeam(localUser.id, teamId, clubId, isClubAdmin)))
+    return res.status(403).json({ error: "You cannot view this team" });
+  await db
+    .insert(teamReadsTable)
+    .values({ userId: localUser.id, teamId, lastSeenAt: new Date() })
+    .onConflictDoUpdate({
+      target: [teamReadsTable.userId, teamReadsTable.teamId],
+      set: { lastSeenAt: new Date() },
+    });
+  return res.status(204).end();
+});
 
 router.get("/feed", requireAuth, async (req, res) => {
   const { clubId, localUser, isClubAdmin } = req as AuthedRequest;

@@ -9,6 +9,8 @@ import { useGetMe, useGetClub } from "@workspace/api-client-react";
 import { getGetMeQueryKey, getGetClubQueryKey } from "@workspace/api-client-react";
 
 import { Button } from "@/components/ui/button";
+import { TeamSwitcher, useTeamUnreads } from "@/components/layout/team-switcher";
+import { useActiveTeam } from "@/lib/active-team";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, 
@@ -29,6 +31,14 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const { data: club } = useGetClub({
     query: { queryKey: getGetClubQueryKey() }
   });
+
+  // Unread badge on the Home tab: unread in the ACTIVE team (or any team
+  // when viewing "All teams").
+  const { activeTeamId } = useActiveTeam();
+  const { data: unreads } = useTeamUnreads();
+  const homeUnread = (unreads ?? [])
+    .filter((t) => (activeTeamId == null ? true : t.teamId === activeTeamId))
+    .some((t) => t.unreadPosts + t.unreadMessages > 0);
 
   // Staff (club admins, coaches, managers) see the full menu; players get a
   // simpler app: Home, Schedule, Check-in and Messages.
@@ -70,6 +80,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="flex-1 overflow-y-auto py-6 px-4 flex flex-col gap-1">
+          <div className="mb-4">
+            <TeamSwitcher />
+          </div>
           <div className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
             Menu
           </div>
@@ -99,14 +112,14 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Header */}
       <header className="md:hidden h-16 bg-background border-b flex items-center justify-between px-4 sticky top-0 z-40">
-        <Link href="/home" className="flex items-center gap-2">
-          <div className="h-8 w-8 bg-primary rounded flex items-center justify-center shrink-0">
-            <span className="text-primary-foreground font-display font-black text-sm leading-none">CH</span>
-          </div>
-          <span className="font-display font-bold text-lg truncate">
-            {club?.name || "ClubHub"}
-          </span>
-        </Link>
+        <div className="flex items-center gap-1 min-w-0">
+          <Link href="/home" className="flex items-center shrink-0">
+            <div className="h-8 w-8 bg-primary rounded flex items-center justify-center">
+              <span className="text-primary-foreground font-display font-black text-sm leading-none">CH</span>
+            </div>
+          </Link>
+          <TeamSwitcher compact />
+        </div>
         
         <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
           {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -160,7 +173,12 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                 isActive ? "text-primary" : "text-muted-foreground"
               }`}
             >
-              <item.icon className={`h-6 w-6 ${isActive ? "" : "opacity-80"}`} strokeWidth={isActive ? 2.4 : 2} />
+              <span className="relative">
+                <item.icon className={`h-6 w-6 ${isActive ? "" : "opacity-80"}`} strokeWidth={isActive ? 2.4 : 2} />
+                {item.label === "Home" && homeUnread && (
+                  <span className="absolute -top-0.5 -right-1 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-background" />
+                )}
+              </span>
               <span className={`text-[11px] leading-none ${isActive ? "font-bold" : "font-medium"}`}>
                 {item.label}
               </span>

@@ -395,6 +395,13 @@ export interface GuardianshipInput {
   canManage?: boolean;
 }
 
+export interface TeamUnread {
+  teamId: number;
+  teamName: string;
+  unreadPosts: number;
+  unreadMessages: number;
+}
+
 export interface PostInput {
   title?: string;
   /** @minLength 1 */

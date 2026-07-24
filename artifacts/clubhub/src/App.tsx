@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { ClerkProvider, SignIn, SignUp, Show, useClerk, useAuth } from '@clerk/react';
 import { setAuthTokenGetter, setBaseUrl } from '@workspace/api-client-react';
+import { ActiveTeamProvider } from '@/lib/active-team';
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from 'wouter';
@@ -213,6 +214,7 @@ function ClerkProviderWithRoutes() {
       <QueryClientProvider client={queryClient}>
         <ApiAuthBinder />
         <ClerkQueryClientCacheInvalidator />
+        <ActiveTeamProvider>
         <Switch>
           <Route path="/" component={HomeRedirect} />
           <Route path="/sign-in/*?" component={SignInPage} />
@@ -234,6 +236,7 @@ function ClerkProviderWithRoutes() {
           
           <Route component={NotFound} />
         </Switch>
+        </ActiveTeamProvider>
       </QueryClientProvider>
     </ClerkProvider>
   );

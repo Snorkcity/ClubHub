@@ -602,6 +602,24 @@ export const RemoveGuardianshipResponse = zod.void()
 
 
 /**
+ * @summary Unread post/message counts per team for the current user
+ */
+export const ListTeamUnreadsResponseItem = zod.object({
+  "teamId": zod.number(),
+  "teamName": zod.string(),
+  "unreadPosts": zod.number(),
+  "unreadMessages": zod.number()
+})
+export const ListTeamUnreadsResponse = zod.array(ListTeamUnreadsResponseItem)
+
+
+/**
+ * @summary Mark a team's content as seen up to now
+ */
+export const MarkTeamSeenResponse = zod.void()
+
+
+/**
  * @summary Aggregated recent posts across the user's teams
  */
 export const GetFeedResponseItem = zod.object({
