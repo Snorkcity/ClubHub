@@ -132,11 +132,12 @@ export async function buildPosts(posts: Post[]) {
     teamName: names[p.teamId] ?? "",
     title: p.title ?? null,
     body: p.body,
-    // Pins auto-expire: a pinned post only presents as pinned for 7 days.
+    // Pins auto-expire: a pinned post only presents as pinned for 2 days
+    // from when it was (last) pinned.
     pinned:
       p.pinned &&
-      p.createdAt != null &&
-      Date.now() - new Date(p.createdAt).getTime() < 7 * 24 * 60 * 60 * 1000,
+      p.pinnedAt != null &&
+      Date.now() - new Date(p.pinnedAt).getTime() < 2 * 24 * 60 * 60 * 1000,
     createdAt: iso(p.createdAt) as string,
     author: toPerson(authorById[p.authorId]),
     commentCount: countByPost[p.id] ?? 0,

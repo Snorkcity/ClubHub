@@ -1,11 +1,22 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { format } from "date-fns";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Pin, PinOff } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useGetMe,
+  useUpdatePost,
+  getGetMeQueryKey,
+  getGetFeedQueryKey,
+  getGetClubOverviewQueryKey,
+  getListTeamPostsQueryKey,
+} from "@workspace/api-client-react";
 
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useToast } from "@/hooks/use-toast";
 
 export function PostCard({ post, linkToTeam = true }: { post: any; linkToTeam?: boolean }) {
   const [expanded, setExpanded] = useState(false);
@@ -31,9 +42,12 @@ export function PostCard({ post, linkToTeam = true }: { post: any; linkToTeam?: 
             <span>{format(new Date(post.createdAt), "MMM d")}</span>
           </div>
         </div>
-        {post.pinned && (
-          <Badge variant="secondary" className="ml-auto text-[10px] bg-amber-100 text-amber-800 hover:bg-amber-100">PINNED</Badge>
-        )}
+        <div className="ml-auto flex items-center gap-1.5">
+          {post.pinned && (
+            <Badge variant="secondary" className="text-[10px] bg-amber-100 text-amber-800 hover:bg-amber-100">PINNED</Badge>
+          )}
+          <PinToggle post={post} />
+        </div>
       </div>
 
       {post.title && <h4 className="font-bold mb-1.5">{post.title}</h4>}
@@ -70,4 +84,57 @@ export function PostCard({ post, linkToTeam = true }: { post: any; linkToTeam?: 
 
   if (!linkToTeam) return card;
   return <Link href={`/teams/${post.teamId}?post=${post.id}`}>{card}</Link>;
+}
+
+/** Staff-only pin/unpin toggle. Re-pinning restarts the 2-day pin window. */
+function PinToggle({ post }: { post: any }) {
+  const { data: me } = useGetMe({ query: { queryKey: getGetMeQueryKey() } });
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const updatePost = useUpdatePost({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetFeedQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetClubOverviewQueryKey() });
+        queryClient.invalidateQueries({
+          queryKey: getListTeamPostsQueryKey(post.teamId),
+        });
+      },
+      onError: () => {
+        toast({
+          title: "Couldn't update pin",
+          description: "Please try again.",
+          variant: "destructive",
+        });
+      },
+    },
+  });
+
+  const isStaff =
+    !!me &&
+    (me.isClubAdmin ||
+      (me.memberships ?? []).some(
+        (m) =>
+          m.teamId === post.teamId && (m.role === "coach" || m.role === "manager"),
+      ));
+  if (!isStaff) return null;
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-8 w-8 text-muted-foreground"
+      aria-label={post.pinned ? "Unpin post" : "Pin post"}
+      title={post.pinned ? "Unpin" : "Pin for 2 days"}
+      disabled={updatePost.isPending}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        updatePost.mutate({ postId: post.id, data: { pinned: !post.pinned } });
+      }}
+    >
+      {post.pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+    </Button>
+  );
 }

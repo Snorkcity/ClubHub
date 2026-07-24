@@ -15,8 +15,9 @@ import { toPerson, iso } from "../lib/serialize";
 
 const router: IRouter = Router();
 
-// Pinned posts only stay on top for 7 days, then fall back into date order.
-const activePin: SQL = sql`(${postsTable.pinned} and ${postsTable.createdAt} > now() - interval '7 days')`;
+// Pinned posts only stay on top for 2 days, then fall back into date order.
+// Re-pinning updates pinnedAt and restarts the clock.
+const activePin: SQL = sql`(${postsTable.pinned} and ${postsTable.pinnedAt} > now() - interval '2 days')`;
 
 router.get("/feed", requireAuth, async (req, res) => {
   const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
@@ -58,6 +59,7 @@ router.post("/teams/:teamId/posts", requireAuth, async (req, res) => {
       title: body.title ?? null,
       body: body.body,
       pinned: body.pinned ?? false,
+      pinnedAt: body.pinned ? new Date() : null,
     })
     .returning();
   const [built] = await buildPosts([post]);
@@ -108,7 +110,13 @@ router.patch("/posts/:postId", requireAuth, async (req, res) => {
   const body = UpdatePostBody.parse(req.body);
   const [post] = await db
     .update(postsTable)
-    .set(body)
+    .set({
+      ...body,
+      // Toggling pin resets/clears the 2-day pin clock.
+      ...(body.pinned !== undefined
+        ? { pinnedAt: body.pinned ? new Date() : null }
+        : {}),
+    })
     .where(eq(postsTable.id, postId))
     .returning();
   const [built] = await buildPosts([post]);

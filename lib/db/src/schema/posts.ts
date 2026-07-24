@@ -16,6 +16,8 @@ export const postsTable = pgTable("posts", {
   title: text("title"),
   body: text("body").notNull(),
   pinned: boolean("pinned").notNull().default(false),
+  // When the post was (last) pinned; pins auto-expire relative to this.
+  pinnedAt: timestamp("pinned_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
