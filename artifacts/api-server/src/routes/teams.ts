@@ -7,6 +7,8 @@ import {
   usersTable,
   eventsTable,
   postsTable,
+  chatsTable,
+  chatMembersTable,
 } from "@workspace/db";
 import {
   CreateTeamBody,
@@ -167,6 +169,19 @@ router.post("/teams/:teamId/members", requireAuth, async (req, res) => {
       position: body.position ?? null,
     })
     .returning();
+
+  // Joining a roster also joins the team chat.
+  const [teamChat] = await db
+    .select({ id: chatsTable.id })
+    .from(chatsTable)
+    .where(and(eq(chatsTable.teamId, teamId), eq(chatsTable.type, "team")));
+  if (teamChat) {
+    await db
+      .insert(chatMembersTable)
+      .values({ chatId: teamChat.id, userId: body.personId })
+      .onConflictDoNothing();
+  }
+
   return res.status(201).json({
     id: member.id,
     teamId: member.teamId,
@@ -219,6 +234,36 @@ router.delete("/team-members/:memberId", requireAuth, async (req, res) => {
   if (!(await isTeamStaff(localUser.id, existing.teamId, clubId, isClubAdmin)))
     return res.status(403).json({ error: "You cannot manage this roster" });
   await db.delete(teamMembersTable).where(eq(teamMembersTable.id, memberId));
+
+  // Leaving the roster also leaves the team chat — unless they still have
+  // another role on the team (e.g. player + coach rows).
+  const stillOnTeam = await db
+    .select({ id: teamMembersTable.id })
+    .from(teamMembersTable)
+    .where(
+      and(
+        eq(teamMembersTable.teamId, existing.teamId),
+        eq(teamMembersTable.userId, existing.userId),
+      ),
+    );
+  if (stillOnTeam.length === 0) {
+    const [teamChat] = await db
+      .select({ id: chatsTable.id })
+      .from(chatsTable)
+      .where(
+        and(eq(chatsTable.teamId, existing.teamId), eq(chatsTable.type, "team")),
+      );
+    if (teamChat) {
+      await db
+        .delete(chatMembersTable)
+        .where(
+          and(
+            eq(chatMembersTable.chatId, teamChat.id),
+            eq(chatMembersTable.userId, existing.userId),
+          ),
+        );
+    }
+  }
   return res.status(204).send();
 });
 
