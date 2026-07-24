@@ -190,9 +190,7 @@ export default function ChatPage() {
                       {otherMemberCount > 0 && (
                         <span className="flex items-center gap-0.5 font-medium">
                           <CheckCheck className={`h-3 w-3 ${seen >= otherMemberCount ? "text-primary" : ""}`} />
-                          {own && seen === 0
-                            ? "Sent"
-                            : `${Math.min(seen, otherMemberCount)}/${otherMemberCount}`}
+                          {`${Math.min(seen, otherMemberCount)}/${otherMemberCount}`}
                         </span>
                       )}
                     </span>
