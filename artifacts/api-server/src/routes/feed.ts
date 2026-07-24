@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { desc, eq, inArray } from "drizzle-orm";
+import { desc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import {
   db,
   postsTable,
@@ -15,6 +15,9 @@ import { toPerson, iso } from "../lib/serialize";
 
 const router: IRouter = Router();
 
+// Pinned posts only stay on top for 7 days, then fall back into date order.
+const activePin: SQL = sql`(${postsTable.pinned} and ${postsTable.createdAt} > now() - interval '7 days')`;
+
 router.get("/feed", requireAuth, async (req, res) => {
   const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
   const visible = await getVisibleTeamIds(clubId, localUser.id, isClubAdmin);
@@ -23,7 +26,7 @@ router.get("/feed", requireAuth, async (req, res) => {
     .select()
     .from(postsTable)
     .where(inArray(postsTable.teamId, visible))
-    .orderBy(desc(postsTable.pinned), desc(postsTable.createdAt))
+    .orderBy(desc(activePin), desc(postsTable.createdAt))
     .limit(30);
   return res.json(await buildPosts(posts));
 });
@@ -37,7 +40,7 @@ router.get("/teams/:teamId/posts", requireAuth, async (req, res) => {
     .select()
     .from(postsTable)
     .where(eq(postsTable.teamId, teamId))
-    .orderBy(desc(postsTable.pinned), desc(postsTable.createdAt));
+    .orderBy(desc(activePin), desc(postsTable.createdAt));
   return res.json(await buildPosts(posts));
 });
 

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import { format } from "date-fns";
 import { MessageSquare } from "lucide-react";
@@ -7,6 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export function PostCard({ post, linkToTeam = true }: { post: any; linkToTeam?: boolean }) {
+  const [expanded, setExpanded] = useState(false);
+  // Rough check for whether the body is long enough to need a "Read more".
+  const isLong = post.body.length > 400 || post.body.split("\n").length > 8;
   const card = (
     <Card
       className={
@@ -33,9 +37,27 @@ export function PostCard({ post, linkToTeam = true }: { post: any; linkToTeam?: 
       </div>
 
       {post.title && <h4 className="font-bold mb-1.5">{post.title}</h4>}
-      <p className="text-sm text-foreground/90 line-clamp-3 leading-relaxed">
+      <p
+        className={
+          "text-sm text-foreground/90 leading-relaxed whitespace-pre-line" +
+          (isLong && !expanded ? " line-clamp-[8]" : "")
+        }
+      >
         {post.body}
       </p>
+      {isLong && (
+        <button
+          type="button"
+          className="mt-1.5 text-sm font-medium text-primary hover:underline"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setExpanded((v) => !v);
+          }}
+        >
+          {expanded ? "Show less" : "Read more"}
+        </button>
+      )}
 
       {post.commentCount > 0 && (
         <div className="mt-4 flex items-center text-xs font-medium text-muted-foreground">
