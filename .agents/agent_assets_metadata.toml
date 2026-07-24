@@ -18,3 +18,21 @@ id = "veXSLzqoxe2Xez3Ktu0CM"
 uri = "file://attached_assets/generated_images/icon-concept-pennant.png"
 type = "image"
 title = "icon-concept-pennant.png"
+
+[[outputs]]
+id = "KQ9GUwwXTodOnpJNv6nih"
+uri = "file://attached_assets/generated_images/icon-concept-huddle.png"
+type = "image"
+title = "icon-concept-huddle.png"
+
+[[outputs]]
+id = "KYB5euXfTuT-G7PB0PhHK"
+uri = "file://attached_assets/generated_images/icon-concept-swoosh.png"
+type = "image"
+title = "icon-concept-swoosh.png"
+
+[[outputs]]
+id = "fuIXW4CdJOgAQZgx9a7YI"
+uri = "file://attached_assets/generated_images/icon-concept-star.png"
+type = "image"
+title = "icon-concept-star.png"
