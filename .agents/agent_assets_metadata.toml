@@ -1,0 +1,20 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "GaQOS4J-nJ4pl14uj8UDv"
+uri = "file://attached_assets/generated_images/icon-concept-hub.png"
+type = "image"
+title = "icon-concept-hub.png"
+
+[[outputs]]
+id = "5gdY35UIXddCeIu8EDXsf"
+uri = "file://attached_assets/generated_images/icon-concept-crest.png"
+type = "image"
+title = "icon-concept-crest.png"
+
+[[outputs]]
+id = "veXSLzqoxe2Xez3Ktu0CM"
+uri = "file://attached_assets/generated_images/icon-concept-pennant.png"
+type = "image"
+title = "icon-concept-pennant.png"
