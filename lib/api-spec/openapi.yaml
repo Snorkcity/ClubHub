@@ -1201,6 +1201,7 @@ components:
         id: { type: integer }
         eventId: { type: integer }
         status: { type: string, enum: [going, maybe, out] }
+        reason: { type: ["string", "null"] }
         respondedAt: { type: ["string", "null"] }
         person: { $ref: "#/components/schemas/Person" }
 
@@ -1392,6 +1393,7 @@ components:
       required: [status]
       properties:
         status: { type: string, enum: [going, maybe, out] }
+        reason: { type: ["string", "null"] }
         onBehalfOfPersonId: { type: integer }
 
     ChatInput:

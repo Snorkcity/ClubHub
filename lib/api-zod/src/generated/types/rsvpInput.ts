@@ -9,5 +9,7 @@ import type { RsvpInputStatus } from './rsvpInputStatus';
 
 export interface RsvpInput {
   status: RsvpInputStatus;
+  /** @nullable */
+  reason?: string | null;
   onBehalfOfPersonId?: number;
 }

@@ -9,6 +9,7 @@ import { useGetMe, useGetClub } from "@workspace/api-client-react";
 import { getGetMeQueryKey, getGetClubQueryKey } from "@workspace/api-client-react";
 
 import { Button } from "@/components/ui/button";
+import { PostComposer } from "@/components/feed/post-composer";
 import { TeamSwitcher, useTeamUnreads } from "@/components/layout/team-switcher";
 import { useActiveTeam } from "@/lib/active-team";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -48,7 +49,6 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { label: "Home", href: "/home", icon: Home },
-    ...(isStaff ? [{ label: "Teams", href: "/teams", icon: Users }] : []),
     { label: "Schedule", href: "/schedule", icon: CalendarDays },
     { label: "Check-in", href: "/checkin", icon: ClipboardCheck },
     { label: "Messages", href: "/messages", icon: MessageSquare },
@@ -159,6 +159,10 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       <main className="flex-1 flex flex-col w-full max-w-full overflow-hidden pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
         {children}
       </main>
+
+      {/* Mobile: floating new-post button, pinned above the tab bar.
+          Hidden inside a chat, where it would cover the message composer. */}
+      {!/^\/messages\/\d+/.test(location) && <PostComposer variant="fab" />}
 
       {/* Mobile Bottom Tab Bar (Heja-style) */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-background border-t flex items-stretch pb-[env(safe-area-inset-bottom)]">

@@ -13,6 +13,8 @@ export interface Rsvp {
   eventId: number;
   status: RsvpStatus;
   /** @nullable */
+  reason?: string | null;
+  /** @nullable */
   respondedAt?: string | null;
   person: Person;
 }

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, Link } from "wouter";
 import { format } from "date-fns";
 import { 
@@ -6,7 +7,7 @@ import {
 } from "lucide-react";
 import { 
   useGetEvent, useSetRsvp, 
-  getGetEventQueryKey, getListUpcomingEventsQueryKey,
+  getGetEventQueryKey, getListUpcomingEventsQueryKey, getGetTeamSummaryQueryKey,
   useGetMe, getGetMeQueryKey
 } from "@workspace/api-client-react";
 import { queryClient } from "@/lib/queryClient";
@@ -27,6 +28,8 @@ export default function EventDetail() {
   
   const setRsvp = useSetRsvp();
   const { data: me } = useGetMe({ query: { queryKey: getGetMeQueryKey() } });
+  const [notOpen, setNotOpen] = useState(false);
+  const [notReason, setNotReason] = useState("");
 
   if (isLoading) return <LoadingScreen message="Loading event details..." />;
   if (error || !eventData) return <ErrorState onRetry={() => refetch()} />;
@@ -39,25 +42,24 @@ export default function EventDetail() {
         m.teamId === event.teamId && (m.role === "coach" || m.role === "manager"),
     );
 
-  function handleRsvp(status: 'going' | 'maybe' | 'out') {
-    if (event.myRsvp === status) return;
-    
+  function handleRsvp(status: 'going' | 'out', reason?: string) {
     setRsvp.mutate({
       eventId,
-      data: { status }
+      data: { status, ...(status === 'out' ? { reason: reason ?? null } : {}) }
     }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetEventQueryKey(eventId) });
         queryClient.invalidateQueries({ queryKey: getListUpcomingEventsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetTeamSummaryQueryKey(event.teamId) });
       }
     });
   }
 
   const typeColors = {
-    game: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800/50",
-    training: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800/50",
-    social: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800/50",
-    other: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border-gray-200 dark:border-gray-700",
+    game: "bg-blue-600 text-white border-transparent",
+    training: "bg-emerald-600 text-white border-transparent",
+    social: "bg-amber-500 text-white border-transparent",
+    other: "bg-slate-600 text-white border-transparent",
   };
   const typeColor = typeColors[event.type as keyof typeof typeColors] || typeColors.other;
 
@@ -131,34 +133,45 @@ export default function EventDetail() {
             </div>
             
             {/* My RSVP Action */}
-            <div className="w-full md:w-auto bg-muted/30 rounded-2xl p-6 border text-center shrink-0">
-              <h3 className="font-display font-bold text-lg mb-4">Your RSVP</h3>
+            <div className="w-full md:w-auto bg-muted/30 rounded-2xl p-5 border text-center shrink-0">
+              <h3 className="font-display font-bold text-lg mb-3">Your RSVP</h3>
               <div className="flex flex-row md:flex-col gap-2">
                 <Button 
-                  onClick={() => handleRsvp('going')} 
+                  onClick={() => { setNotOpen(false); if (event.myRsvp !== 'going') handleRsvp('going'); }} 
                   disabled={setRsvp.isPending}
                   variant={event.myRsvp === 'going' ? 'default' : 'outline'}
-                  className={`rounded-xl h-12 flex-1 md:w-48 justify-start ${event.myRsvp === 'going' ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                  className={`rounded-xl h-12 flex-1 md:w-48 justify-start ${event.myRsvp === 'going' ? 'bg-green-600 hover:bg-green-700' : 'text-green-700 border-green-300'}`}
                 >
                   <CheckCircle2 className="h-5 w-5 mr-2" /> Going
                 </Button>
                 <Button 
-                  onClick={() => handleRsvp('maybe')} 
-                  disabled={setRsvp.isPending}
-                  variant={event.myRsvp === 'maybe' ? 'default' : 'outline'}
-                  className={`rounded-xl h-12 flex-1 md:w-48 justify-start ${event.myRsvp === 'maybe' ? 'bg-amber-500 hover:bg-amber-600 text-white' : ''}`}
-                >
-                  <HelpCircle className="h-5 w-5 mr-2" /> Maybe
-                </Button>
-                <Button 
-                  onClick={() => handleRsvp('out')} 
+                  onClick={() => { if (event.myRsvp !== 'out') handleRsvp('out'); setNotOpen(true); }} 
                   disabled={setRsvp.isPending}
                   variant={event.myRsvp === 'out' ? 'default' : 'outline'}
-                  className={`rounded-xl h-12 flex-1 md:w-48 justify-start ${event.myRsvp === 'out' ? 'bg-red-500 hover:bg-red-600 text-white' : ''}`}
+                  className={`rounded-xl h-12 flex-1 md:w-48 justify-start ${event.myRsvp === 'out' ? 'bg-red-600 hover:bg-red-700 text-white' : 'text-red-700 border-red-300'}`}
                 >
-                  <XCircle className="h-5 w-5 mr-2" /> Out
+                  <XCircle className="h-5 w-5 mr-2" /> Not
                 </Button>
               </div>
+              {notOpen && (
+                <div className="mt-3 flex flex-col gap-2 animate-in fade-in slide-in-from-top-1 duration-150">
+                  <input
+                    autoFocus
+                    value={notReason}
+                    onChange={(e) => setNotReason(e.target.value)}
+                    placeholder="Reason (optional)"
+                    className="h-10 rounded-xl border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
+                  />
+                  <Button
+                    size="sm"
+                    disabled={setRsvp.isPending}
+                    className="rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold"
+                    onClick={() => { handleRsvp('out', notReason.trim() || undefined); setNotOpen(false); }}
+                  >
+                    Save
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
           
@@ -176,18 +189,14 @@ export default function EventDetail() {
             <h2 className="text-2xl font-display font-bold">Team Availability</h2>
           </div>
           
-          <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="bg-card border rounded-2xl p-4 text-center">
               <div className="text-3xl font-display font-bold text-green-600">{event.goingCount}</div>
               <div className="text-xs font-semibold text-muted-foreground uppercase mt-1">Going</div>
             </div>
             <div className="bg-card border rounded-2xl p-4 text-center">
-              <div className="text-3xl font-display font-bold text-amber-500">{event.maybeCount}</div>
-              <div className="text-xs font-semibold text-muted-foreground uppercase mt-1">Maybe</div>
-            </div>
-            <div className="bg-card border rounded-2xl p-4 text-center">
-              <div className="text-3xl font-display font-bold text-red-500">{event.outCount}</div>
-              <div className="text-xs font-semibold text-muted-foreground uppercase mt-1">Out</div>
+              <div className="text-3xl font-display font-bold text-red-500">{event.outCount + event.maybeCount}</div>
+              <div className="text-xs font-semibold text-muted-foreground uppercase mt-1">Not going</div>
             </div>
           </div>
 
@@ -202,11 +211,13 @@ export default function EventDetail() {
                   <div className="flex flex-col flex-1 min-w-0">
                     <span className="font-semibold text-sm truncate">{rsvp.person.fullName}</span>
                     <span className={`text-xs font-bold uppercase ${
-                      rsvp.status === 'going' ? 'text-green-600' :
-                      rsvp.status === 'maybe' ? 'text-amber-500' : 'text-red-500'
+                      rsvp.status === 'going' ? 'text-green-600' : 'text-red-500'
                     }`}>
-                      {rsvp.status}
+                      {rsvp.status === 'going' ? 'Going' : 'Not going'}
                     </span>
+                    {rsvp.reason && rsvp.status !== 'going' && (
+                      <span className="text-xs text-muted-foreground truncate italic">{rsvp.reason}</span>
+                    )}
                   </div>
                 </div>
               ))}

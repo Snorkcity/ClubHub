@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { format, isToday, isTomorrow } from "date-fns";
 import { Link } from "wouter";
-import { CalendarDays, MapPin, Clock, Users, ArrowRight } from "lucide-react";
+import { CalendarDays, MapPin, Users } from "lucide-react";
 import { 
   useListUpcomingEvents, getListUpcomingEventsQueryKey,
   useSetRsvp, getGetEventQueryKey, getGetTeamSummaryQueryKey
@@ -8,7 +9,7 @@ import {
 import { queryClient } from "@/lib/queryClient";
 
 import { LoadingScreen, ErrorState, EmptyState } from "@/components/ui/states";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 export default function Schedule() {
   const { data: events, isLoading, error, refetch } = useListUpcomingEvents({ 
@@ -73,111 +74,140 @@ export default function Schedule() {
   );
 }
 
+export const eventTypeColors: Record<string, string> = {
+  game: "bg-blue-600 text-white border-transparent",
+  training: "bg-emerald-600 text-white border-transparent",
+  social: "bg-amber-500 text-white border-transparent",
+  other: "bg-slate-600 text-white border-transparent",
+};
+export const eventTypeBar: Record<string, string> = {
+  game: "bg-blue-600",
+  training: "bg-emerald-600",
+  social: "bg-amber-500",
+  other: "bg-slate-600",
+};
+
 function ScheduleCard({ event }: { event: any }) {
   const setRsvp = useSetRsvp();
-  
-  const typeColors = {
-    game: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800/50",
-    training: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800/50",
-    social: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800/50",
-    other: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border-gray-200 dark:border-gray-700",
-  };
-  const typeColor = typeColors[event.type as keyof typeof typeColors] || typeColors.other;
+  const [reasonOpen, setReasonOpen] = useState(false);
+  const [reason, setReason] = useState("");
 
-  function handleRsvp(status: 'going' | 'maybe' | 'out') {
-    if (event.myRsvp === status) return; // already set
-    
+  const typeColor = eventTypeColors[event.type] || eventTypeColors.other;
+  const barColor = eventTypeBar[event.type] || eventTypeBar.other;
+
+  function submitRsvp(status: "going" | "out", reasonText?: string) {
     setRsvp.mutate({
       eventId: event.id,
-      data: { status }
+      data: { status, ...(status === "out" ? { reason: reasonText ?? null } : {}) },
     }, {
       onSuccess: () => {
-        // Invalidate lists
         queryClient.invalidateQueries({ queryKey: getListUpcomingEventsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetEventQueryKey(event.id) });
         queryClient.invalidateQueries({ queryKey: getGetTeamSummaryQueryKey(event.teamId) });
-      }
+      },
     });
   }
 
-  return (
-    <div className="bg-card border rounded-3xl p-5 hover:shadow-md transition-shadow group flex flex-col md:flex-row md:items-center gap-6 relative overflow-hidden">
-      <div className={`absolute top-0 left-0 bottom-0 w-1.5 ${typeColor.split(' ')[0]}`} />
-      
-      {/* Time & Type block */}
-      <div className="flex flex-row md:flex-col items-center md:items-start justify-between md:justify-center md:w-32 shrink-0 border-b md:border-b-0 md:border-r border-border pb-4 md:pb-0 md:pr-4">
-        <div>
-          <div className="font-display font-bold text-xl">{format(new Date(event.startsAt), "h:mm")}</div>
-          <div className="text-sm font-semibold text-muted-foreground uppercase">{format(new Date(event.startsAt), "a")}</div>
-        </div>
-        <Badge variant="outline" className={`md:mt-3 ${typeColor}`}>
-          {event.type}
-        </Badge>
-      </div>
+  function handleGoing() {
+    setReasonOpen(false);
+    if (event.myRsvp === "going") return;
+    submitRsvp("going");
+  }
 
-      {/* Main Content */}
-      <div className="flex-1 min-w-0 flex flex-col">
-        <Link href={`/teams/${event.teamId}`} className="text-sm font-bold text-primary hover:underline w-fit mb-1">
-          {event.teamName}
-        </Link>
-        <Link href={`/events/${event.id}`}>
-          <h3 className="text-xl font-bold group-hover:text-primary transition-colors cursor-pointer truncate mb-2">
+  function handleNot() {
+    // Mark "Not" immediately, then let them optionally add a reason.
+    if (event.myRsvp !== "out") submitRsvp("out");
+    setReasonOpen(true);
+  }
+
+  return (
+    <div className="bg-card border rounded-2xl px-4 py-3 hover:shadow-md transition-shadow group relative overflow-hidden">
+      <div className={`absolute top-0 left-0 bottom-0 w-1.5 ${barColor}`} />
+
+      <div className="flex items-center gap-3 pl-2">
+        {/* Time */}
+        <div className="w-14 shrink-0 text-center">
+          <div className="font-display font-bold text-lg leading-tight">{format(new Date(event.startsAt), "h:mm")}</div>
+          <div className="text-[11px] font-semibold text-muted-foreground uppercase leading-none">{format(new Date(event.startsAt), "a")}</div>
+        </div>
+
+        {/* Main content */}
+        <Link href={`/events/${event.id}`} className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${typeColor}`}>
+              {event.type}
+            </span>
+            <span className="text-xs text-muted-foreground truncate">{event.teamName}</span>
+          </div>
+          <h3 className="font-bold text-base group-hover:text-primary transition-colors truncate mt-0.5">
             {event.title}
           </h3>
+          <div className="flex flex-wrap gap-x-3 text-xs text-muted-foreground mt-0.5">
+            {event.location && (
+              <span className="flex items-center truncate"><MapPin className="h-3 w-3 mr-1 opacity-70" /> {event.location}</span>
+            )}
+            {event.opponent && (
+              <span className="flex items-center"><Users className="h-3 w-3 mr-1 opacity-70" /> vs {event.opponent}</span>
+            )}
+          </div>
         </Link>
-        
-        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-          {event.location && (
-            <span className="flex items-center"><MapPin className="h-4 w-4 mr-1.5 opacity-70" /> {event.location}</span>
-          )}
-          {event.opponent && (
-            <span className="flex items-center"><Users className="h-4 w-4 mr-1.5 opacity-70" /> vs {event.opponent}</span>
-          )}
-        </div>
-      </div>
 
-      {/* RSVP block */}
-      <div className="shrink-0 flex items-center justify-between md:justify-end gap-4 mt-2 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-border">
-        <div className="flex rounded-full bg-muted/50 p-1 border">
-          <button 
-            onClick={() => handleRsvp('going')}
+        {/* RSVP: Going / Not */}
+        <div className="flex gap-1.5 shrink-0">
+          <button
+            onClick={handleGoing}
             disabled={setRsvp.isPending}
-            className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${
-              event.myRsvp === 'going' 
-                ? 'bg-green-500 text-white shadow-sm' 
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            className={`px-3.5 py-1.5 rounded-full text-sm font-bold transition-all border ${
+              event.myRsvp === "going"
+                ? "bg-green-600 text-white border-transparent shadow-sm"
+                : "bg-background text-green-700 border-green-300 hover:bg-green-50"
             }`}
           >
             Going
           </button>
-          <button 
-            onClick={() => handleRsvp('maybe')}
+          <button
+            onClick={handleNot}
             disabled={setRsvp.isPending}
-            className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${
-              event.myRsvp === 'maybe' 
-                ? 'bg-amber-500 text-white shadow-sm' 
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            className={`px-3.5 py-1.5 rounded-full text-sm font-bold transition-all border ${
+              event.myRsvp === "out"
+                ? "bg-red-600 text-white border-transparent shadow-sm"
+                : "bg-background text-red-700 border-red-300 hover:bg-red-50"
             }`}
           >
-            Maybe
-          </button>
-          <button 
-            onClick={() => handleRsvp('out')}
-            disabled={setRsvp.isPending}
-            className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${
-              event.myRsvp === 'out' 
-                ? 'bg-red-500 text-white shadow-sm' 
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-            }`}
-          >
-            Out
+            Not
           </button>
         </div>
-        
-        <Link href={`/events/${event.id}`} className="h-10 w-10 rounded-full bg-primary/5 text-primary flex items-center justify-center hover:bg-primary/10 transition-colors hidden md:flex">
-          <ArrowRight className="h-5 w-5" />
-        </Link>
       </div>
+
+      {/* Reason field, shown when marking Not */}
+      {reasonOpen && (
+        <div className="mt-3 ml-2 pl-14 pr-1 flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-150">
+          <input
+            autoFocus
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                submitRsvp("out", reason.trim() || undefined);
+                setReasonOpen(false);
+              }
+            }}
+            placeholder="Add a reason (optional, e.g. away that weekend)"
+            className="flex-1 h-9 rounded-full border bg-muted/50 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
+          />
+          <Button
+            size="sm"
+            className="rounded-full bg-red-600 hover:bg-red-700 text-white font-bold"
+            disabled={setRsvp.isPending}
+            onClick={() => {
+              submitRsvp("out", reason.trim() || undefined);
+              setReasonOpen(false);
+            }}
+          >
+            Save
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

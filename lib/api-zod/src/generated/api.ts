@@ -936,6 +936,7 @@ export const GetEventResponse = zod.object({
   "id": zod.number(),
   "eventId": zod.number(),
   "status": zod.enum(['going', 'maybe', 'out']),
+  "reason": zod.string().nullish(),
   "respondedAt": zod.string().nullish(),
   "person": zod.object({
   "id": zod.number(),
@@ -999,6 +1000,7 @@ export const DeleteEventResponse = zod.void()
  */
 export const SetRsvpBody = zod.object({
   "status": zod.enum(['going', 'maybe', 'out']),
+  "reason": zod.string().nullish(),
   "onBehalfOfPersonId": zod.number().optional()
 })
 
@@ -1006,6 +1008,7 @@ export const SetRsvpResponse = zod.object({
   "id": zod.number(),
   "eventId": zod.number(),
   "status": zod.enum(['going', 'maybe', 'out']),
+  "reason": zod.string().nullish(),
   "respondedAt": zod.string().nullish(),
   "person": zod.object({
   "id": zod.number(),

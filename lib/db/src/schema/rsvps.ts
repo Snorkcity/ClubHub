@@ -16,6 +16,7 @@ export const rsvpsTable = pgTable(
       .notNull()
       .references(() => usersTable.id),
     status: text("status").notNull(), // going | maybe | out
+    reason: text("reason"), // optional explanation when not going
     respondedAt: timestamp("responded_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

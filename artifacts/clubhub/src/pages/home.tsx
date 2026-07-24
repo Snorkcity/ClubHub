@@ -19,6 +19,7 @@ import {
 } from "@workspace/api-client-react";
 
 import { LoadingScreen, ErrorState, EmptyState } from "@/components/ui/states";
+import { useTeamUnreads } from "@/components/layout/team-switcher";
 import { PostComposer } from "@/components/feed/post-composer";
 import { PostCard } from "@/components/feed/post-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -44,13 +45,59 @@ export default function Home() {
           </p>
         </header>
 
+        <UnreadActivityBanner />
+
         {me.isClubAdmin ? (
           <AdminDashboard />
         ) : (
           <MemberDashboard me={me} />
         )}
       </div>
-      <PostComposer variant="fab" />
+    </div>
+  );
+}
+
+/** Prominent pointer to unread posts/messages so nothing gets missed. */
+function UnreadActivityBanner() {
+  const { data: unreads } = useTeamUnreads();
+  const { setActiveTeamId } = useActiveTeam();
+  const withUnread = (unreads ?? []).filter((t) => t.unreadPosts + t.unreadMessages > 0);
+  if (withUnread.length === 0) return null;
+
+  return (
+    <div className="bg-primary/5 border border-primary/25 rounded-2xl p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="h-2.5 w-2.5 rounded-full bg-destructive animate-pulse" />
+        <span className="font-display font-bold text-sm uppercase tracking-wide">New for you</span>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {withUnread.map((t) => (
+          <div key={t.teamId} className="flex items-center gap-1.5">
+            {t.unreadPosts > 0 && (
+              <button
+                onClick={() => setActiveTeamId(t.teamId)}
+                className="flex items-center gap-1.5 bg-background border rounded-full pl-3 pr-2 py-1.5 text-sm font-semibold hover:border-primary transition-colors"
+              >
+                {t.teamName}
+                <span className="bg-destructive text-white text-xs font-bold rounded-full px-1.5 py-0.5 leading-none">
+                  {t.unreadPosts} {t.unreadPosts === 1 ? "post" : "posts"}
+                </span>
+              </button>
+            )}
+            {t.unreadMessages > 0 && (
+              <Link
+                href="/messages"
+                className="flex items-center gap-1.5 bg-background border rounded-full pl-3 pr-2 py-1.5 text-sm font-semibold hover:border-primary transition-colors"
+              >
+                {t.unreadPosts > 0 ? <MessageSquare className="h-3.5 w-3.5" /> : t.teamName}
+                <span className="bg-destructive text-white text-xs font-bold rounded-full px-1.5 py-0.5 leading-none">
+                  {t.unreadMessages} {t.unreadMessages === 1 ? "message" : "messages"}
+                </span>
+              </Link>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -109,9 +156,6 @@ function AdminDashboard() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-display font-bold">Recent Updates</h2>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/teams">Teams <ChevronRight className="h-4 w-4 ml-1" /></Link>
-            </Button>
           </div>
           
           <PostComposer variant="card" />
@@ -250,9 +294,6 @@ function MemberDashboard({ me }: { me: any }) {
         <div className="bg-card border rounded-3xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-display font-bold">My Teams</h3>
-            <Button variant="ghost" size="sm" asChild className="h-8 text-muted-foreground">
-              <Link href="/teams">All <ChevronRight className="h-4 w-4" /></Link>
-            </Button>
           </div>
           
           {!teams || teams.length === 0 ? (
@@ -312,30 +353,30 @@ function formatEventDateDay(dateStr: string) {
 
 function EventCard({ event, compact = false }: { event: any, compact?: boolean }) {
   const typeColors = {
-    game: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800/50",
-    training: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800/50",
-    social: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800/50",
-    other: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border-gray-200 dark:border-gray-700",
+    game: "bg-blue-600 text-white border-transparent",
+    training: "bg-emerald-600 text-white border-transparent",
+    social: "bg-amber-500 text-white border-transparent",
+    other: "bg-slate-600 text-white border-transparent",
   };
   const typeColor = typeColors[event.type as keyof typeof typeColors] || typeColors.other;
 
   return (
     <Link href={`/events/${event.id}`}>
-      <div className="bg-card border rounded-2xl p-4 hover:shadow-md transition-all active:scale-[0.98] cursor-pointer group flex items-start gap-4">
-        <div className="flex flex-col items-center justify-center shrink-0 w-12 text-center">
-          <span className="text-xs font-bold text-muted-foreground uppercase">{format(new Date(event.startsAt), "MMM")}</span>
-          <span className="text-2xl font-display font-bold leading-none mt-1">{format(new Date(event.startsAt), "d")}</span>
+      <div className="bg-card border rounded-2xl px-4 py-2.5 hover:shadow-md transition-all active:scale-[0.98] cursor-pointer group flex items-center gap-3">
+        <div className="flex flex-col items-center justify-center shrink-0 w-10 text-center">
+          <span className="text-[10px] font-bold text-muted-foreground uppercase leading-none">{format(new Date(event.startsAt), "MMM")}</span>
+          <span className="text-xl font-display font-bold leading-none mt-0.5">{format(new Date(event.startsAt), "d")}</span>
         </div>
         
         <div className="flex-1 min-w-0 flex flex-col justify-center">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2">
             <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${typeColor}`}>
               {event.type}
             </span>
             <span className="text-xs text-muted-foreground truncate">{event.teamName}</span>
           </div>
-          <h4 className="font-bold text-base truncate pr-4">{event.title}</h4>
-          <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+          <h4 className="font-bold text-sm truncate pr-4 mt-0.5">{event.title}</h4>
+          <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
             <span className="flex items-center"><Clock className="h-3 w-3 mr-1" /> {format(new Date(event.startsAt), "h:mm a")}</span>
             {!compact && event.location && (
               <span className="flex items-center truncate"><MapPin className="h-3 w-3 mr-1" /> {event.location}</span>

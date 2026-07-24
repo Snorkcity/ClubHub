@@ -89,6 +89,7 @@ router.get("/events/:eventId", requireAuth, async (req, res) => {
       id: r.id,
       eventId: r.eventId,
       status: r.status,
+      reason: r.reason ?? null,
       respondedAt: iso(r.respondedAt),
       person: toPerson(u),
     })),
@@ -159,10 +160,20 @@ router.put("/events/:eventId/rsvp", requireAuth, async (req, res) => {
 
   const [rsvp] = await db
     .insert(rsvpsTable)
-    .values({ eventId, userId: targetId, status: body.status })
+    .values({
+      eventId,
+      userId: targetId,
+      status: body.status,
+      // Only "out" carries a reason; clear it when switching to going.
+      reason: body.status === "out" ? (body.reason ?? null) : null,
+    })
     .onConflictDoUpdate({
       target: [rsvpsTable.eventId, rsvpsTable.userId],
-      set: { status: body.status, respondedAt: new Date() },
+      set: {
+        status: body.status,
+        reason: body.status === "out" ? (body.reason ?? null) : null,
+        respondedAt: new Date(),
+      },
     })
     .returning();
   const [u] = await db
@@ -174,6 +185,7 @@ router.put("/events/:eventId/rsvp", requireAuth, async (req, res) => {
     id: rsvp.id,
     eventId: rsvp.eventId,
     status: rsvp.status,
+    reason: rsvp.reason ?? null,
     respondedAt: iso(rsvp.respondedAt),
     person: toPerson(u),
   });

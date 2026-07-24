@@ -245,6 +245,8 @@ export interface Rsvp {
   eventId: number;
   status: RsvpStatus;
   /** @nullable */
+  reason?: string | null;
+  /** @nullable */
   respondedAt?: string | null;
   person: Person;
 }
@@ -483,6 +485,8 @@ export const RsvpInputStatus = {
 
 export interface RsvpInput {
   status: RsvpInputStatus;
+  /** @nullable */
+  reason?: string | null;
   onBehalfOfPersonId?: number;
 }
 

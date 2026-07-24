@@ -21,3 +21,7 @@ Patterns to adopt (from user's Heja screenshots, July 2026):
 
 ## App icon (July 24, 2026)
 Scott chose the sport-neutral "team huddle" mark (three figures circling, navy #0b1f4b / lime / white) — deliberately not soccer-specific so ClubHub can expand to other sports. The maskable (Android) icon variant must keep the artwork inside ~75% of the canvas because Android crops/squishes into a circle or squircle.
+
+## RSVP model (July 24, 2026)
+Two-option RSVP only: "Going" (green) / "Not" (red) — no Maybe in the UI ('maybe' stays in the API enum for legacy rows; counts show maybe merged into Not). Tapping Not saves immediately, then an optional reason field appears (rsvps.reason, stored only for status=out). Teams nav tab removed — team switcher dropdown replaces it; roster admin still lives at /teams/:id routes.
+**Reminder:** Railway prod DB needs `ALTER TABLE rsvps ADD COLUMN reason text` before the next push goes live.

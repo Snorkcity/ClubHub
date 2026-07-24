@@ -88,7 +88,7 @@ const clerkAppearance = {
     logoImage: "h-12 w-auto",
     socialButtonsBlockButton: "border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-gray-50 dark:hover:bg-zinc-800 rounded-xl transition-colors",
     formButtonPrimary: "bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl shadow-sm transition-all active:scale-[0.98]",
-    formFieldInput: "rounded-xl border-gray-200 dark:border-zinc-800 focus:border-green-600 focus:ring-green-600/20 bg-gray-50/50 dark:bg-zinc-900/50",
+    formFieldInput: "rounded-xl !bg-gray-100 dark:!bg-zinc-800/80 !border !border-gray-300 dark:!border-zinc-700 focus:!border-green-600 focus:!ring-green-600/20",
     footerAction: "mt-6 text-center text-sm",
     dividerLine: "bg-gray-200 dark:bg-zinc-800",
     alert: "bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900 rounded-xl p-3",
