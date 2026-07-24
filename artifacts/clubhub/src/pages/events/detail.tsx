@@ -202,7 +202,13 @@ export default function EventDetail() {
 
           <div className="bg-card border rounded-3xl overflow-hidden shadow-sm">
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-px bg-border">
-              {rsvps.map((rsvp) => (
+              {[...rsvps]
+                .sort((a, b) =>
+                  a.status === b.status
+                    ? a.person.fullName.localeCompare(b.person.fullName)
+                    : a.status === "going" ? -1 : b.status === "going" ? 1 : 0,
+                )
+                .map((rsvp) => (
                 <div key={rsvp.id} className="bg-card p-4 flex items-center gap-4 hover:bg-muted/30 transition-colors">
                   <Avatar className="h-12 w-12 border shadow-sm">
                     <AvatarImage src={rsvp.person.avatarUrl || undefined} />

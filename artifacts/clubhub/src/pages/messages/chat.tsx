@@ -108,11 +108,6 @@ export default function ChatPage() {
   const chat = detail.chat;
   const isTeam = chat.type === "team";
 
-  // Index of the LAST message I authored — receipts show there (Heja-style).
-  let lastOwnIdx = -1;
-  for (let i = messages.length - 1; i >= 0; i--) {
-    if (messages[i].author.id === myId) { lastOwnIdx = i; break; }
-  }
 
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-muted/10">
@@ -153,7 +148,8 @@ export default function ChatPage() {
             const prev = i > 0 ? messages[i - 1] : null;
             const newDay = !prev || !isSameDay(new Date(prev.createdAt), new Date(m.createdAt));
             const sameAuthorAsPrev = !newDay && prev?.author.id === m.author.id;
-            const seen = own && i === lastOwnIdx ? seenCountFor(m.createdAt) : null;
+            // Every message shows how many of the other members have seen it.
+            const seen = seenCountFor(m.createdAt);
             return (
               <div key={m.id}>
                 {newDay && (
@@ -191,14 +187,12 @@ export default function ChatPage() {
                     </div>
                     <span className="text-[10px] text-muted-foreground px-1.5 mt-0.5 flex items-center gap-1">
                       {format(new Date(m.createdAt), "h:mm a")}
-                      {seen != null && (
+                      {otherMemberCount > 0 && (
                         <span className="flex items-center gap-0.5 font-medium">
-                          <CheckCheck className="h-3 w-3" />
-                          {seen === 0
+                          <CheckCheck className={`h-3 w-3 ${seen >= otherMemberCount ? "text-primary" : ""}`} />
+                          {own && seen === 0
                             ? "Sent"
-                            : seen >= otherMemberCount
-                              ? "Seen by all"
-                              : `Seen by ${seen}/${otherMemberCount}`}
+                            : `${Math.min(seen, otherMemberCount)}/${otherMemberCount}`}
                         </span>
                       )}
                     </span>
