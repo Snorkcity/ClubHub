@@ -6,9 +6,11 @@ import {
   MessageSquare, Pin, ChevronLeft, Calendar as CalendarIcon
 } from "lucide-react";
 import { 
-  useGetTeam, useGetTeamSummary, useListTeamMembers, useGetMe,
-  getGetTeamQueryKey, getGetTeamSummaryQueryKey, getListTeamMembersQueryKey
+  useGetTeam, useGetTeamSummary, useListTeamMembers, useGetMe, useListTeamPosts,
+  getGetTeamQueryKey, getGetTeamSummaryQueryKey, getListTeamMembersQueryKey, getListTeamPostsQueryKey
 } from "@workspace/api-client-react";
+import { PostCard } from "@/components/feed/post-card";
+import { PostComposer } from "@/components/feed/post-composer";
 
 import { LoadingScreen, ErrorState, EmptyState } from "@/components/ui/states";
 import { Button } from "@/components/ui/button";
@@ -160,24 +162,10 @@ export default function TeamDetail() {
                     <h2 className="text-xl font-display font-bold flex items-center gap-2">
                       <MessageSquare className="h-5 w-5 text-primary" /> Team Feed
                     </h2>
-                    {isCoach && (
-                      <Button size="sm" className="rounded-xl shadow-sm">
-                        Post Update
-                      </Button>
-                    )}
+                    {isCoach && <PostComposer variant="button" teamId={teamId} />}
                   </div>
                   
-                  {summary.recentPostCount === 0 ? (
-                    <EmptyState 
-                      title="No posts yet" 
-                      message="Updates from coaches and managers will appear here." 
-                      icon={MessageSquare} 
-                    />
-                  ) : (
-                    <Card className="p-8 text-center border-dashed bg-muted/20 rounded-3xl">
-                      <p className="text-muted-foreground">Team posts would load here. Use /teams/:id/posts API.</p>
-                    </Card>
-                  )}
+                  <TeamPosts teamId={teamId} />
                 </div>
               </div>
 
@@ -270,6 +258,30 @@ export default function TeamDetail() {
           </TabsContent>
         </Tabs>
       </div>
+    </div>
+  );
+}
+
+function TeamPosts({ teamId }: { teamId: number }) {
+  const { data: posts, isLoading } = useListTeamPosts(teamId, {
+    query: { enabled: !!teamId, queryKey: getListTeamPostsQueryKey(teamId) },
+  });
+
+  if (isLoading) return <LoadingScreen />;
+  if (!posts || posts.length === 0) {
+    return (
+      <EmptyState
+        title="No posts yet"
+        message="Updates from coaches and managers will appear here."
+        icon={MessageSquare}
+      />
+    );
+  }
+  return (
+    <div className="space-y-4">
+      {posts.map((post) => (
+        <PostCard key={post.id} post={post} linkToTeam={false} />
+      ))}
     </div>
   );
 }

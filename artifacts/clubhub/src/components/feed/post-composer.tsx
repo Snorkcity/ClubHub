@@ -40,7 +40,14 @@ import { useToast } from "@/hooks/use-toast";
  * (desktop/inline) or a floating write button (mobile) that opens the same
  * compose dialog. Only visible to users who can post (team staff/club admin).
  */
-export function PostComposer({ variant }: { variant: "card" | "fab" }) {
+export function PostComposer({
+  variant,
+  teamId: fixedTeamId,
+}: {
+  variant: "card" | "fab" | "button";
+  /** Lock the composer to a single team (e.g. on a team page). */
+  teamId?: number;
+}) {
   const { data: me } = useGetMe({ query: { queryKey: getGetMeQueryKey() } });
   const isClubAdmin = !!me?.isClubAdmin;
   const { data: allTeams } = useListTeams({
@@ -48,12 +55,13 @@ export function PostComposer({ variant }: { variant: "card" | "fab" }) {
   });
 
   const postableTeams = useMemo(() => {
-    if (isClubAdmin)
-      return (allTeams ?? []).map((t) => ({ id: t.id, name: t.name }));
-    return (me?.memberships ?? [])
-      .filter((m) => m.role === "coach" || m.role === "manager")
-      .map((m) => ({ id: m.teamId, name: m.teamName }));
-  }, [isClubAdmin, allTeams, me]);
+    const teams = isClubAdmin
+      ? (allTeams ?? []).map((t) => ({ id: t.id, name: t.name }))
+      : (me?.memberships ?? [])
+          .filter((m) => m.role === "coach" || m.role === "manager")
+          .map((m) => ({ id: m.teamId, name: m.teamName }));
+    return fixedTeamId != null ? teams.filter((t) => t.id === fixedTeamId) : teams;
+  }, [isClubAdmin, allTeams, me, fixedTeamId]);
 
   const [open, setOpen] = useState(false);
 
@@ -73,6 +81,10 @@ export function PostComposer({ variant }: { variant: "card" | "fab" }) {
           Post
         </Button>
       </Card>
+    ) : variant === "button" ? (
+      <Button size="sm" className="rounded-xl shadow-sm">
+        Post Update
+      </Button>
     ) : (
       <Button
         size="icon"
