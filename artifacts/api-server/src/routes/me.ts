@@ -29,7 +29,7 @@ router.get("/me", requireAuth, async (req, res) => {
     .where(eq(guardianshipsTable.guardianId, localUser.id));
 
   return res.json({
-    person: toPerson(localUser),
+    person: toPerson(localUser, undefined, { full: true }),
     clubRole: isClubAdmin ? "admin" : "member",
     isClubAdmin,
     memberships: memberships.map(({ m, t }) => ({
@@ -40,7 +40,8 @@ router.get("/me", requireAuth, async (req, res) => {
       jerseyNumber: m.jerseyNumber ?? null,
       position: m.position ?? null,
     })),
-    guardianOf: wards.map((w) => toPerson(w.u)),
+    // Guardians see their wards' full profiles.
+    guardianOf: wards.map((w) => toPerson(w.u, undefined, { full: true })),
   });
 });
 
@@ -52,7 +53,7 @@ router.patch("/me", requireAuth, async (req, res) => {
     .set(body)
     .where(eq(usersTable.id, localUser.id))
     .returning();
-  return res.json(toPerson(updated));
+  return res.json(toPerson(updated, undefined, { full: true }));
 });
 
 export default router;

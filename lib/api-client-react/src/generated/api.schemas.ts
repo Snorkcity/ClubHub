@@ -13,6 +13,33 @@ export interface Error {
   error: string;
 }
 
+export type PersonPhonePrivacy = typeof PersonPhonePrivacy[keyof typeof PersonPhonePrivacy];
+
+
+export const PersonPhonePrivacy = {
+  everyone: 'everyone',
+  admins: 'admins',
+  private: 'private',
+} as const;
+
+export type PersonEmailPrivacy = typeof PersonEmailPrivacy[keyof typeof PersonEmailPrivacy];
+
+
+export const PersonEmailPrivacy = {
+  everyone: 'everyone',
+  admins: 'admins',
+  private: 'private',
+} as const;
+
+export type PersonBioPrivacy = typeof PersonBioPrivacy[keyof typeof PersonBioPrivacy];
+
+
+export const PersonBioPrivacy = {
+  everyone: 'everyone',
+  admins: 'admins',
+  private: 'private',
+} as const;
+
 export interface Person {
   id: number;
   firstName: string;
@@ -24,6 +51,11 @@ export interface Person {
   phone?: string | null;
   /** @nullable */
   avatarUrl?: string | null;
+  /** @nullable */
+  bio?: string | null;
+  phonePrivacy?: PersonPhonePrivacy;
+  emailPrivacy?: PersonEmailPrivacy;
+  bioPrivacy?: PersonBioPrivacy;
   /** @nullable */
   dateOfBirth?: string | null;
   isMinor: boolean;
@@ -309,6 +341,33 @@ export interface ClubOverview {
   recentPosts: Post[];
 }
 
+export type ProfileUpdatePhonePrivacy = typeof ProfileUpdatePhonePrivacy[keyof typeof ProfileUpdatePhonePrivacy];
+
+
+export const ProfileUpdatePhonePrivacy = {
+  everyone: 'everyone',
+  admins: 'admins',
+  private: 'private',
+} as const;
+
+export type ProfileUpdateEmailPrivacy = typeof ProfileUpdateEmailPrivacy[keyof typeof ProfileUpdateEmailPrivacy];
+
+
+export const ProfileUpdateEmailPrivacy = {
+  everyone: 'everyone',
+  admins: 'admins',
+  private: 'private',
+} as const;
+
+export type ProfileUpdateBioPrivacy = typeof ProfileUpdateBioPrivacy[keyof typeof ProfileUpdateBioPrivacy];
+
+
+export const ProfileUpdateBioPrivacy = {
+  everyone: 'everyone',
+  admins: 'admins',
+  private: 'private',
+} as const;
+
 export interface ProfileUpdate {
   /** @minLength 1 */
   firstName?: string;
@@ -316,6 +375,10 @@ export interface ProfileUpdate {
   lastName?: string;
   phone?: string;
   avatarUrl?: string;
+  bio?: string;
+  phonePrivacy?: ProfileUpdatePhonePrivacy;
+  emailPrivacy?: ProfileUpdateEmailPrivacy;
+  bioPrivacy?: ProfileUpdateBioPrivacy;
 }
 
 export interface TeamInput {

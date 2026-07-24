@@ -1021,6 +1021,10 @@ components:
         email: { type: ["string", "null"] }
         phone: { type: ["string", "null"] }
         avatarUrl: { type: ["string", "null"] }
+        bio: { type: ["string", "null"] }
+        phonePrivacy: { type: string, enum: [everyone, admins, private] }
+        emailPrivacy: { type: string, enum: [everyone, admins, private] }
+        bioPrivacy: { type: string, enum: [everyone, admins, private] }
         dateOfBirth: { type: ["string", "null"] }
         isMinor: { type: boolean }
         hasLogin: { type: boolean }
@@ -1270,6 +1274,10 @@ components:
         lastName: { type: string, minLength: 1 }
         phone: { type: string }
         avatarUrl: { type: string }
+        bio: { type: string }
+        phonePrivacy: { type: string, enum: [everyone, admins, private] }
+        emailPrivacy: { type: string, enum: [everyone, admins, private] }
+        bioPrivacy: { type: string, enum: [everyone, admins, private] }
 
     TeamInput:
       type: object

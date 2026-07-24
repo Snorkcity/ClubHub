@@ -16,15 +16,32 @@ export function computeIsMinor(dob: string | null | undefined): boolean {
   return age < 18;
 }
 
-export function toPerson(u: User) {
+export type Viewer = { id: number; isClubAdmin: boolean };
+
+/**
+ * Serialize a user, honoring their per-field privacy settings.
+ * - No viewer given: only 'everyone' fields are included (safe default).
+ * - viewer.self / full: everything (own profile, guardians viewing wards).
+ * - 'admins' fields require viewer.isClubAdmin; 'private' is self-only.
+ */
+export function toPerson(u: User, viewer?: Viewer, opts?: { full?: boolean }) {
+  const self = opts?.full === true || (viewer != null && viewer.id === u.id);
+  const can = (privacy: string) =>
+    self ||
+    privacy === "everyone" ||
+    (privacy === "admins" && !!viewer?.isClubAdmin);
   return {
     id: u.id,
     firstName: u.firstName,
     lastName: u.lastName,
     fullName: `${u.firstName} ${u.lastName}`,
-    email: u.email ?? null,
-    phone: u.phone ?? null,
+    email: can(u.emailPrivacy) ? (u.email ?? null) : null,
+    phone: can(u.phonePrivacy) ? (u.phone ?? null) : null,
     avatarUrl: u.avatarUrl ?? null,
+    bio: can(u.bioPrivacy) ? (u.bio ?? null) : null,
+    phonePrivacy: u.phonePrivacy,
+    emailPrivacy: u.emailPrivacy,
+    bioPrivacy: u.bioPrivacy,
     dateOfBirth: u.dateOfBirth ?? null,
     isMinor: computeIsMinor(u.dateOfBirth),
     hasLogin: !!u.clerkUserId,

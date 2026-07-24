@@ -25,3 +25,8 @@ Scott chose the sport-neutral "team huddle" mark (three figures circling, navy #
 ## RSVP model (July 24, 2026)
 Two-option RSVP only: "Going" (green) / "Not" (red) — no Maybe in the UI ('maybe' stays in the API enum for legacy rows; counts show maybe merged into Not). Tapping Not saves immediately, then an optional reason field appears (rsvps.reason, stored only for status=out). Teams nav tab removed — team switcher dropdown replaces it; roster admin still lives at /teams/:id routes.
 **Reminder:** Railway prod DB needs `ALTER TABLE rsvps ADD COLUMN reason text` before the next push goes live.
+
+## Profile privacy & mobile nav (July 24, 2026)
+- Per-field privacy on phone/email/bio: everyone | admins | private ("only me" beats admins). Enforced in toPerson(u, viewer?, {full}) — no viewer = 'everyone'-only redaction (safe default); never call .map(toPerson) directly (index becomes viewer).
+- Mobile has NO hamburger: avatar dropdown in top bar holds Profile & Settings, staff Directory/Check-in, logout. Bottom tabs — players: Home/Schedule/Check-in/Messages; staff: Home/Schedule/Messages/Monitoring (monitoring team must be one they coach/manage; admins may use active team).
+- AU phone format in placeholders (0412 345 678); later: derive formats from club country setting.

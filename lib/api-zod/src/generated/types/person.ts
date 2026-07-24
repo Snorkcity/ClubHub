@@ -5,6 +5,9 @@
  * ClubHub API — multi-team soccer club management
  * OpenAPI spec version: 0.1.0
  */
+import type { PersonBioPrivacy } from './personBioPrivacy';
+import type { PersonEmailPrivacy } from './personEmailPrivacy';
+import type { PersonPhonePrivacy } from './personPhonePrivacy';
 
 export interface Person {
   id: number;
@@ -17,6 +20,11 @@ export interface Person {
   phone?: string | null;
   /** @nullable */
   avatarUrl?: string | null;
+  /** @nullable */
+  bio?: string | null;
+  phonePrivacy?: PersonPhonePrivacy;
+  emailPrivacy?: PersonEmailPrivacy;
+  bioPrivacy?: PersonBioPrivacy;
   /** @nullable */
   dateOfBirth?: string | null;
   isMinor: boolean;

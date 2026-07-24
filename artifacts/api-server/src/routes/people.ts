@@ -61,7 +61,9 @@ router.get("/people", requireAuth, async (req, res) => {
     );
   }
 
-  return res.json(people.map(toPerson));
+  const { localUser, isClubAdmin } = req as AuthedRequest;
+  const viewer = { id: localUser.id, isClubAdmin };
+  return res.json(people.map((p) => toPerson(p, viewer)));
 });
 
 router.post("/people", requireAuth, async (req, res) => {
@@ -116,8 +118,10 @@ router.get("/people/:personId", requireAuth, async (req, res) => {
     : [];
   const byId = Object.fromEntries(related.map((u) => [u.id, u]));
 
+  const { localUser, isClubAdmin } = req as AuthedRequest;
+  const viewer = { id: localUser.id, isClubAdmin };
   return res.json({
-    person: toPerson(person),
+    person: toPerson(person, viewer),
     memberships: memberships.map(({ m, t }) => ({
       id: m.id,
       teamId: m.teamId,
@@ -130,15 +134,15 @@ router.get("/people/:personId", requireAuth, async (req, res) => {
       id: g.id,
       relationship: g.relationship,
       canManage: g.canManage,
-      guardian: toPerson(byId[g.guardianId]),
-      player: toPerson(person),
+      guardian: toPerson(byId[g.guardianId], viewer),
+      player: toPerson(person, viewer),
     })),
     wards: wardLinks.map((g) => ({
       id: g.id,
       relationship: g.relationship,
       canManage: g.canManage,
-      guardian: toPerson(person),
-      player: toPerson(byId[g.playerId]),
+      guardian: toPerson(person, viewer),
+      player: toPerson(byId[g.playerId], viewer),
     })),
   });
 });

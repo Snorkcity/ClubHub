@@ -5,6 +5,9 @@
  * ClubHub API — multi-team soccer club management
  * OpenAPI spec version: 0.1.0
  */
+import type { ProfileUpdateBioPrivacy } from './profileUpdateBioPrivacy';
+import type { ProfileUpdateEmailPrivacy } from './profileUpdateEmailPrivacy';
+import type { ProfileUpdatePhonePrivacy } from './profileUpdatePhonePrivacy';
 
 export interface ProfileUpdate {
   /** @minLength 1 */
@@ -13,4 +16,8 @@ export interface ProfileUpdate {
   lastName?: string;
   phone?: string;
   avatarUrl?: string;
+  bio?: string;
+  phonePrivacy?: ProfileUpdatePhonePrivacy;
+  emailPrivacy?: ProfileUpdateEmailPrivacy;
+  bioPrivacy?: ProfileUpdateBioPrivacy;
 }

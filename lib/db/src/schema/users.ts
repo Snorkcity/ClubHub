@@ -19,6 +19,11 @@ export const usersTable = pgTable("users", {
   email: text("email"),
   phone: text("phone"),
   avatarUrl: text("avatar_url"),
+  bio: text("bio"),
+  // Per-field privacy: who can see this info. 'everyone' | 'admins' | 'private'
+  phonePrivacy: text("phone_privacy").notNull().default("everyone"),
+  emailPrivacy: text("email_privacy").notNull().default("everyone"),
+  bioPrivacy: text("bio_privacy").notNull().default("everyone"),
   dateOfBirth: date("date_of_birth", { mode: "string" }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

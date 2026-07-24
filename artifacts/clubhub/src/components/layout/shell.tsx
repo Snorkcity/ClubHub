@@ -1,9 +1,8 @@
-import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useClerk, useUser } from "@clerk/react";
 import { 
   Home, Users, CalendarDays, MessageSquare, Settings, 
-  LogOut, Menu, X, ChevronDown, UserSquare2, ClipboardCheck
+  LogOut, ChevronDown, UserSquare2, ClipboardCheck, Activity
 } from "lucide-react";
 import { useGetMe, useGetClub } from "@workspace/api-client-react";
 import { getGetMeQueryKey, getGetClubQueryKey } from "@workspace/api-client-react";
@@ -22,7 +21,6 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { signOut } = useClerk();
   const { user: clerkUser } = useUser();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // We use the same query keys that the generated hook uses internally 
   const { data: me, isLoading: isLoadingMe } = useGetMe({ 
@@ -47,18 +45,36 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     !!me?.isClubAdmin ||
     !!me?.memberships?.some((m: any) => m.role === "coach" || m.role === "manager");
 
+  // Monitoring tab (staff): the active team if they actually staff it,
+  // otherwise the first team they coach/manage. Club admins can open any team.
+  const staffedTeamIds = new Set(
+    (me?.memberships ?? [])
+      .filter((m: any) => m.role === "coach" || m.role === "manager")
+      .map((m: any) => m.teamId),
+  );
+  const staffTeamId = me?.isClubAdmin
+    ? (activeTeamId ?? me?.memberships?.[0]?.teamId ?? null)
+    : activeTeamId != null && staffedTeamIds.has(activeTeamId)
+      ? activeTeamId
+      : (staffedTeamIds.values().next().value as number | undefined) ?? null;
+
   const navItems = [
     { label: "Home", href: "/home", icon: Home },
     { label: "Schedule", href: "/schedule", icon: CalendarDays },
     { label: "Check-in", href: "/checkin", icon: ClipboardCheck },
     { label: "Messages", href: "/messages", icon: MessageSquare },
     ...(isStaff ? [{ label: "Directory", href: "/people", icon: UserSquare2 }] : []),
+    ...(isStaff && staffTeamId != null
+      ? [{ label: "Monitoring", href: `/teams/${staffTeamId}/monitoring`, icon: Activity }]
+      : []),
   ];
 
-  // Bottom tab bar (mobile): max 5 items, Heja-style.
+  // Bottom tab bar (mobile): max 4 tabs + everything else lives in the
+  // avatar menu. Players: Home/Schedule/Check-in/Messages.
+  // Staff: Home/Schedule/Messages/Monitoring.
   const tabItems = isStaff
-    ? navItems.filter((i) => i.label !== "Check-in")
-    : navItems;
+    ? navItems.filter((i) => i.label !== "Check-in" && i.label !== "Directory")
+    : navItems.filter((i) => i.label !== "Monitoring" && i.label !== "Directory");
 
   return (
     <div className="min-h-screen bg-muted/20 flex flex-col md:flex-row">
@@ -106,7 +122,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="p-4 border-t shrink-0">
-          <UserMenu me={me} clerkUser={clerkUser} onSignOut={() => signOut({ redirectUrl: "/" })} />
+          <UserMenu me={me} clerkUser={clerkUser} onSignOut={() => signOut({ redirectUrl: "/" })} isStaff={isStaff} />
         </div>
       </aside>
 
@@ -121,39 +137,16 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           <TeamSwitcher compact />
         </div>
         
-        <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-          {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </Button>
+        {/* Avatar menu replaces the old hamburger — profile, settings, staff
+            extras and log out all live here. */}
+        <UserMenu
+          me={me}
+          clerkUser={clerkUser}
+          onSignOut={() => signOut({ redirectUrl: "/" })}
+          avatarOnly
+          isStaff={isStaff}
+        />
       </header>
-
-      {/* Mobile Navigation Menu */}
-      {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 top-16 z-40 bg-background flex flex-col animate-in fade-in slide-in-from-top-4 duration-200">
-          <div className="flex-1 px-4 py-6 flex flex-col gap-2">
-            {navItems.map((item) => {
-              const isActive = location.startsWith(item.href);
-              return (
-                <Link 
-                  key={item.href} 
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-4 px-4 py-4 rounded-2xl text-base font-medium transition-colors ${
-                    isActive 
-                      ? "bg-primary text-primary-foreground" 
-                      : "text-foreground hover:bg-muted"
-                  }`}
-                >
-                  <item.icon className="h-6 w-6" />
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
-          <div className="p-6 border-t pb-10">
-            <UserMenu me={me} clerkUser={clerkUser} onSignOut={() => signOut({ redirectUrl: "/" })} mobile />
-          </div>
-        </div>
-      )}
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col w-full max-w-full overflow-hidden pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
@@ -172,7 +165,6 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             <Link
               key={item.href}
               href={item.href}
-              onClick={() => setMobileMenuOpen(false)}
               className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-14 ${
                 isActive ? "text-primary" : "text-muted-foreground"
               }`}
@@ -194,42 +186,23 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function UserMenu({ me, clerkUser, onSignOut, mobile = false }: { me: any, clerkUser: any, onSignOut: () => void, mobile?: boolean }) {
+function UserMenu({ me, clerkUser, onSignOut, avatarOnly = false, isStaff = false }: { me: any, clerkUser: any, onSignOut: () => void, avatarOnly?: boolean, isStaff?: boolean }) {
   const avatarUrl = me?.person?.avatarUrl || clerkUser?.imageUrl;
   const name = me?.person?.fullName || clerkUser?.fullName || "Loading...";
-  
-  if (mobile) {
-    return (
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-3 mb-2">
-          <Avatar className="h-12 w-12 border-2 border-background shadow-sm">
-            <AvatarImage src={avatarUrl} />
-            <AvatarFallback className="bg-primary/10 text-primary font-bold">
-              {name.charAt(0)}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col">
-            <span className="font-semibold text-base">{name}</span>
-            <span className="text-xs text-muted-foreground">{me?.isClubAdmin ? "Club Admin" : "Member"}</span>
-          </div>
-        </div>
-        <Button asChild variant="outline" className="w-full justify-start rounded-xl h-12">
-          <Link href="/settings">
-            <Settings className="h-5 w-5 mr-3 text-muted-foreground" />
-            Settings
-          </Link>
-        </Button>
-        <Button variant="ghost" onClick={onSignOut} className="w-full justify-start rounded-xl h-12 text-destructive hover:bg-destructive/10 hover:text-destructive">
-          <LogOut className="h-5 w-5 mr-3" />
-          Log out
-        </Button>
-      </div>
-    );
-  }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
+        {avatarOnly ? (
+          <Button variant="ghost" size="icon" className="rounded-full" aria-label="Account menu">
+            <Avatar className="h-9 w-9 border border-border/50">
+              <AvatarImage src={avatarUrl} />
+              <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
+                {name.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+          </Button>
+        ) : (
         <Button variant="ghost" className="w-full justify-start p-2 h-auto rounded-xl hover:bg-muted">
           <div className="flex items-center gap-3 w-full">
             <Avatar className="h-9 w-9 shrink-0 border border-border/50">
@@ -247,6 +220,7 @@ function UserMenu({ me, clerkUser, onSignOut, mobile = false }: { me: any, clerk
             <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
           </div>
         </Button>
+        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64 rounded-2xl p-2 shadow-xl border-border/50">
         <DropdownMenuLabel className="font-normal p-2">
@@ -282,9 +256,25 @@ function UserMenu({ me, clerkUser, onSignOut, mobile = false }: { me: any, clerk
         <DropdownMenuItem asChild className="rounded-xl py-2 cursor-pointer">
           <Link href="/settings" className="flex items-center w-full">
             <Settings className="mr-2 h-4 w-4 text-muted-foreground" />
-            <span>Settings</span>
+            <span>Profile & Settings</span>
           </Link>
         </DropdownMenuItem>
+        {isStaff && (
+          <>
+            <DropdownMenuItem asChild className="rounded-xl py-2 cursor-pointer">
+              <Link href="/people" className="flex items-center w-full">
+                <UserSquare2 className="mr-2 h-4 w-4 text-muted-foreground" />
+                <span>Directory</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild className="rounded-xl py-2 cursor-pointer">
+              <Link href="/checkin" className="flex items-center w-full">
+                <ClipboardCheck className="mr-2 h-4 w-4 text-muted-foreground" />
+                <span>Check-in</span>
+              </Link>
+            </DropdownMenuItem>
+          </>
+        )}
         <DropdownMenuItem onClick={onSignOut} className="rounded-xl py-2 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10">
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>

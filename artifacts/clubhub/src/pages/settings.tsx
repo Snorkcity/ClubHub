@@ -11,6 +11,22 @@ import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 
+/** Who can see this field: Everyone / Admins only / Only me. */
+function PrivacySelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="text-xs font-semibold text-muted-foreground bg-muted/50 border rounded-full px-2.5 py-1 focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
+      aria-label="Who can see this"
+    >
+      <option value="everyone">Everyone</option>
+      <option value="admins">Admins only</option>
+      <option value="private">Only me</option>
+    </select>
+  );
+}
+
 export default function Settings() {
   const { data: me, isLoading, error, refetch } = useGetMe({ 
     query: { queryKey: getGetMeQueryKey() } 
@@ -23,6 +39,10 @@ export default function Settings() {
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [bio, setBio] = useState("");
+  const [phonePrivacy, setPhonePrivacy] = useState("everyone");
+  const [emailPrivacy, setEmailPrivacy] = useState("everyone");
+  const [bioPrivacy, setBioPrivacy] = useState("everyone");
   const initialized = useRef(false);
 
   useEffect(() => {
@@ -31,6 +51,10 @@ export default function Settings() {
       setLastName(me.person.lastName || "");
       setPhone(me.person.phone || "");
       setAvatarUrl(me.person.avatarUrl || "");
+      setBio(me.person.bio || "");
+      setPhonePrivacy(me.person.phonePrivacy || "everyone");
+      setEmailPrivacy(me.person.emailPrivacy || "everyone");
+      setBioPrivacy(me.person.bioPrivacy || "everyone");
       initialized.current = true;
     }
   }, [me]);
@@ -44,7 +68,11 @@ export default function Settings() {
         firstName,
         lastName,
         phone,
-        avatarUrl
+        avatarUrl,
+        bio,
+        phonePrivacy: phonePrivacy as any,
+        emailPrivacy: emailPrivacy as any,
+        bioPrivacy: bioPrivacy as any,
       }
     }, {
       onSuccess: () => {
@@ -65,7 +93,11 @@ export default function Settings() {
     firstName !== me.person.firstName || 
     lastName !== me.person.lastName || 
     phone !== (me.person.phone || "") ||
-    avatarUrl !== (me.person.avatarUrl || "");
+    avatarUrl !== (me.person.avatarUrl || "") ||
+    bio !== (me.person.bio || "") ||
+    phonePrivacy !== (me.person.phonePrivacy || "everyone") ||
+    emailPrivacy !== (me.person.emailPrivacy || "everyone") ||
+    bioPrivacy !== (me.person.bioPrivacy || "everyone");
 
   return (
     <div className="flex-1 overflow-y-auto bg-muted/10">
@@ -90,7 +122,7 @@ export default function Settings() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="text-xs text-muted-foreground text-center">
-                  Profile avatars can be updated<br/>via Clerk.
+                  No photo? Your initials<br/>are shown instead.
                 </div>
               </div>
 
@@ -117,7 +149,10 @@ export default function Settings() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="email">Email Address</Label>
+                    <PrivacySelect value={emailPrivacy} onChange={setEmailPrivacy} />
+                  </div>
                   <Input 
                     id="email" 
                     value={me.person.email || ""} 
@@ -128,14 +163,32 @@ export default function Settings() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <PrivacySelect value={phonePrivacy} onChange={setPhonePrivacy} />
+                  </div>
                   <Input 
                     id="phone" 
                     type="tel"
                     value={phone} 
                     onChange={(e) => setPhone(e.target.value)} 
-                    placeholder="(555) 123-4567"
+                    placeholder="0412 345 678"
                     className="rounded-xl h-11"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="bio">Bio</Label>
+                    <PrivacySelect value={bioPrivacy} onChange={setBioPrivacy} />
+                  </div>
+                  <textarea
+                    id="bio"
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    placeholder="Describe yourself — position, favourite team, anything you like."
+                    rows={3}
+                    className="w-full rounded-xl border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
                 
