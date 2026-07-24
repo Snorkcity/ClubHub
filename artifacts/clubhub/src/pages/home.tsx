@@ -13,6 +13,7 @@ import {
 } from "@workspace/api-client-react";
 
 import { LoadingScreen, ErrorState, EmptyState } from "@/components/ui/states";
+import { PostComposer } from "@/components/feed/post-composer";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -42,6 +43,7 @@ export default function Home() {
           <MemberDashboard me={me} />
         )}
       </div>
+      <PostComposer variant="fab" />
     </div>
   );
 }
@@ -105,6 +107,8 @@ function AdminDashboard() {
             </Button>
           </div>
           
+          <PostComposer variant="card" />
+
           {overview.recentPosts.length === 0 ? (
             <Card className="p-8 text-center border-dashed bg-muted/20">
               <p className="text-muted-foreground text-sm">No recent activity.</p>
@@ -188,6 +192,8 @@ function MemberDashboard({ me }: { me: any }) {
             <h2 className="text-2xl font-display font-bold">Team Feed</h2>
           </div>
           
+          <PostComposer variant="card" />
+
           {!feed || feed.length === 0 ? (
             <EmptyState 
               title="No updates yet" 
