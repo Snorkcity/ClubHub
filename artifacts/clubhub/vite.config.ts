@@ -5,13 +5,9 @@ import { defineConfig } from 'vite';
 
 import runtimeErrorOverlay from '@replit/vite-plugin-runtime-error-modal';
 
-const rawPort = process.env.PORT;
-
-if (!rawPort) {
-  throw new Error(
-    'PORT environment variable is required but was not provided.',
-  );
-}
+// PORT is required to serve (dev/preview) but not to build. Default keeps
+// build-only environments (e.g. Railway) working; serving platforms inject it.
+const rawPort = process.env.PORT ?? '4173';
 
 const port = Number(rawPort);
 
