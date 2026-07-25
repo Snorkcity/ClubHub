@@ -22,6 +22,8 @@ export const eventsTable = pgTable("events", {
   notes: text("notes"),
   // CSV of invited role groups: coaches | players | parents
   invitedRoles: text("invited_roles").notNull().default("coaches,players,parents"),
+  cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+  cancelReason: text("cancel_reason"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

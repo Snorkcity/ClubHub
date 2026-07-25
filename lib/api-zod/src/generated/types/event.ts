@@ -31,4 +31,8 @@ export interface Event {
   /** @nullable */
   myRsvp?: EventMyRsvp;
   invitedRoles?: EventInvitedRolesItem[];
+  /** @nullable */
+  cancelledAt?: string | null;
+  /** @nullable */
+  cancelReason?: string | null;
 }

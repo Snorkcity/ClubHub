@@ -149,7 +149,9 @@ export const GetClubOverviewResponse = zod.object({
   "outCount": zod.number(),
   "noResponseCount": zod.number(),
   "myRsvp": zod.union([zod.literal('going'),zod.literal('maybe'),zod.literal('out'),zod.literal(null)]).nullish(),
-  "invitedRoles": zod.array(zod.enum(['coaches', 'players', 'parents'])).optional()
+  "invitedRoles": zod.array(zod.enum(['coaches', 'players', 'parents'])).optional(),
+  "cancelledAt": zod.string().nullish(),
+  "cancelReason": zod.string().nullish()
 })),
   "recentPosts": zod.array(zod.object({
   "id": zod.number(),
@@ -313,7 +315,9 @@ export const GetTeamSummaryResponse = zod.object({
   "outCount": zod.number(),
   "noResponseCount": zod.number(),
   "myRsvp": zod.union([zod.literal('going'),zod.literal('maybe'),zod.literal('out'),zod.literal(null)]).nullish(),
-  "invitedRoles": zod.array(zod.enum(['coaches', 'players', 'parents'])).optional()
+  "invitedRoles": zod.array(zod.enum(['coaches', 'players', 'parents'])).optional(),
+  "cancelledAt": zod.string().nullish(),
+  "cancelReason": zod.string().nullish()
 }).optional(),
   "playerCount": zod.number(),
   "goingCount": zod.number(),
@@ -958,7 +962,9 @@ export const ListUpcomingEventsResponseItem = zod.object({
   "outCount": zod.number(),
   "noResponseCount": zod.number(),
   "myRsvp": zod.union([zod.literal('going'),zod.literal('maybe'),zod.literal('out'),zod.literal(null)]).nullish(),
-  "invitedRoles": zod.array(zod.enum(['coaches', 'players', 'parents'])).optional()
+  "invitedRoles": zod.array(zod.enum(['coaches', 'players', 'parents'])).optional(),
+  "cancelledAt": zod.string().nullish(),
+  "cancelReason": zod.string().nullish()
 })
 export const ListUpcomingEventsResponse = zod.array(ListUpcomingEventsResponseItem)
 
@@ -982,7 +988,9 @@ export const ListTeamEventsResponseItem = zod.object({
   "outCount": zod.number(),
   "noResponseCount": zod.number(),
   "myRsvp": zod.union([zod.literal('going'),zod.literal('maybe'),zod.literal('out'),zod.literal(null)]).nullish(),
-  "invitedRoles": zod.array(zod.enum(['coaches', 'players', 'parents'])).optional()
+  "invitedRoles": zod.array(zod.enum(['coaches', 'players', 'parents'])).optional(),
+  "cancelledAt": zod.string().nullish(),
+  "cancelReason": zod.string().nullish()
 })
 export const ListTeamEventsResponse = zod.array(ListTeamEventsResponseItem)
 
@@ -1021,7 +1029,9 @@ export const CreateEventResponse = zod.object({
   "outCount": zod.number(),
   "noResponseCount": zod.number(),
   "myRsvp": zod.union([zod.literal('going'),zod.literal('maybe'),zod.literal('out'),zod.literal(null)]).nullish(),
-  "invitedRoles": zod.array(zod.enum(['coaches', 'players', 'parents'])).optional()
+  "invitedRoles": zod.array(zod.enum(['coaches', 'players', 'parents'])).optional(),
+  "cancelledAt": zod.string().nullish(),
+  "cancelReason": zod.string().nullish()
 })
 
 
@@ -1045,7 +1055,9 @@ export const GetEventResponse = zod.object({
   "outCount": zod.number(),
   "noResponseCount": zod.number(),
   "myRsvp": zod.union([zod.literal('going'),zod.literal('maybe'),zod.literal('out'),zod.literal(null)]).nullish(),
-  "invitedRoles": zod.array(zod.enum(['coaches', 'players', 'parents'])).optional()
+  "invitedRoles": zod.array(zod.enum(['coaches', 'players', 'parents'])).optional(),
+  "cancelledAt": zod.string().nullish(),
+  "cancelReason": zod.string().nullish()
 }),
   "rsvps": zod.array(zod.object({
   "id": zod.number(),
@@ -1108,7 +1120,9 @@ export const UpdateEventResponse = zod.object({
   "outCount": zod.number(),
   "noResponseCount": zod.number(),
   "myRsvp": zod.union([zod.literal('going'),zod.literal('maybe'),zod.literal('out'),zod.literal(null)]).nullish(),
-  "invitedRoles": zod.array(zod.enum(['coaches', 'players', 'parents'])).optional()
+  "invitedRoles": zod.array(zod.enum(['coaches', 'players', 'parents'])).optional(),
+  "cancelledAt": zod.string().nullish(),
+  "cancelReason": zod.string().nullish()
 })
 
 
@@ -1116,6 +1130,38 @@ export const UpdateEventResponse = zod.object({
  * @summary Delete an event
  */
 export const DeleteEventResponse = zod.void()
+
+
+/**
+ * @summary Cancel an event with a reason (staff only)
+ */
+
+
+
+export const CancelEventBody = zod.object({
+  "reason": zod.string().min(1)
+})
+
+export const CancelEventResponse = zod.object({
+  "id": zod.number(),
+  "teamId": zod.number(),
+  "teamName": zod.string(),
+  "type": zod.enum(['training', 'game', 'social', 'other']),
+  "title": zod.string(),
+  "location": zod.string().nullish(),
+  "opponent": zod.string().nullish(),
+  "startsAt": zod.string(),
+  "endsAt": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "goingCount": zod.number(),
+  "maybeCount": zod.number(),
+  "outCount": zod.number(),
+  "noResponseCount": zod.number(),
+  "myRsvp": zod.union([zod.literal('going'),zod.literal('maybe'),zod.literal('out'),zod.literal(null)]).nullish(),
+  "invitedRoles": zod.array(zod.enum(['coaches', 'players', 'parents'])).optional(),
+  "cancelledAt": zod.string().nullish(),
+  "cancelReason": zod.string().nullish()
+})
 
 
 /**
@@ -1415,7 +1461,9 @@ export const GetCheckinStatusResponse = zod.object({
   "outCount": zod.number(),
   "noResponseCount": zod.number(),
   "myRsvp": zod.union([zod.literal('going'),zod.literal('maybe'),zod.literal('out'),zod.literal(null)]).nullish(),
-  "invitedRoles": zod.array(zod.enum(['coaches', 'players', 'parents'])).optional()
+  "invitedRoles": zod.array(zod.enum(['coaches', 'players', 'parents'])).optional(),
+  "cancelledAt": zod.string().nullish(),
+  "cancelReason": zod.string().nullish()
 }),
   "defaultMinutes": zod.number()
 })),

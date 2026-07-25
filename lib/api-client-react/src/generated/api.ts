@@ -30,6 +30,7 @@ import type {
   CommentInput,
   CurrentUser,
   Event,
+  EventCancelInput,
   EventDetail,
   EventInput,
   EventUpdate,
@@ -2856,6 +2857,78 @@ export const useDeleteEvent = <TError = ErrorType<NotFoundResponse>,
         TContext
       > => {
       return useMutation(getDeleteEventMutationOptions(options));
+    }
+
+export const getCancelEventUrl = (eventId: number,) => {
+
+
+
+
+  return `/api/events/${eventId}/cancel`
+}
+
+/**
+ * @summary Cancel an event with a reason (staff only)
+ */
+export const cancelEvent = async (eventId: number,
+    eventCancelInput: EventCancelInput, options?: RequestInit): Promise<Event> => {
+
+  return customFetch<Event>(getCancelEventUrl(eventId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(eventCancelInput)
+  }
+);}
+
+
+
+
+
+export const getCancelEventMutationOptions = <TError = ErrorType<NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelEvent>>, TError,{eventId: number;data: BodyType<EventCancelInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof cancelEvent>>, TError,{eventId: number;data: BodyType<EventCancelInput>}, TContext> => {
+
+const mutationKey = ['cancelEvent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cancelEvent>>, {eventId: number;data: BodyType<EventCancelInput>}> = (props) => {
+          const {eventId,data} = props ?? {};
+
+          return  cancelEvent(eventId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CancelEventMutationResult = NonNullable<Awaited<ReturnType<typeof cancelEvent>>>
+    export type CancelEventMutationBody = BodyType<EventCancelInput>
+    export type CancelEventMutationError = ErrorType<NotFoundResponse>
+
+    /**
+ * @summary Cancel an event with a reason (staff only)
+ */
+export const useCancelEvent = <TError = ErrorType<NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelEvent>>, TError,{eventId: number;data: BodyType<EventCancelInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof cancelEvent>>,
+        TError,
+        {eventId: number;data: BodyType<EventCancelInput>},
+        TContext
+      > => {
+      return useMutation(getCancelEventMutationOptions(options));
     }
 
 export const getSetRsvpUrl = (eventId: number,) => {

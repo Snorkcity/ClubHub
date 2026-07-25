@@ -22,6 +22,7 @@ export * from './currentUser';
 export * from './currentUserClubRole';
 export * from './error';
 export * from './event';
+export * from './eventCancelInput';
 export * from './eventDetail';
 export * from './eventInput';
 export * from './eventInputInvitedRolesItem';

@@ -140,9 +140,14 @@ function ScheduleCard({ event }: { event: any }) {
             <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${typeColor}`}>
               {event.type}
             </span>
+            {event.cancelledAt && (
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-red-600 text-white">
+                Cancelled
+              </span>
+            )}
             <span className="text-xs text-muted-foreground truncate">{event.teamName}</span>
           </div>
-          <h3 className="font-bold text-base group-hover:text-primary transition-colors truncate mt-0.5">
+          <h3 className={`font-bold text-base group-hover:text-primary transition-colors truncate mt-0.5 ${event.cancelledAt ? "line-through text-muted-foreground" : ""}`}>
             {event.title}
           </h3>
           <div className="flex flex-wrap gap-x-3 text-xs text-muted-foreground mt-0.5">

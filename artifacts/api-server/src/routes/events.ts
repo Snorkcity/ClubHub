@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { and, asc, eq, gte, inArray } from "drizzle-orm";
 import { db, eventsTable, rsvpsTable, teamMembersTable, usersTable } from "@workspace/db";
-import { CreateEventBody, UpdateEventBody, SetRsvpBody } from "@workspace/api-zod";
+import { CreateEventBody, UpdateEventBody, SetRsvpBody, CancelEventBody } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
 import { buildEvents } from "../lib/build";
 import { getVisibleTeamIds, canActFor } from "../lib/queries";
@@ -133,6 +133,26 @@ router.patch("/events/:eventId", requireAuth, async (req, res) => {
   const [event] = await db
     .update(eventsTable)
     .set(patch)
+    .where(eq(eventsTable.id, eventId))
+    .returning();
+  const [built] = await buildEvents([event], localUser.id);
+  return res.json(built);
+});
+
+router.post("/events/:eventId/cancel", requireAuth, async (req, res) => {
+  const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
+  const eventId = Number(req.params.eventId);
+  const [existing] = await db
+    .select()
+    .from(eventsTable)
+    .where(eq(eventsTable.id, eventId));
+  if (!existing) return res.status(404).json({ error: "Event not found" });
+  if (!(await isTeamStaff(localUser.id, existing.teamId, clubId, isClubAdmin)))
+    return res.status(403).json({ error: "You cannot cancel this event" });
+  const body = CancelEventBody.parse(req.body);
+  const [event] = await db
+    .update(eventsTable)
+    .set({ cancelledAt: new Date(), cancelReason: body.reason.trim() })
     .where(eq(eventsTable.id, eventId))
     .returning();
   const [built] = await buildEvents([event], localUser.id);

@@ -6,13 +6,23 @@ import {
   CheckCircle2, HelpCircle, XCircle, FileQuestion, MessageSquare, Timer
 } from "lucide-react";
 import { 
-  useGetEvent, useSetRsvp, 
+  useGetEvent, useSetRsvp, useCancelEvent, useCreatePost,
   getGetEventQueryKey, getListUpcomingEventsQueryKey, getGetTeamSummaryQueryKey,
+  getListTeamPostsQueryKey,
   useGetMe, getGetMeQueryKey
 } from "@workspace/api-client-react";
 import { queryClient } from "@/lib/queryClient";
 
 import { LoadingScreen, ErrorState, EmptyState } from "@/components/ui/states";
+import { EventEditorDialog, initialFromEvent } from "@/components/schedule/new-event-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +41,13 @@ export default function EventDetail() {
   const [notOpen, setNotOpen] = useState(false);
   const [notReason, setNotReason] = useState("");
   const [editingRsvp, setEditingRsvp] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editorMode, setEditorMode] = useState<"edit" | "create">("edit");
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const cancelEvent = useCancelEvent();
+  const createPost = useCreatePost();
+  const { toast } = useToast();
 
   if (isLoading) return <LoadingScreen message="Loading event details..." />;
   if (error || !eventData) return <ErrorState onRetry={() => refetch()} />;
@@ -72,7 +89,35 @@ export default function EventDetail() {
       : myTeamRole === "coach" || myTeamRole === "manager"
         ? invited.includes("coaches")
         : false;
-  const showRsvpCard = amInvited && (!event.myRsvp || editingRsvp);
+  const isCancelled = !!event.cancelledAt;
+  const showRsvpCard = !isCancelled && amInvited && (!event.myRsvp || editingRsvp);
+
+  async function handleCancel(notify: boolean) {
+    const reason = cancelReason.trim();
+    if (!reason) return;
+    try {
+      await cancelEvent.mutateAsync({ eventId, data: { reason } });
+      if (notify) {
+        await createPost.mutateAsync({
+          teamId: event.teamId,
+          data: {
+            title: `Cancelled: ${event.title}`,
+            body: `${event.title} on ${format(new Date(event.startsAt), "EEEE d MMMM, h:mmaaa")} has been cancelled. Reason: ${reason}`,
+          },
+        });
+        queryClient.invalidateQueries({ queryKey: getListTeamPostsQueryKey(event.teamId) });
+      }
+      queryClient.invalidateQueries({ queryKey: getGetEventQueryKey(eventId) });
+      queryClient.invalidateQueries({ queryKey: getListUpcomingEventsQueryKey() });
+      toast({
+        title: "Event cancelled",
+        ...(notify ? { description: "The team has been notified in the feed." } : {}),
+      });
+      setCancelOpen(false);
+    } catch {
+      toast({ title: "Couldn't cancel the event", variant: "destructive" });
+    }
+  }
 
   const typeColors = {
     game: "bg-blue-600 text-white border-transparent",
@@ -84,6 +129,56 @@ export default function EventDetail() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-muted/10">
+      <EventEditorDialog
+        open={editorOpen}
+        onOpenChange={setEditorOpen}
+        mode={editorMode}
+        eventId={editorMode === "edit" ? eventId : undefined}
+        teamId={event.teamId}
+        teamName={event.teamName}
+        initial={initialFromEvent(event, editorMode === "edit")}
+      />
+      <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cancel this event?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <p className="text-sm font-semibold">Reason</p>
+              <Textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="e.g. Ground closed due to weather"
+                rows={2}
+              />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Notifying posts an announcement to the team feed with the reason.
+            </p>
+            <div className="space-y-2">
+              <Button
+                className="w-full rounded-xl h-11 font-bold bg-red-600 hover:bg-red-700 text-white"
+                disabled={!cancelReason.trim() || cancelEvent.isPending}
+                onClick={() => handleCancel(true)}
+              >
+                {cancelEvent.isPending ? "Cancelling…" : "Cancel event & notify team"}
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full rounded-xl h-11 font-bold"
+                disabled={!cancelReason.trim() || cancelEvent.isPending}
+                onClick={() => handleCancel(false)}
+              >
+                Cancel without notifying
+              </Button>
+              <Button variant="ghost" className="w-full" disabled={cancelEvent.isPending} onClick={() => setCancelOpen(false)}>
+                Keep event
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       <div className="container mx-auto p-4 md:p-8 lg:max-w-4xl space-y-8">
         <Link href="/schedule" className="inline-flex items-center text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors mb-2">
           <ArrowLeft className="h-4 w-4 mr-1" /> Back to Schedule
@@ -106,12 +201,38 @@ export default function EventDetail() {
                 {event.title}
               </h1>
 
-              {isStaff && event.type === "game" && (
-                <Button asChild variant="outline" className="rounded-xl mb-6 font-bold">
-                  <Link href={`/events/${eventId}/timekeeping`}>
-                    <Timer className="h-4 w-4 mr-2" /> Track game time
-                  </Link>
-                </Button>
+              {isCancelled && (
+                <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-900 p-4">
+                  <p className="font-bold text-red-700 dark:text-red-400">This event has been cancelled</p>
+                  {event.cancelReason && (
+                    <p className="text-sm text-red-700/80 dark:text-red-400/80 mt-1">{event.cancelReason}</p>
+                  )}
+                </div>
+              )}
+
+              {isStaff && (
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {event.type === "game" && !isCancelled && (
+                    <Button asChild variant="outline" className="rounded-xl font-bold">
+                      <Link href={`/events/${eventId}/timekeeping`}>
+                        <Timer className="h-4 w-4 mr-2" /> Track game time
+                      </Link>
+                    </Button>
+                  )}
+                  {!isCancelled && (
+                    <Button variant="outline" className="rounded-xl font-bold" onClick={() => { setEditorMode("edit"); setEditorOpen(true); }}>
+                      Edit
+                    </Button>
+                  )}
+                  <Button variant="outline" className="rounded-xl font-bold" onClick={() => { setEditorMode("create"); setEditorOpen(true); }}>
+                    Duplicate
+                  </Button>
+                  {!isCancelled && (
+                    <Button variant="outline" className="rounded-xl font-bold text-red-700 border-red-300 hover:bg-red-50 dark:hover:bg-red-950/30" onClick={() => setCancelOpen(true)}>
+                      Cancel event
+                    </Button>
+                  )}
+                </div>
               )}
               
               <div className="grid sm:grid-cols-2 gap-4">

@@ -642,6 +642,29 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /events/{eventId}/cancel:
+    post:
+      operationId: cancelEvent
+      tags: [events]
+      summary: Cancel an event with a reason (staff only)
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventCancelInput"
+      responses:
+        "200":
+          description: Cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /events/{eventId}/rsvp:
     put:
       operationId: setRsvp
@@ -1211,6 +1234,8 @@ components:
         invitedRoles:
           type: array
           items: { type: string, enum: [coaches, players, parents] }
+        cancelledAt: { type: ["string", "null"] }
+        cancelReason: { type: ["string", "null"] }
 
     EventDetail:
       type: object
@@ -1427,6 +1452,12 @@ components:
           type: array
           items: { type: string, enum: [coaches, players, parents] }
           minItems: 1
+
+    EventCancelInput:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string, minLength: 1 }
 
     RsvpInput:
       type: object

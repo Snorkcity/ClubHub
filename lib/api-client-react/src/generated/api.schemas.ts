@@ -150,6 +150,10 @@ export interface Event {
   /** @nullable */
   myRsvp?: EventMyRsvp;
   invitedRoles?: EventInvitedRolesItem[];
+  /** @nullable */
+  cancelledAt?: string | null;
+  /** @nullable */
+  cancelReason?: string | null;
 }
 
 export interface TeamSummary {
@@ -581,6 +585,11 @@ export interface EventUpdate {
   notes?: string;
   /** @minItems 1 */
   invitedRoles?: EventUpdateInvitedRolesItem[];
+}
+
+export interface EventCancelInput {
+  /** @minLength 1 */
+  reason: string;
 }
 
 export type RsvpInputStatus = typeof RsvpInputStatus[keyof typeof RsvpInputStatus];

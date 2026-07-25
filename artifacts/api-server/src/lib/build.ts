@@ -107,6 +107,8 @@ export async function buildEvents(events: Event[], myUserId?: number) {
       invitedRoles: (e.invitedRoles ?? "coaches,players,parents")
         .split(",")
         .filter(Boolean) as ("coaches" | "players" | "parents")[],
+      cancelledAt: iso(e.cancelledAt),
+      cancelReason: e.cancelReason ?? null,
     };
   });
 }
