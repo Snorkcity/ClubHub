@@ -268,15 +268,15 @@ function PlayerCard({ p }: { p: PlayerMonitoring }) {
               const v = p[e.key] as number | null;
               return (
                 <div key={e.key} className={`rounded-lg px-1 py-1.5 text-center ${wellnessTone(v)}`}>
-                  <div className="text-[9px] font-bold uppercase tracking-wide opacity-70">{e.label}</div>
-                  <div className="text-sm font-bold tabular-nums">{v == null ? "–" : v}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wide opacity-70">{e.label}</div>
+                  <div className="text-base font-bold tabular-nums">{v == null ? "–" : v}</div>
                 </div>
               );
             })}
           </div>
-          <p className="text-xs text-muted-foreground leading-relaxed">{wellnessExplanation(p)}</p>
+          <p className="text-sm text-foreground/80 leading-relaxed">{wellnessExplanation(p)}</p>
           {p.wellnessBaseline != null && p.wellnessComposite != null && (
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Their usual (28-day) score is {p.wellnessBaseline} — this window is {p.wellnessComposite}.
             </p>
           )}
@@ -287,34 +287,34 @@ function PlayerCard({ p }: { p: PlayerMonitoring }) {
         <div className="border-t bg-muted/20 p-3 space-y-2 animate-in fade-in slide-in-from-top-1 duration-150">
           <div className="grid grid-cols-3 gap-1.5">
             <div className="rounded-lg px-1 py-1.5 text-center bg-muted/40">
-              <div className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground">This week</div>
-              <div className="text-sm font-bold tabular-nums">{p.acuteLoad}</div>
+              <div className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">This week</div>
+              <div className="text-base font-bold tabular-nums">{p.acuteLoad}</div>
             </div>
             <div className="rounded-lg px-1 py-1.5 text-center bg-muted/40">
-              <div className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground">Usual week</div>
-              <div className="text-sm font-bold tabular-nums">
+              <div className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Usual week</div>
+              <div className="text-base font-bold tabular-nums">
                 {p.chronicWeeklyLoad == null ? "–" : Math.round(p.chronicWeeklyLoad)}
               </div>
             </div>
             <div className={`rounded-lg px-1 py-1.5 text-center ${acwrTone(p.acwr)}`}>
-              <div className="text-[9px] font-bold uppercase tracking-wide opacity-70">Ratio</div>
-              <div className="text-sm font-bold tabular-nums">{p.acwr == null ? "–" : p.acwr.toFixed(2)}</div>
+              <div className="text-[10px] font-bold uppercase tracking-wide opacity-70">Ratio</div>
+              <div className="text-base font-bold tabular-nums">{p.acwr == null ? "–" : p.acwr.toFixed(2)}</div>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground leading-relaxed">{acwrExplanation(p)}</p>
-          <details className="text-[11px] text-muted-foreground">
+          <p className="text-sm text-foreground/80 leading-relaxed">{acwrExplanation(p)}</p>
+          <details className="text-sm text-muted-foreground">
             <summary className="cursor-pointer select-none font-semibold">What do these load numbers mean?</summary>
             <p className="mt-1 leading-relaxed">{loadContext(p)}</p>
           </details>
           {p.windowExternalLoad ? (
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Includes {p.windowExternalLoad} from sessions outside the club (rep, school, other).
             </p>
           ) : null}
           {p.flags.length > 0 && (
             <ul className="space-y-0.5">
               {p.flags.map((f, i) => (
-                <li key={i} className="text-[11px] text-muted-foreground">
+                <li key={i} className="text-sm text-muted-foreground">
                   {f.severity === "alert" ? "⚠ " : "👁 "}{f.message}
                 </li>
               ))}
@@ -436,31 +436,30 @@ export default function TeamMonitoring() {
             {/* Player tiles */}
             <div className="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
               {sortedPlayers.map((p) => {
-                const light = overallLight(p);
                 return (
                   <button
                     key={p.person.id}
                     onClick={() => setSelected(p)}
-                    className={`rounded-2xl border-2 p-3 text-left transition-colors ${LIGHT_TILE[light]}`}
+                    className="rounded-2xl border-2 border-border bg-card p-3 text-left transition-colors hover:border-foreground/30"
                   >
                     <div className="flex items-start justify-between gap-1">
                       <span className="font-semibold text-sm leading-tight truncate">{p.person.fullName}</span>
-                      <span className={`h-2.5 w-2.5 rounded-full shrink-0 mt-1 ${LIGHT_DOT[light]}`} />
-                    </div>
-                    <div className="mt-2 flex items-center gap-3 text-xs tabular-nums">
-                      <span>
-                        <span className="text-muted-foreground">Well </span>
-                        <span className="font-bold">{p.wellnessComposite ?? "–"}</span>
-                      </span>
-                      <span>
-                        <span className="text-muted-foreground">ACWR </span>
-                        <span className="font-bold">{p.acwr == null ? "–" : p.acwr.toFixed(2)}</span>
-                      </span>
                       {p.flags.length > 0 && (
-                        <span className={`ml-auto font-bold ${p.flags.some((f) => f.severity === "alert") ? "text-red-600" : "text-amber-600"}`}>
+                        <span className={`text-xs font-bold shrink-0 ${p.flags.some((f) => f.severity === "alert") ? "text-red-600" : "text-amber-600"}`}>
                           {p.flags.some((f) => f.severity === "alert") ? "⚠" : "👁"} {p.flags.length}
                         </span>
                       )}
+                    </div>
+                    {/* Two separate lights: wellness and load each carry their own colour */}
+                    <div className="mt-2 grid grid-cols-2 gap-1.5 text-xs tabular-nums">
+                      <span className={`rounded-lg px-2 py-1 text-center ${wellnessTone(p.wellnessComposite)}`}>
+                        <span className="opacity-70">Well </span>
+                        <span className="font-bold">{p.wellnessComposite ?? "–"}</span>
+                      </span>
+                      <span className={`rounded-lg px-2 py-1 text-center ${acwrTone(p.acwr)}`}>
+                        <span className="opacity-70">Load </span>
+                        <span className="font-bold">{p.acwr == null ? "–" : p.acwr.toFixed(2)}</span>
+                      </span>
                     </div>
                   </button>
                 );
