@@ -7,6 +7,7 @@
  */
 import type { MonitoringFlag } from './monitoringFlag';
 import type { Person } from './person';
+import type { WeeklyHistory } from './weeklyHistory';
 
 export interface PlayerMonitoring {
   person: Person;
@@ -27,4 +28,6 @@ export interface PlayerMonitoring {
   chronicWeeklyLoad?: number | null;
   acwr?: number | null;
   flags: MonitoringFlag[];
+  /** Last 4 weeks, oldest first. */
+  weeklyHistory?: WeeklyHistory[];
 }

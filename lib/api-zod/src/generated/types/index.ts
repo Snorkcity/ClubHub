@@ -93,5 +93,6 @@ export * from './teamUpdate';
 export * from './timekeepingPlayer';
 export * from './timekeepingPlayerRsvpStatus';
 export * from './timekeepingState';
+export * from './weeklyHistory';
 export * from './wellnessEntry';
 export * from './wellnessInput';

@@ -1574,7 +1574,15 @@ export const GetTeamMonitoringResponse = zod.object({
   "metric": zod.string(),
   "severity": zod.enum(['watch', 'alert']),
   "message": zod.string()
-}))
+})),
+  "weeklyHistory": zod.array(zod.object({
+  "weekStart": zod.string(),
+  "load": zod.number(),
+  "externalLoad": zod.number(),
+  "sessions": zod.number(),
+  "wellnessAvg": zod.number().nullish(),
+  "checkIns": zod.number()
+})).optional().describe('Last 4 weeks, oldest first.')
 }))
 })
 

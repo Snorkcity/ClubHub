@@ -574,6 +574,33 @@ router.get("/teams/:teamId/monitoring", requireAuth, async (req, res) => {
       ? mine.reduce((a, b) => (a.entryDate > b.entryDate ? a : b)).entryDate
       : null;
 
+    // Weekly history: 4 rolling 7-day buckets ending now, oldest first.
+    const weeklyHistory = [3, 2, 1, 0].map((i) => {
+      const from = daysAgo(7 * (i + 1)).getTime();
+      const to = daysAgo(7 * i).getTime();
+      const fromDate = dateStr(daysAgo(7 * (i + 1) - 1));
+      const evts = myLoad.filter(
+        (row) => row.startsAt.getTime() > from && row.startsAt.getTime() <= to,
+      );
+      const extras = myExtras.filter(
+        (s) => extraTime(s) > from && extraTime(s) <= to,
+      );
+      const wk = mine.filter(
+        (w) =>
+          w.entryDate >= fromDate && w.entryDate >= since28 &&
+          new Date(`${w.entryDate}T12:00:00Z`).getTime() <= to,
+      );
+      const wkAvg = avg(wk.flatMap((w) => WELLNESS_METRICS.map((m) => w[m])));
+      return {
+        weekStart: fromDate,
+        load: sum(evts) + sumExtras(extras),
+        externalLoad: sumExtras(extras),
+        sessions: evts.length + extras.length,
+        wellnessAvg: round1(wkAvg),
+        checkIns: wk.length,
+      };
+    });
+
     return {
       person: toPerson(p),
       sleepQuality: metricAvgs.sleepQuality,
@@ -596,6 +623,7 @@ router.get("/teams/:teamId/monitoring", requireAuth, async (req, res) => {
         chronicWeekly === null ? null : Math.round(chronicWeekly),
       acwr,
       flags,
+      weeklyHistory,
     };
   });
 

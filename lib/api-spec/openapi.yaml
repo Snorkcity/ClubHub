@@ -1569,6 +1569,22 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/MonitoringFlag"
+        weeklyHistory:
+          type: array
+          description: Last 4 weeks, oldest first.
+          items:
+            $ref: "#/components/schemas/WeeklyHistory"
+
+    WeeklyHistory:
+      type: object
+      required: [weekStart, load, externalLoad, sessions, checkIns]
+      properties:
+        weekStart: { type: string }
+        load: { type: integer }
+        externalLoad: { type: integer }
+        sessions: { type: integer }
+        wellnessAvg: { type: number, nullable: true }
+        checkIns: { type: integer }
 
     TeamMonitoring:
       type: object

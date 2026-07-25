@@ -732,6 +732,15 @@ export interface MonitoringFlag {
   message: string;
 }
 
+export interface WeeklyHistory {
+  weekStart: string;
+  load: number;
+  externalLoad: number;
+  sessions: number;
+  wellnessAvg?: number | null;
+  checkIns: number;
+}
+
 export interface PlayerMonitoring {
   person: Person;
   sleepQuality?: number | null;
@@ -751,6 +760,8 @@ export interface PlayerMonitoring {
   chronicWeeklyLoad?: number | null;
   acwr?: number | null;
   flags: MonitoringFlag[];
+  /** Last 4 weeks, oldest first. */
+  weeklyHistory?: WeeklyHistory[];
 }
 
 export interface TeamMonitoring {

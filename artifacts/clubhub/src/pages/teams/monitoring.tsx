@@ -178,6 +178,45 @@ function acwrExplanation(p: PlayerMonitoring): string {
   return `This week's load (${p.acuteLoad}) is in line with their usual week (≈${Math.round(p.chronicWeeklyLoad ?? 0)}) — right in the sweet spot.`;
 }
 
+function WeeklyHistoryBlock({ p, compact }: { p: PlayerMonitoring; compact?: boolean }) {
+  const weeks = p.weeklyHistory ?? [];
+  if (weeks.length === 0) return null;
+  const maxLoad = Math.max(...weeks.map((w) => w.load), 1);
+  return (
+    <div className={compact ? "text-xs" : "text-sm"}>
+      <div className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
+        Last 4 weeks
+      </div>
+      <div className="space-y-1.5">
+        {weeks.map((w, i) => {
+          const isCurrent = i === weeks.length - 1;
+          return (
+            <div key={w.weekStart} className="flex items-center gap-2">
+              <span className={`w-14 shrink-0 tabular-nums ${isCurrent ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
+                {isCurrent ? "This wk" : format(new Date(w.weekStart + "T12:00:00"), "d MMM")}
+              </span>
+              <div className="flex-1 h-4 rounded bg-muted/50 overflow-hidden">
+                <div
+                  className={`h-full rounded ${isCurrent ? "bg-primary" : "bg-primary/40"}`}
+                  style={{ width: `${Math.round((w.load / maxLoad) * 100)}%` }}
+                />
+              </div>
+              <span className="w-12 shrink-0 text-right tabular-nums font-semibold">{w.load || "–"}</span>
+              <span className={`w-16 shrink-0 text-right tabular-nums ${wellnessTone(w.wellnessAvg).includes("red") ? "text-red-600 font-semibold" : "text-muted-foreground"}`}>
+                {w.wellnessAvg == null ? "– " : `${w.wellnessAvg}/5`}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex justify-end gap-2 mt-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+        <span>load</span>
+        <span>· wellness</span>
+      </div>
+    </div>
+  );
+}
+
 function FlagBadges({ player }: { player: PlayerMonitoring }) {
   if (player.flags.length === 0) return null;
   const alert = player.flags.some((f) => f.severity === "alert");
@@ -302,6 +341,7 @@ function PlayerCard({ p }: { p: PlayerMonitoring }) {
             </div>
           </div>
           <p className="text-base text-foreground/80 leading-relaxed">{acwrExplanation(p)}</p>
+          <WeeklyHistoryBlock p={p} />
           <details className="text-base text-muted-foreground">
             <summary className="cursor-pointer select-none font-semibold">What do these load numbers mean?</summary>
             <p className="mt-1 leading-relaxed">{loadContext(p)}</p>
@@ -542,6 +582,9 @@ export default function TeamMonitoring() {
                           Includes {selected.windowExternalLoad} from sessions outside the club (rep, school, other).
                         </p>
                       ) : null}
+                      <div className="mt-3">
+                        <WeeklyHistoryBlock p={selected} compact />
+                      </div>
                     </div>
 
                     {selected.flags.length > 0 && (
