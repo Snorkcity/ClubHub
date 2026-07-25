@@ -32,12 +32,13 @@ export default function Schedule() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-muted/10">
+      {/* Compact sticky header, like Chats — stays put while the list scrolls. */}
+      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b">
+        <div className="container mx-auto px-4 md:px-8 lg:max-w-4xl h-12 flex items-center">
+          <h1 className="text-xl font-display font-bold tracking-tight">Schedule</h1>
+        </div>
+      </header>
       <div className="container mx-auto p-4 md:p-8 lg:max-w-4xl">
-        <header className="mb-10">
-          <h1 className="text-3xl font-display font-bold tracking-tight">Schedule</h1>
-          <p className="text-muted-foreground mt-1">Upcoming events across all your teams.</p>
-        </header>
-
         {events.length === 0 ? (
           <EmptyState 
             title="Your schedule is clear" 
@@ -56,7 +57,7 @@ export default function Schedule() {
 
               return (
                 <div key={day} className="space-y-4">
-                  <h2 className="text-xl font-display font-bold sticky top-0 bg-muted/10 backdrop-blur-md py-2 z-10">
+                  <h2 className="text-xl font-display font-bold sticky top-12 bg-muted/10 backdrop-blur-md py-2 z-10">
                     {dayLabel}
                   </h2>
                   <div className="flex flex-col gap-4">

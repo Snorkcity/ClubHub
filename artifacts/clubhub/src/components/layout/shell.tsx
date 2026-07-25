@@ -44,6 +44,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const isStaff =
     !!me?.isClubAdmin ||
     !!me?.memberships?.some((m: any) => m.role === "coach" || m.role === "manager");
+  // Check-in is a player thing — parents (guardians) and staff don't need it.
+  const isPlayer = !!me?.memberships?.some((m: any) => m.role === "player");
 
   // Monitoring tab (staff): the active team if they actually staff it,
   // otherwise the first team they coach/manage. Club admins can open any team.
@@ -61,7 +63,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const navItems = [
     { label: "Home", href: "/home", icon: Home },
     { label: "Schedule", href: "/schedule", icon: CalendarDays },
-    { label: "Check-in", href: "/checkin", icon: ClipboardCheck },
+    ...(isPlayer ? [{ label: "Check-in", href: "/checkin", icon: ClipboardCheck }] : []),
     { label: "Messages", href: "/messages", icon: MessageSquare },
     ...(isStaff ? [{ label: "Directory", href: "/people", icon: UserSquare2 }] : []),
     ...(isStaff && staffTeamId != null
@@ -71,10 +73,12 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   // Bottom tab bar (mobile): max 4 tabs + everything else lives in the
   // avatar menu. Players: Home/Schedule/Check-in/Messages.
-  // Staff: Home/Schedule/Messages/Monitoring.
-  const tabItems = isStaff
-    ? navItems.filter((i) => i.label !== "Check-in" && i.label !== "Directory")
-    : navItems.filter((i) => i.label !== "Monitoring" && i.label !== "Directory");
+  // Parents: Home/Schedule/Messages. Staff: Home/Schedule/Messages/Monitoring.
+  const tabItems = navItems.filter((i) =>
+    isStaff
+      ? i.label !== "Check-in" && i.label !== "Directory"
+      : i.label !== "Monitoring" && i.label !== "Directory",
+  );
 
   return (
     <div className="min-h-screen bg-muted/20 flex flex-col md:flex-row">
@@ -155,7 +159,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
       {/* Mobile: floating new-post button, pinned above the tab bar.
           Hidden inside a chat, where it would cover the message composer. */}
-      {!/^\/messages\/\d+/.test(location) && <PostComposer variant="fab" />}
+      {/* New-post button: staff only (server rejects non-staff posts anyway),
+          and only on the Home feed. */}
+      {isStaff && location === "/home" && <PostComposer variant="fab" />}
 
       {/* Mobile Bottom Tab Bar (Heja-style) */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-background border-t flex items-stretch pb-[env(safe-area-inset-bottom)]">
@@ -186,6 +192,14 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Managers and coaches share the same permissions; managers show as "Team Admin". */
+function roleLabel(me: any) {
+  if (me?.isClubAdmin) return "Club Admin";
+  if (me?.memberships?.some((m: any) => m.role === "manager")) return "Team Admin";
+  if (me?.memberships?.some((m: any) => m.role === "coach")) return "Coach";
+  return "Member";
+}
+
 function UserMenu({ me, clerkUser, onSignOut, avatarOnly = false, isStaff = false }: { me: any, clerkUser: any, onSignOut: () => void, avatarOnly?: boolean, isStaff?: boolean }) {
   const avatarUrl = me?.person?.avatarUrl || clerkUser?.imageUrl;
   const name = me?.person?.fullName || clerkUser?.fullName || "Loading...";
@@ -214,7 +228,7 @@ function UserMenu({ me, clerkUser, onSignOut, avatarOnly = false, isStaff = fals
             <div className="flex flex-col items-start flex-1 min-w-0">
               <span className="font-semibold text-sm truncate w-full text-left">{name}</span>
               <span className="text-xs text-muted-foreground truncate w-full text-left">
-                {me?.isClubAdmin ? "Club Admin" : "Member"}
+                {roleLabel(me)}
               </span>
             </div>
             <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -265,12 +279,6 @@ function UserMenu({ me, clerkUser, onSignOut, avatarOnly = false, isStaff = fals
               <Link href="/people" className="flex items-center w-full">
                 <UserSquare2 className="mr-2 h-4 w-4 text-muted-foreground" />
                 <span>Directory</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild className="rounded-xl py-2 cursor-pointer">
-              <Link href="/checkin" className="flex items-center w-full">
-                <ClipboardCheck className="mr-2 h-4 w-4 text-muted-foreground" />
-                <span>Check-in</span>
               </Link>
             </DropdownMenuItem>
           </>

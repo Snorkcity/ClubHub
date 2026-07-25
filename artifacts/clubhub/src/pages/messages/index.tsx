@@ -30,12 +30,14 @@ export default function Messages() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-muted/10">
-      <div className="container mx-auto p-4 md:p-6 lg:max-w-4xl space-y-6">
-        <header className="flex items-center justify-between">
+      {/* Sticky header with divider — stays put while chats scroll. */}
+      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b">
+        <div className="container mx-auto px-4 md:px-6 lg:max-w-4xl h-12 flex items-center justify-between">
           <h1 className="text-xl font-display font-bold tracking-tight">Chats</h1>
           <NewChatDialog myId={myId} />
-        </header>
-
+        </div>
+      </header>
+      <div className="container mx-auto p-4 md:p-6 lg:max-w-4xl space-y-6">
         {chats.length === 0 ? (
           <EmptyState 
             title="No messages yet" 
