@@ -1423,6 +1423,10 @@ components:
         startsAt: { type: string }
         endsAt: { type: string }
         notes: { type: string }
+        invitedRoles:
+          type: array
+          items: { type: string, enum: [coaches, players, parents] }
+          minItems: 1
 
     RsvpInput:
       type: object

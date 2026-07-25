@@ -64,12 +64,14 @@ export default function EventDetail() {
   // player wards, so they follow "players".
   const invited = event.invitedRoles ?? ["coaches", "players", "parents"];
   const myTeamRole = me?.memberships?.find((m: any) => m.teamId === event.teamId)?.role;
+  // Self-RSVP requires team membership (server enforces it), so non-members
+  // (club admins browsing, guardians) don't get the card at all.
   const amInvited =
     myTeamRole === "player"
       ? invited.includes("players")
       : myTeamRole === "coach" || myTeamRole === "manager"
         ? invited.includes("coaches")
-        : invited.includes("players"); // guardians RSVP for player wards
+        : false;
   const showRsvpCard = amInvited && (!event.myRsvp || editingRsvp);
 
   const typeColors = {

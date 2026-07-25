@@ -1080,6 +1080,7 @@ export const GetEventResponse = zod.object({
 
 
 
+
 export const UpdateEventBody = zod.object({
   "type": zod.enum(['training', 'game', 'social', 'other']).optional(),
   "title": zod.string().min(1).optional(),
@@ -1087,7 +1088,8 @@ export const UpdateEventBody = zod.object({
   "opponent": zod.string().optional(),
   "startsAt": zod.string().optional(),
   "endsAt": zod.string().optional(),
-  "notes": zod.string().optional()
+  "notes": zod.string().optional(),
+  "invitedRoles": zod.array(zod.enum(['coaches', 'players', 'parents'])).min(1).optional()
 })
 
 export const UpdateEventResponse = zod.object({

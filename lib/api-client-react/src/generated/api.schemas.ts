@@ -561,6 +561,15 @@ export const EventUpdateType = {
   other: 'other',
 } as const;
 
+export type EventUpdateInvitedRolesItem = typeof EventUpdateInvitedRolesItem[keyof typeof EventUpdateInvitedRolesItem];
+
+
+export const EventUpdateInvitedRolesItem = {
+  coaches: 'coaches',
+  players: 'players',
+  parents: 'parents',
+} as const;
+
 export interface EventUpdate {
   type?: EventUpdateType;
   /** @minLength 1 */
@@ -570,6 +579,8 @@ export interface EventUpdate {
   startsAt?: string;
   endsAt?: string;
   notes?: string;
+  /** @minItems 1 */
+  invitedRoles?: EventUpdateInvitedRolesItem[];
 }
 
 export type RsvpInputStatus = typeof RsvpInputStatus[keyof typeof RsvpInputStatus];

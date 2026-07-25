@@ -127,6 +127,9 @@ router.patch("/events/:eventId", requireAuth, async (req, res) => {
   const patch: Record<string, unknown> = { ...body };
   if (body.startsAt) patch.startsAt = new Date(body.startsAt);
   if (body.endsAt) patch.endsAt = new Date(body.endsAt);
+  if (body.invitedRoles && body.invitedRoles.length)
+    patch.invitedRoles = body.invitedRoles.join(",");
+  else delete patch.invitedRoles;
   const [event] = await db
     .update(eventsTable)
     .set(patch)

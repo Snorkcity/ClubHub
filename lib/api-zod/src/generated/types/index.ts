@@ -30,6 +30,7 @@ export * from './eventInvitedRolesItem';
 export * from './eventMyRsvp';
 export * from './eventType';
 export * from './eventUpdate';
+export * from './eventUpdateInvitedRolesItem';
 export * from './eventUpdateType';
 export * from './extraSession';
 export * from './extraSessionInput';
