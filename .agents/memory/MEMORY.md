@@ -7,3 +7,4 @@
 - [API smoke testing](api-smoke-testing.md) — shared proxy 404s curl POSTs; hit api-server on its own PORT with a minted Clerk session JWT.
 - [Team switcher & unreads](team-switcher-unreads.md) — active team is localStorage-only; unread = content since team_reads.last_seen_at (14-day fallback); mark-seen after 2s view, never on switch.
 - [Client clock skew breaks auth](clock-skew-auth.md) — instant 401s with valid cookies can mean the user device clock is slow; dev server has 30-min skew tolerance.
+- [Verify gitPush landed](git-push-verification.md) — gitPush can claim success while origin/main stays behind; always check origin/main == HEAD + clean status after pushing.
