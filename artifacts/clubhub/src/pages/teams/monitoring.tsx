@@ -274,9 +274,9 @@ function PlayerCard({ p }: { p: PlayerMonitoring }) {
               );
             })}
           </div>
-          <p className="text-sm text-foreground/80 leading-relaxed">{wellnessExplanation(p)}</p>
+          <p className="text-base text-foreground/80 leading-relaxed">{wellnessExplanation(p)}</p>
           {p.wellnessBaseline != null && p.wellnessComposite != null && (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-base text-muted-foreground">
               Their usual (28-day) score is {p.wellnessBaseline} — this window is {p.wellnessComposite}.
             </p>
           )}
@@ -301,20 +301,20 @@ function PlayerCard({ p }: { p: PlayerMonitoring }) {
               <div className="text-base font-bold tabular-nums">{p.acwr == null ? "–" : p.acwr.toFixed(2)}</div>
             </div>
           </div>
-          <p className="text-sm text-foreground/80 leading-relaxed">{acwrExplanation(p)}</p>
-          <details className="text-sm text-muted-foreground">
+          <p className="text-base text-foreground/80 leading-relaxed">{acwrExplanation(p)}</p>
+          <details className="text-base text-muted-foreground">
             <summary className="cursor-pointer select-none font-semibold">What do these load numbers mean?</summary>
             <p className="mt-1 leading-relaxed">{loadContext(p)}</p>
           </details>
           {p.windowExternalLoad ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-base text-muted-foreground">
               Includes {p.windowExternalLoad} from sessions outside the club (rep, school, other).
             </p>
           ) : null}
           {p.flags.length > 0 && (
             <ul className="space-y-0.5">
               {p.flags.map((f, i) => (
-                <li key={i} className="text-sm text-muted-foreground">
+                <li key={i} className="text-base text-muted-foreground">
                   {f.severity === "alert" ? "⚠ " : "👁 "}{f.message}
                 </li>
               ))}
