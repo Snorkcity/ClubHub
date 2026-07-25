@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { Pencil } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -85,19 +86,37 @@ export function PostComposer({
       <Button size="sm" className="rounded-xl shadow-sm">
         Post Update
       </Button>
-    ) : (
-      <Button
-        size="icon"
-        aria-label="Write post"
-        className="md:hidden fixed right-4 z-50 h-14 w-14 rounded-full shadow-lg bottom-[calc(4.25rem+env(safe-area-inset-bottom))]"
-      >
-        <Pencil className="h-6 w-6" />
-      </Button>
-    );
+    ) : null;
+
+  // The floating pencil is portalled to <body> and positioned with inline
+  // styles so no ancestor (transforms, overflow, stacking contexts) can pull
+  // it out of its bottom-right spot above the tab bar.
+  const fab =
+    variant === "fab"
+      ? createPortal(
+          <Button
+            size="icon"
+            aria-label="Write post"
+            onClick={() => setOpen(true)}
+            className="md:hidden h-14 w-14 rounded-full shadow-lg"
+            style={{
+              position: "fixed",
+              right: "1rem",
+              left: "auto",
+              bottom: "calc(4.25rem + env(safe-area-inset-bottom))",
+              zIndex: 50,
+            }}
+          >
+            <Pencil className="h-6 w-6" />
+          </Button>,
+          document.body,
+        )
+      : null;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
+      {fab}
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>New post</DialogTitle>
