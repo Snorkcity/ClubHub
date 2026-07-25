@@ -497,18 +497,18 @@ function EventForm({
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1.5">
           <Label htmlFor="ev-date">Date</Label>
-          <Input id="ev-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          <Input className="min-w-0 w-full" id="ev-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="ev-start">{isGame ? "Kick-off time" : "Start time"}</Label>
-          <Input id="ev-start" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+          <Input className="min-w-0 w-full" id="ev-start" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
         </div>
       </div>
 
       {isGame ? (
         <div className="space-y-1.5">
           <Label htmlFor="ev-arrive">Players to arrive by</Label>
-          <Input id="ev-arrive" type="time" value={arriveBy} onChange={(e) => setArriveBy(e.target.value)} />
+          <Input className="min-w-0 w-full" id="ev-arrive" type="time" value={arriveBy} onChange={(e) => setArriveBy(e.target.value)} />
         </div>
       ) : (
         <div className={`grid gap-2 ${duration === "custom" ? "grid-cols-2" : "grid-cols-1"}`}>
@@ -526,7 +526,7 @@ function EventForm({
           {duration === "custom" ? (
             <div className="space-y-1.5">
               <Label htmlFor="ev-end">End time</Label>
-              <Input id="ev-end" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+              <Input className="min-w-0 w-full" id="ev-end" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
             </div>
           ) : (
             startTime && (
@@ -549,7 +549,7 @@ function EventForm({
           {repeatWeekly && (
             <div className="space-y-1.5">
               <Label htmlFor="ev-until">Until</Label>
-              <Input id="ev-until" type="date" value={repeatUntil} min={date} onChange={(e) => setRepeatUntil(e.target.value)} />
+              <Input className="min-w-0 w-full" id="ev-until" type="date" value={repeatUntil} min={date} onChange={(e) => setRepeatUntil(e.target.value)} />
               {eventDates.length > 1 && (
                 <p className="text-xs text-muted-foreground">
                   {eventDates.length} sessions, same time each week.

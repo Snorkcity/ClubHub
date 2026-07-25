@@ -81,7 +81,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div className="min-h-screen bg-muted/20 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-muted/20 flex flex-col md:flex-row overflow-x-clip">
       {/* Sidebar for Desktop */}
       <aside className="hidden md:flex flex-col w-72 bg-background border-r shrink-0 sticky top-0 h-screen">
         <div className="h-16 flex items-center px-6 border-b shrink-0">
