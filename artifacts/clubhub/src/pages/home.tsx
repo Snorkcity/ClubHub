@@ -158,7 +158,10 @@ function AdminDashboard() {
             <h2 className="text-xl font-display font-bold">Recent Updates</h2>
           </div>
           
-          <PostComposer variant="card" />
+          {/* Mobile uses the floating pencil button instead of this card. */}
+          <div className="hidden md:block">
+            <PostComposer variant="card" />
+          </div>
 
           {overview.recentPosts.length === 0 ? (
             <Card className="p-8 text-center border-dashed bg-muted/20">
@@ -265,7 +268,10 @@ function MemberDashboard({ me }: { me: any }) {
             <h2 className="text-2xl font-display font-bold">Team Feed</h2>
           </div>
           
-          <PostComposer variant="card" />
+          {/* Mobile uses the floating pencil button instead of this card. */}
+          <div className="hidden md:block">
+            <PostComposer variant="card" />
+          </div>
 
           {!visibleFeed || visibleFeed.length === 0 ? (
             <EmptyState 

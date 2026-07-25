@@ -39,6 +39,29 @@ function acwrTone(v: number | null | undefined): string {
   return "bg-green-50 text-green-700";
 }
 
+/** Higher = more concerning; used to float the reddest players to the top. */
+function severityScore(p: PlayerMonitoring): number {
+  let score = 0;
+  const bucket = (v: number | null | undefined) => (v == null ? 0 : v < 2.5 ? 2 : v < 3.5 ? 1 : 0);
+  for (const e of WELLNESS_ELEMENTS) score += bucket(p[e.key] as number | null);
+  score += bucket(p.wellnessComposite) * 2; // overall wellness weighs double
+  if (p.acwr != null) {
+    if (p.acwr >= 1.5 || p.acwr < 0.6) score += 4;
+    else if (p.acwr >= 1.3 || p.acwr < 0.8) score += 2;
+  }
+  for (const f of p.flags) score += f.severity === "alert" ? 3 : 1;
+  return score;
+}
+
+/** Plain-English context for a raw sRPE load number. */
+function loadContext(p: PlayerMonitoring): string {
+  const perSession = p.sessions > 0 ? Math.round(p.windowLoad / p.sessions) : null;
+  const base =
+    "Load = how hard the session felt (1–10) × minutes. A tough 90-minute session lands around 600–700; a light one nearer 200–300.";
+  if (perSession == null) return base;
+  return `${base} This player is averaging ≈${perSession} per session, so skipping one takes roughly that much off their week.`;
+}
+
 const WELLNESS_ELEMENTS = [
   { key: "sleepQuality", label: "Sleep" },
   { key: "energy", label: "Energy" },
@@ -222,6 +245,10 @@ function PlayerCard({ p }: { p: PlayerMonitoring }) {
             </div>
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed">{acwrExplanation(p)}</p>
+          <details className="text-[11px] text-muted-foreground">
+            <summary className="cursor-pointer select-none font-semibold">What do these load numbers mean?</summary>
+            <p className="mt-1 leading-relaxed">{loadContext(p)}</p>
+          </details>
           {p.windowExternalLoad ? (
             <p className="text-[11px] text-muted-foreground">
               Includes {p.windowExternalLoad} from sessions outside the club (rep, school, other).
@@ -260,6 +287,12 @@ export default function TeamMonitoring() {
   if (error || !data) return <ErrorState onRetry={() => refetch()} />;
 
   const flagged = data.players.filter((p) => p.flags.length > 0);
+
+  // Most concerning first; players tied on severity stay alphabetical.
+  const sortedPlayers = [...data.players].sort((a, b) => {
+    const diff = severityScore(b) - severityScore(a);
+    return diff !== 0 ? diff : a.person.fullName.localeCompare(b.person.fullName);
+  });
 
   return (
     <div className="flex-1 overflow-y-auto bg-muted/10">
@@ -313,7 +346,7 @@ export default function TeamMonitoring() {
           <>
           {/* Mobile: tappable score cards */}
           <div className="space-y-3 md:hidden">
-            {data.players.map((p) => (
+            {sortedPlayers.map((p) => (
               <PlayerCard key={p.person.id} p={p} />
             ))}
           </div>
@@ -348,7 +381,7 @@ export default function TeamMonitoring() {
                 </tr>
               </thead>
               <tbody>
-                {data.players.map((p) => (
+                {sortedPlayers.map((p) => (
                   <tr key={p.person.id} className="border-t">
                     <td className="p-3 sticky left-0 bg-card z-10">
                       <div className="flex items-center gap-2 min-w-[160px]">
@@ -423,9 +456,11 @@ export default function TeamMonitoring() {
         )}
 
         <p className="text-xs text-muted-foreground">
-          Wellness cells show the {windowDays === 1 ? "24-hour" : `${windowDays}-day`} average on a 1–5 scale
-          (higher is better). Load = RPE × minutes (sRPE). Flags compare each player against their own 28-day
-          baseline — thresholds are a draft pending physio review.
+          Players are sorted most-concerning first. Wellness cells show the{" "}
+          {windowDays === 1 ? "24-hour" : `${windowDays}-day`} average on a 1–5 scale (higher is better).
+          Load = how hard it felt (1–10) × minutes, so a tough 90-minute session ≈ 600–700 and a light one
+          ≈ 200–300 — a 2,000 week is roughly three or four solid sessions. Flags compare each player against
+          their own 28-day baseline — thresholds are a draft pending physio review.
         </p>
 
         <details className="rounded-2xl border border-border bg-card group">

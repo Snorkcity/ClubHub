@@ -89,7 +89,7 @@ export function PostComposer({
       <Button
         size="icon"
         aria-label="Write post"
-        className="md:hidden fixed right-4 z-40 h-14 w-14 rounded-full shadow-lg bottom-[calc(4.5rem+env(safe-area-inset-bottom))]"
+        className="md:hidden fixed right-4 z-50 h-14 w-14 rounded-full shadow-lg bottom-[calc(4.25rem+env(safe-area-inset-bottom))]"
       >
         <Pencil className="h-6 w-6" />
       </Button>
