@@ -31,7 +31,7 @@ export default function TeamMinutes() {
   const maxSeconds = Math.max(1, ...data.players.map((p) => p.totalSeconds));
 
   return (
-    <div className="flex-1 overflow-y-auto bg-muted/10">
+    <div className="flex-1 overflow-y-auto overflow-x-hidden bg-muted/10">
       <div className="container mx-auto p-4 md:p-8 lg:max-w-3xl space-y-4">
         <Link
           href={`/teams/${teamId}`}

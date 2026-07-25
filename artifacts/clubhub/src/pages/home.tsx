@@ -34,7 +34,7 @@ export default function Home() {
   if (!me) return <ErrorState />;
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 overflow-y-auto overflow-x-hidden">
       <div className="container mx-auto p-4 md:p-8 lg:max-w-6xl space-y-8">
         <header className="mb-8">
           <h1 className="text-3xl font-display font-bold tracking-tight">
@@ -227,7 +227,7 @@ function MemberDashboard({ me }: { me: any }) {
 
   return (
     <div className="grid lg:grid-cols-3 gap-8">
-      <div className="lg:col-span-2 space-y-8">
+      <div className="lg:col-span-2 space-y-8 min-w-0">
         
         {/* Next Event — compact banner so posts stay visible below it */}
         {nextEvent && (
@@ -289,7 +289,7 @@ function MemberDashboard({ me }: { me: any }) {
         </div>
       </div>
 
-      <div className="space-y-8">
+      <div className="space-y-8 min-w-0">
         {/* Teams List */}
         <div className="bg-card border rounded-3xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-6">

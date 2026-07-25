@@ -27,7 +27,7 @@ export default function PersonDetail() {
   const wardIds = wards.map((w) => w.player.id);
 
   return (
-    <div className="flex-1 overflow-y-auto bg-muted/5">
+    <div className="flex-1 overflow-y-auto overflow-x-hidden bg-muted/5">
       {/* Cover Profile */}
       <div className="h-32 md:h-48 w-full bg-gradient-to-r from-primary to-primary/80 shrink-0 relative overflow-hidden">
         <div className="absolute inset-0 bg-black/10" />

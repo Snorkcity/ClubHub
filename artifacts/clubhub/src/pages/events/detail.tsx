@@ -128,7 +128,7 @@ export default function EventDetail() {
   const typeColor = typeColors[event.type as keyof typeof typeColors] || typeColors.other;
 
   return (
-    <div className="flex-1 overflow-y-auto bg-muted/10">
+    <div className="flex-1 overflow-y-auto overflow-x-hidden bg-muted/10">
       <EventEditorDialog
         open={editorOpen}
         onOpenChange={setEditorOpen}

@@ -34,7 +34,7 @@ export default function TeamsList() {
   if (error || !teams || !me) return <ErrorState onRetry={() => refetch()} />;
 
   return (
-    <div className="flex-1 overflow-y-auto bg-muted/10">
+    <div className="flex-1 overflow-y-auto overflow-x-hidden bg-muted/10">
       <div className="container mx-auto p-4 md:p-8 lg:max-w-6xl">
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>

@@ -52,7 +52,7 @@ export default function PeopleList() {
           </Select>
         </div>
 
-        <div className="flex-1 overflow-y-auto pb-8">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden pb-8">
           {isLoading ? (
             <LoadingScreen message="Searching directory..." />
           ) : error || !people ? (

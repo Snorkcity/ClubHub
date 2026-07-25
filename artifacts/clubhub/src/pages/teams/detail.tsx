@@ -64,7 +64,7 @@ export default function TeamDetail() {
   const existingUserIds = (members ?? []).map((m) => m.person.id);
 
   return (
-    <div className="flex-1 overflow-y-auto bg-muted/5 relative">
+    <div className="flex-1 overflow-y-auto overflow-x-hidden bg-muted/5 relative">
       {/* Team Header */}
       <div 
         className="h-32 md:h-48 w-full shrink-0"

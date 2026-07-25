@@ -450,7 +450,7 @@ export default function Checkin() {
   const subjects = data.subjects;
   if (subjects.length === 0) {
     return (
-      <div className="flex-1 overflow-y-auto bg-muted/10">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden bg-muted/10">
         <div className="container mx-auto p-4 md:p-8 lg:max-w-2xl">
           <EmptyState
             title="No check-in needed"
@@ -465,7 +465,7 @@ export default function Checkin() {
   const active = subjects[Math.min(activeIdx, subjects.length - 1)];
 
   return (
-    <div className="flex-1 overflow-y-auto bg-muted/10">
+    <div className="flex-1 overflow-y-auto overflow-x-hidden bg-muted/10">
       <div className="container mx-auto p-4 md:p-8 lg:max-w-2xl space-y-5">
         <header>
           <h1 className="text-3xl font-display font-bold tracking-tight">Check-in</h1>
