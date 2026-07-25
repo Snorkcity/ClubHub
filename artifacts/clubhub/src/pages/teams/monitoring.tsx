@@ -393,6 +393,15 @@ export default function TeamMonitoring() {
             </span>
           )}
         </div>
+        <p className="text-sm text-muted-foreground">
+          Changing this changes the <span className="font-medium text-foreground">wellness</span> view and load totals —{" "}
+          {windowDays === 1
+            ? "24h shows just today's check-in, handy before training."
+            : windowDays === 7
+              ? "7d averages the past week — the usual view."
+              : `${windowDays}d averages a longer stretch, good for spotting slow drifts.`}{" "}
+          The load ratio is always last 7 days vs the 4-week average, whatever you pick.
+        </p>
 
         {data.players.length === 0 ? (
           <EmptyState
