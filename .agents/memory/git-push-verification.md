@@ -8,3 +8,5 @@ description: gitPush can report success while leaving commits or working-tree ch
 - The `gitPush({})` callback has twice reported `success:true` while origin/main stayed behind (once with an unpushed local commit, once with uncommitted working-tree changes it didn't pick up).
 - **How to apply:** after every push, run `git fetch && git rev-parse origin/main HEAD && git status --short`. If HEAD != origin/main or files are dirty, commit manually (`git add`/`git commit`) then call `gitPush({})` again — direct `git push` fails auth (token not in remote URL); only the callback can push.
 - **Why:** Railway deploys from GitHub; a "successful" push that didn't land means Scott tests stale prod on his phone and reports missing features.
+
+**New failure mode (Jul 2026):** gitPush can report success WITHOUT committing dirty working-tree changes at all (HEAD/origin match but file stays modified). If status isn't clean after gitPush, `git add + git commit` manually, then gitPush again.
