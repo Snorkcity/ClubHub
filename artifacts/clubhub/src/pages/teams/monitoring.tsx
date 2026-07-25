@@ -178,6 +178,24 @@ function acwrExplanation(p: PlayerMonitoring): string {
   return `This week's load (${p.acuteLoad}) is in line with their usual week (≈${Math.round(p.chronicWeeklyLoad ?? 0)}) — right in the sweet spot.`;
 }
 
+/** One short sentence comparing this player's week against the squad. */
+function squadLoadContext(p: PlayerMonitoring, players: PlayerMonitoring[]): string | null {
+  const loads = players.map((x) => x.acuteLoad).filter((v) => v > 0);
+  if (loads.length < 3) return null;
+  const avg = Math.round(loads.reduce((a, b) => a + b, 0) / loads.length);
+  if (avg <= 0) return null;
+  const ratio = p.acuteLoad / avg;
+  const firstName = p.person.fullName.split(" ")[0];
+  const rel =
+    ratio >= 1.25 ? `well above that (${ratio.toFixed(1)}×)`
+    : ratio >= 1.1 ? `a bit above that (${ratio.toFixed(1)}×)`
+    : ratio > 0.9 ? "right around that"
+    : ratio > 0.75 ? `a bit below that (${ratio.toFixed(1)}×)`
+    : ratio > 0 ? `well below that (${ratio.toFixed(1)}×)`
+    : "at zero";
+  return `Squad average this week is ≈${avg} — ${firstName} is ${rel}.`;
+}
+
 function WeeklyHistoryBlock({ p, compact }: { p: PlayerMonitoring; compact?: boolean }) {
   const weeks = p.weeklyHistory ?? [];
   if (weeks.length === 0) return null;
@@ -253,7 +271,7 @@ function windowLabel(days: number): string {
   return days === 1 ? "24-hour" : `${days}-day`;
 }
 
-function PlayerCard({ p, windowDays }: { p: PlayerMonitoring; windowDays: number }) {
+function PlayerCard({ p, windowDays, squadNote }: { p: PlayerMonitoring; windowDays: number; squadNote: string | null }) {
   const [open, setOpen] = useState<"wellness" | "acwr" | null>(null);
   const toggle = (which: "wellness" | "acwr") => setOpen((o) => (o === which ? null : which));
 
@@ -345,6 +363,7 @@ function PlayerCard({ p, windowDays }: { p: PlayerMonitoring; windowDays: number
             </div>
           </div>
           <p className="text-base text-foreground/80 leading-relaxed">{acwrExplanation(p)}</p>
+          {squadNote && <p className="text-base text-muted-foreground">{squadNote}</p>}
           <WeeklyHistoryBlock p={p} />
           <details className="text-base text-muted-foreground">
             <summary className="cursor-pointer select-none font-semibold">What do these load numbers mean?</summary>
@@ -458,7 +477,7 @@ export default function TeamMonitoring() {
           {/* Mobile: tappable score cards */}
           <div className="space-y-3 md:hidden">
             {sortedPlayers.map((p) => (
-              <PlayerCard key={p.person.id} p={p} windowDays={windowDays} />
+              <PlayerCard key={p.person.id} p={p} windowDays={windowDays} squadNote={squadLoadContext(p, data.players)} />
             ))}
           </div>
 
@@ -586,6 +605,9 @@ export default function TeamMonitoring() {
                         </div>
                       </div>
                       <p className="text-xs text-muted-foreground leading-relaxed">{acwrExplanation(selected)}</p>
+                      {squadLoadContext(selected, data.players) && (
+                        <p className="text-xs text-muted-foreground mt-1">{squadLoadContext(selected, data.players)}</p>
+                      )}
                       {selected.windowExternalLoad ? (
                         <p className="text-[11px] text-muted-foreground mt-1">
                           Includes {selected.windowExternalLoad} from sessions outside the club (rep, school, other).
