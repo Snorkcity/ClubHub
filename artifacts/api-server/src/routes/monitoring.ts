@@ -578,21 +578,22 @@ router.get("/teams/:teamId/monitoring", requireAuth, async (req, res) => {
     const weeklyHistory = [3, 2, 1, 0].map((i) => {
       const from = daysAgo(7 * (i + 1)).getTime();
       const to = daysAgo(7 * i).getTime();
-      const fromDate = dateStr(daysAgo(7 * (i + 1) - 1));
       const evts = myLoad.filter(
         (row) => row.startsAt.getTime() > from && row.startsAt.getTime() <= to,
       );
       const extras = myExtras.filter(
         (s) => extraTime(s) > from && extraTime(s) <= to,
       );
+      // Anchor wellness entry dates at midday (same convention as extra
+      // sessions) so every metric in a row uses the SAME rolling bounds.
+      const wellnessTime = (w: (typeof mine)[number]) =>
+        new Date(`${w.entryDate}T12:00:00Z`).getTime();
       const wk = mine.filter(
-        (w) =>
-          w.entryDate >= fromDate && w.entryDate >= since28 &&
-          new Date(`${w.entryDate}T12:00:00Z`).getTime() <= to,
+        (w) => wellnessTime(w) > from && wellnessTime(w) <= to,
       );
       const wkAvg = avg(wk.flatMap((w) => WELLNESS_METRICS.map((m) => w[m])));
       return {
-        weekStart: fromDate,
+        weekStart: dateStr(new Date(from)),
         load: sum(evts) + sumExtras(extras),
         externalLoad: sumExtras(extras),
         sessions: evts.length + extras.length,
