@@ -10,6 +10,7 @@ import {
   type PlayerMonitoring,
 } from "@workspace/api-client-react";
 import { LoadingScreen, ErrorState, EmptyState } from "@/components/ui/states";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
@@ -62,6 +63,72 @@ function loadContext(p: PlayerMonitoring): string {
   return `${base} This player is averaging ≈${perSession} per session, so skipping one takes roughly that much off their week.`;
 }
 
+type TrafficLight = "red" | "amber" | "green" | "none";
+
+/** One overall traffic light per player — the worst of wellness, ACWR and flags. */
+function overallLight(p: PlayerMonitoring): TrafficLight {
+  const buckets: TrafficLight[] = [];
+  const wb = (v: number | null | undefined): TrafficLight =>
+    v == null ? "none" : v < 2.5 ? "red" : v < 3.5 ? "amber" : "green";
+  buckets.push(wb(p.wellnessComposite));
+  if (p.acwr != null) {
+    buckets.push(p.acwr >= 1.5 || p.acwr < 0.6 ? "red" : p.acwr >= 1.3 || p.acwr < 0.8 ? "amber" : "green");
+  }
+  if (p.flags.some((f) => f.severity === "alert")) buckets.push("red");
+  else if (p.flags.length > 0) buckets.push("amber");
+  if (buckets.includes("red")) return "red";
+  if (buckets.includes("amber")) return "amber";
+  if (buckets.includes("green")) return "green";
+  return "none";
+}
+
+const LIGHT_TILE: Record<TrafficLight, string> = {
+  red: "bg-red-50 border-red-200 hover:border-red-400",
+  amber: "bg-amber-50 border-amber-200 hover:border-amber-400",
+  green: "bg-green-50 border-green-200 hover:border-green-400",
+  none: "bg-muted/30 border-border hover:border-foreground/20",
+};
+const LIGHT_DOT: Record<TrafficLight, string> = {
+  red: "bg-red-500",
+  amber: "bg-amber-500",
+  green: "bg-green-500",
+  none: "bg-muted-foreground/30",
+};
+
+/** Personalised opener the coach can use with this player. */
+function conversationGuide(p: PlayerMonitoring): string {
+  const light = overallLight(p);
+  const firstName = p.person.fullName.split(" ")[0];
+  const scored = WELLNESS_ELEMENTS
+    .map((e) => ({ label: e.label.toLowerCase(), value: p[e.key] as number | null }))
+    .filter((e): e is { label: string; value: number } => e.value != null);
+  const worst = [...scored].sort((a, b) => a.value - b.value)[0];
+  const loadHigh = p.acwr != null && p.acwr >= 1.3;
+  const loadLow = p.acwr != null && p.acwr < 0.8;
+
+  if (light === "none")
+    return `No recent check-ins from ${firstName}. A casual "have you seen the check-in thing?" is the only conversation needed here.`;
+  if (light === "green")
+    return `${firstName} looks in good shape — nothing to raise. A quick "you're travelling well" goes a long way for buy-in.`;
+  if (loadHigh && worst && worst.value < 3.5)
+    return `Double signal for ${firstName}: workload has spiked AND ${worst.label} is down. Open with "big week — how's the body holding up?" and consider trimming their next session rather than asking them to push through.`;
+  if (loadHigh)
+    return `${firstName}'s wellness is holding but their workload has jumped. Ask what else they've played this week (school, rep) — the risk is what you can't see on your own training plan.`;
+  if (loadLow)
+    return `${firstName} has trained much less than usual. If it's planned rest, fine — if not, ask "missed you this week, everything OK?" and rebuild gradually rather than straight back to full load.`;
+  if (worst && worst.value < 2.5)
+    return `The flag for ${firstName} is ${worst.label}. Don't lead with the number — open with "how are you travelling this week?" and steer gently toward ${
+      worst.label === "sleep" ? "how they're sleeping" :
+      worst.label === "stress" ? "school/home pressure" :
+      worst.label === "soreness" ? "where they're sore and since when" :
+      worst.label === "energy" ? "whether they're eating and recovering enough" :
+      "how things are going off the pitch"
+    }.`;
+  if (worst)
+    return `${firstName} is a touch below par (${worst.label} is the softest). Nothing urgent — a casual check-in at training is enough, and watch whether next week's numbers recover.`;
+  return `Check in casually with ${firstName} and keep an eye on next week's trend.`;
+}
+
 const WELLNESS_ELEMENTS = [
   { key: "sleepQuality", label: "Sleep" },
   { key: "energy", label: "Energy" },
@@ -109,16 +176,6 @@ function acwrExplanation(p: PlayerMonitoring): string {
   if (p.acwr < 0.8)
     return `This week's load (${p.acuteLoad}) is a bit lighter than their usual week (≈${Math.round(p.chronicWeeklyLoad ?? 0)}) — fine if it's planned recovery, worth asking about if not.`;
   return `This week's load (${p.acuteLoad}) is in line with their usual week (≈${Math.round(p.chronicWeeklyLoad ?? 0)}) — right in the sweet spot.`;
-}
-
-function Cell({ value, tone, suffix }: { value: number | null | undefined; tone: string; suffix?: string }) {
-  return (
-    <td className="p-1">
-      <div className={`rounded-lg px-2 py-2 text-center text-sm tabular-nums ${tone}`}>
-        {value == null ? "–" : `${value}${suffix ?? ""}`}
-      </div>
-    </td>
-  );
 }
 
 function FlagBadges({ player }: { player: PlayerMonitoring }) {
@@ -273,6 +330,7 @@ export default function TeamMonitoring() {
   const params = useParams<{ teamId: string }>();
   const teamId = Number(params.teamId);
   const [windowDays, setWindowDays] = useState(7);
+  const [selected, setSelected] = useState<PlayerMonitoring | null>(null);
 
   const { data: team } = useGetTeam(teamId, {
     query: { queryKey: getGetTeamQueryKey(teamId) },
@@ -351,107 +409,157 @@ export default function TeamMonitoring() {
             ))}
           </div>
 
-          {/* Desktop: full table */}
-          <div className="hidden md:block rounded-2xl border bg-card shadow-sm overflow-x-auto">
-            <table className="w-full min-w-[860px] border-collapse">
-              <thead>
-                <tr className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <th className="text-left p-3 sticky left-0 bg-card z-10">Player</th>
-                  <th className="p-2 font-semibold">Sleep</th>
-                  <th className="p-2 font-semibold">Energy</th>
-                  <th className="p-2 font-semibold">Soreness</th>
-                  <th className="p-2 font-semibold">Stress</th>
-                  <th className="p-2 font-semibold">Mood</th>
-                  <th className="p-2 font-semibold">
-                    <Tooltip>
-                      <TooltipTrigger className="underline decoration-dotted">Wellness</TooltipTrigger>
-                      <TooltipContent>Average of all five, vs their 28-day norm</TooltipContent>
-                    </Tooltip>
-                  </th>
-                  <th className="p-2 font-semibold">Sessions</th>
-                  <th className="p-2 font-semibold">Load</th>
-                  <th className="p-2 font-semibold">
-                    <Tooltip>
-                      <TooltipTrigger className="underline decoration-dotted">ACWR</TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        Acute:chronic workload ratio — last 7 days vs their 4-week weekly average. Sweet spot ≈ 0.8–1.3.
-                      </TooltipContent>
-                    </Tooltip>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedPlayers.map((p) => (
-                  <tr key={p.person.id} className="border-t">
-                    <td className="p-3 sticky left-0 bg-card z-10">
-                      <div className="flex items-center gap-2 min-w-[160px]">
-                        <div className="min-w-0">
-                          <Link
-                            href={`/people/${p.person.id}`}
-                            className="font-semibold text-sm hover:underline truncate block"
-                          >
-                            {p.person.fullName}
-                          </Link>
-                          <p className="text-[11px] text-muted-foreground">
-                            {p.wellnessCount} check-in{p.wellnessCount === 1 ? "" : "s"}
-                            {p.lastWellnessDate ? ` · last ${format(new Date(p.lastWellnessDate + "T12:00:00"), "d MMM")}` : ""}
-                          </p>
-                        </div>
-                        <FlagBadges player={p} />
-                      </div>
-                    </td>
-                    <Cell value={p.sleepQuality} tone={wellnessTone(p.sleepQuality)} />
-                    <Cell value={p.energy} tone={wellnessTone(p.energy)} />
-                    <Cell value={p.soreness} tone={wellnessTone(p.soreness)} />
-                    <Cell value={p.stress} tone={wellnessTone(p.stress)} />
-                    <Cell value={p.mood} tone={wellnessTone(p.mood)} />
-                    <td className="p-1">
-                      <div className={`rounded-lg px-2 py-2 text-center text-sm tabular-nums ${wellnessTone(p.wellnessComposite)}`}>
-                        {p.wellnessComposite == null ? "–" : p.wellnessComposite}
-                        {p.wellnessBaseline != null && p.wellnessComposite != null && (
-                          <span className="text-[10px] opacity-70"> /{p.wellnessBaseline}</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-1">
-                      <div className="rounded-lg px-2 py-2 text-center text-sm tabular-nums bg-muted/40">
-                        {p.sessions}
-                      </div>
-                    </td>
-                    <td className="p-1">
-                      {p.windowLoad > 0 && p.sessions > 0 ? (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="rounded-lg px-2 py-2 text-center text-sm tabular-nums bg-muted/40 cursor-default">
-                              {p.windowLoad}
-                              {p.windowExternalLoad ? <span className="text-sky-600 font-bold">*</span> : null}
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-xs text-xs space-y-1">
-                            <p>
-                              ≈ {Math.round(p.windowLoad / p.sessions)} per session — skipping one takes
-                              roughly that much off their total.
-                            </p>
-                            {p.windowExternalLoad ? (
-                              <p>
-                                Includes {p.windowExternalLoad} from sessions outside the club (rep,
-                                school, other).
-                              </p>
-                            ) : null}
-                          </TooltipContent>
-                        </Tooltip>
-                      ) : (
-                        <div className="rounded-lg px-2 py-2 text-center text-sm tabular-nums bg-muted/40">
-                          {p.windowLoad}
-                        </div>
+          {/* Desktop: at-a-glance dashboard — traffic-light tiles, click for detail */}
+          <div className="hidden md:block space-y-4">
+            {/* Squad summary strip */}
+            <div className="grid grid-cols-4 gap-3">
+              {(["red", "amber", "green", "none"] as TrafficLight[]).map((light) => {
+                const count = sortedPlayers.filter((p) => overallLight(p) === light).length;
+                const labels: Record<TrafficLight, string> = {
+                  red: "Needs attention",
+                  amber: "Keep an eye on",
+                  green: "All good",
+                  none: "No data",
+                };
+                return (
+                  <div key={light} className="rounded-2xl border bg-card p-4 flex items-center gap-3">
+                    <span className={`h-3.5 w-3.5 rounded-full shrink-0 ${LIGHT_DOT[light]}`} />
+                    <div>
+                      <div className="text-2xl font-display font-bold leading-none">{count}</div>
+                      <div className="text-xs text-muted-foreground mt-1">{labels[light]}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Player tiles */}
+            <div className="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+              {sortedPlayers.map((p) => {
+                const light = overallLight(p);
+                return (
+                  <button
+                    key={p.person.id}
+                    onClick={() => setSelected(p)}
+                    className={`rounded-2xl border-2 p-3 text-left transition-colors ${LIGHT_TILE[light]}`}
+                  >
+                    <div className="flex items-start justify-between gap-1">
+                      <span className="font-semibold text-sm leading-tight truncate">{p.person.fullName}</span>
+                      <span className={`h-2.5 w-2.5 rounded-full shrink-0 mt-1 ${LIGHT_DOT[light]}`} />
+                    </div>
+                    <div className="mt-2 flex items-center gap-3 text-xs tabular-nums">
+                      <span>
+                        <span className="text-muted-foreground">Well </span>
+                        <span className="font-bold">{p.wellnessComposite ?? "–"}</span>
+                      </span>
+                      <span>
+                        <span className="text-muted-foreground">ACWR </span>
+                        <span className="font-bold">{p.acwr == null ? "–" : p.acwr.toFixed(2)}</span>
+                      </span>
+                      {p.flags.length > 0 && (
+                        <span className={`ml-auto font-bold ${p.flags.some((f) => f.severity === "alert") ? "text-red-600" : "text-amber-600"}`}>
+                          {p.flags.some((f) => f.severity === "alert") ? "⚠" : "👁"} {p.flags.length}
+                        </span>
                       )}
-                    </td>
-                    <Cell value={p.acwr} tone={acwrTone(p.acwr)} />
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
+
+          {/* Player detail dialog (desktop tile click) */}
+          <Dialog open={selected != null} onOpenChange={(o) => { if (!o) setSelected(null); }}>
+            <DialogContent className="sm:max-w-xl">
+              {selected && (
+                <>
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <span className={`h-3 w-3 rounded-full ${LIGHT_DOT[overallLight(selected)]}`} />
+                      {selected.person.fullName}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 text-sm">
+                    <p className="text-xs text-muted-foreground -mt-2">
+                      {selected.wellnessCount} check-in{selected.wellnessCount === 1 ? "" : "s"} in this window
+                      {selected.lastWellnessDate ? ` · last ${format(new Date(selected.lastWellnessDate + "T12:00:00"), "d MMM")}` : ""}
+                      {" · "}
+                      <Link href={`/people/${selected.person.id}`} className="underline hover:text-foreground">
+                        view profile
+                      </Link>
+                    </p>
+
+                    <div>
+                      <h4 className="font-bold text-xs uppercase tracking-wider text-muted-foreground mb-1.5">
+                        Wellness {selected.wellnessComposite != null ? `· ${selected.wellnessComposite}/5` : ""}
+                        {selected.wellnessBaseline != null ? ` (usual ${selected.wellnessBaseline})` : ""}
+                      </h4>
+                      <div className="grid grid-cols-5 gap-1.5 mb-2">
+                        {WELLNESS_ELEMENTS.map((e) => {
+                          const v = selected[e.key] as number | null;
+                          return (
+                            <div key={e.key} className={`rounded-lg px-1 py-1.5 text-center ${wellnessTone(v)}`}>
+                              <div className="text-[9px] font-bold uppercase tracking-wide opacity-70">{e.label}</div>
+                              <div className="text-sm font-bold tabular-nums">{v == null ? "–" : v}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{wellnessExplanation(selected)}</p>
+                    </div>
+
+                    <div>
+                      <h4 className="font-bold text-xs uppercase tracking-wider text-muted-foreground mb-1.5">
+                        Workload · {selected.sessions} session{selected.sessions === 1 ? "" : "s"}
+                      </h4>
+                      <div className="grid grid-cols-3 gap-1.5 mb-2">
+                        <div className="rounded-lg px-1 py-1.5 text-center bg-muted/40">
+                          <div className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground">This week</div>
+                          <div className="text-sm font-bold tabular-nums">{selected.acuteLoad}</div>
+                        </div>
+                        <div className="rounded-lg px-1 py-1.5 text-center bg-muted/40">
+                          <div className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground">Usual week</div>
+                          <div className="text-sm font-bold tabular-nums">
+                            {selected.chronicWeeklyLoad == null ? "–" : Math.round(selected.chronicWeeklyLoad)}
+                          </div>
+                        </div>
+                        <div className={`rounded-lg px-1 py-1.5 text-center ${acwrTone(selected.acwr)}`}>
+                          <div className="text-[9px] font-bold uppercase tracking-wide opacity-70">ACWR</div>
+                          <div className="text-sm font-bold tabular-nums">{selected.acwr == null ? "–" : selected.acwr.toFixed(2)}</div>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{acwrExplanation(selected)}</p>
+                      {selected.windowExternalLoad ? (
+                        <p className="text-[11px] text-muted-foreground mt-1">
+                          Includes {selected.windowExternalLoad} from sessions outside the club (rep, school, other).
+                        </p>
+                      ) : null}
+                    </div>
+
+                    {selected.flags.length > 0 && (
+                      <div>
+                        <h4 className="font-bold text-xs uppercase tracking-wider text-muted-foreground mb-1.5">Flags</h4>
+                        <ul className="space-y-0.5">
+                          {selected.flags.map((f, i) => (
+                            <li key={i} className="text-xs text-muted-foreground">
+                              {f.severity === "alert" ? "⚠ " : "👁 "}{f.message}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    <div className="rounded-xl bg-muted/40 border p-3">
+                      <h4 className="font-bold text-xs uppercase tracking-wider text-muted-foreground mb-1">
+                        Talking to them
+                      </h4>
+                      <p className="text-xs leading-relaxed">{conversationGuide(selected)}</p>
+                    </div>
+                  </div>
+                </>
+              )}
+            </DialogContent>
+          </Dialog>
           </>
         )}
 
