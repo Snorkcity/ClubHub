@@ -9,6 +9,7 @@ import {
 import { queryClient } from "@/lib/queryClient";
 
 import { LoadingScreen, ErrorState, EmptyState } from "@/components/ui/states";
+import { NewEventDialog } from "@/components/schedule/new-event-dialog";
 import { Button } from "@/components/ui/button";
 
 export default function Schedule() {
@@ -34,8 +35,9 @@ export default function Schedule() {
     <div className="flex-1 overflow-y-auto bg-muted/10">
       {/* Compact sticky header, like Chats — stays put while the list scrolls. */}
       <header className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b">
-        <div className="container mx-auto px-4 md:px-8 lg:max-w-4xl h-12 flex items-center">
+        <div className="container mx-auto px-4 md:px-8 lg:max-w-4xl h-12 flex items-center justify-between">
           <h1 className="text-xl font-display font-bold tracking-tight">Schedule</h1>
+          <NewEventDialog />
         </div>
       </header>
       <div className="container mx-auto p-4 md:p-8 lg:max-w-4xl">

@@ -20,6 +20,8 @@ export const eventsTable = pgTable("events", {
   startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
   endsAt: timestamp("ends_at", { withTimezone: true }),
   notes: text("notes"),
+  // CSV of invited role groups: coaches | players | parents
+  invitedRoles: text("invited_roles").notNull().default("coaches,players,parents"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

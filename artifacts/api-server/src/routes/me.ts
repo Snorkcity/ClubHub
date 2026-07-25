@@ -1,11 +1,12 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull } from "drizzle-orm";
 import {
   db,
   usersTable,
   teamsTable,
   teamMembersTable,
   guardianshipsTable,
+  eventsTable,
 } from "@workspace/db";
 import { UpdateMeBody } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
@@ -54,6 +55,50 @@ router.patch("/me", requireAuth, async (req, res) => {
     .where(eq(usersTable.id, localUser.id))
     .returning();
   return res.json(toPerson(updated, undefined, { full: true }));
+});
+
+/** Distinct recent locations from events of teams the user staffs (or whole
+ *  club for admins) — powers location suggestions when creating an event. */
+router.get("/me/event-locations", requireAuth, async (req, res) => {
+  const { localUser, clubId, isClubAdmin } = req as AuthedRequest;
+  let teamIds: number[];
+  if (isClubAdmin) {
+    const rows = await db
+      .select({ id: teamsTable.id })
+      .from(teamsTable)
+      .where(eq(teamsTable.clubId, clubId));
+    teamIds = rows.map((r) => r.id);
+  } else {
+    const rows = await db
+      .select({ teamId: teamMembersTable.teamId })
+      .from(teamMembersTable)
+      .where(
+        and(
+          eq(teamMembersTable.userId, localUser.id),
+          inArray(teamMembersTable.role, ["coach", "manager"]),
+        ),
+      );
+    teamIds = rows.map((r) => r.teamId);
+  }
+  if (teamIds.length === 0) return res.json([]);
+  const rows = await db
+    .select({ location: eventsTable.location, startsAt: eventsTable.startsAt })
+    .from(eventsTable)
+    .where(
+      and(inArray(eventsTable.teamId, teamIds), isNotNull(eventsTable.location)),
+    )
+    .orderBy(desc(eventsTable.startsAt))
+    .limit(200);
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const r of rows) {
+    const loc = (r.location ?? "").trim();
+    if (!loc || seen.has(loc.toLowerCase())) continue;
+    seen.add(loc.toLowerCase());
+    out.push(loc);
+    if (out.length >= 15) break;
+  }
+  return res.json(out);
 });
 
 export default router;

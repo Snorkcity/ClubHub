@@ -58,7 +58,19 @@ export default function EventDetail() {
   }
 
   const myPersonId = me?.person?.id;
-  const showRsvpCard = !event.myRsvp || editingRsvp;
+
+  // Only invited groups get the RSVP prompt: players need "players" invited,
+  // coaches/managers need "coaches". Guardians (no membership) act for their
+  // player wards, so they follow "players".
+  const invited = event.invitedRoles ?? ["coaches", "players", "parents"];
+  const myTeamRole = me?.memberships?.find((m: any) => m.teamId === event.teamId)?.role;
+  const amInvited =
+    myTeamRole === "player"
+      ? invited.includes("players")
+      : myTeamRole === "coach" || myTeamRole === "manager"
+        ? invited.includes("coaches")
+        : invited.includes("players"); // guardians RSVP for player wards
+  const showRsvpCard = amInvited && (!event.myRsvp || editingRsvp);
 
   const typeColors = {
     game: "bg-blue-600 text-white border-transparent",
@@ -135,6 +147,11 @@ export default function EventDetail() {
                   </div>
                 )}
               </div>
+              {invited.length < 3 && (
+                <p className="text-sm text-muted-foreground mt-4">
+                  Invited: {invited.map((r) => r === "coaches" ? "Coaches" : r === "players" ? "Players" : "Parents").join(" & ")}
+                </p>
+              )}
             </div>
             
             {/* My RSVP Action */}

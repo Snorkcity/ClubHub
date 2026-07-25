@@ -119,6 +119,15 @@ export const EventMyRsvp = {
   out: 'out',
 } as const;
 
+export type EventInvitedRolesItem = typeof EventInvitedRolesItem[keyof typeof EventInvitedRolesItem];
+
+
+export const EventInvitedRolesItem = {
+  coaches: 'coaches',
+  players: 'players',
+  parents: 'parents',
+} as const;
+
 export interface Event {
   id: number;
   teamId: number;
@@ -140,6 +149,7 @@ export interface Event {
   noResponseCount: number;
   /** @nullable */
   myRsvp?: EventMyRsvp;
+  invitedRoles?: EventInvitedRolesItem[];
 }
 
 export interface TeamSummary {
@@ -519,6 +529,15 @@ export const EventInputType = {
   other: 'other',
 } as const;
 
+export type EventInputInvitedRolesItem = typeof EventInputInvitedRolesItem[keyof typeof EventInputInvitedRolesItem];
+
+
+export const EventInputInvitedRolesItem = {
+  coaches: 'coaches',
+  players: 'players',
+  parents: 'parents',
+} as const;
+
 export interface EventInput {
   type: EventInputType;
   /** @minLength 1 */
@@ -528,6 +547,8 @@ export interface EventInput {
   startsAt: string;
   endsAt?: string;
   notes?: string;
+  /** @minItems 1 */
+  invitedRoles?: EventInputInvitedRolesItem[];
 }
 
 export type EventUpdateType = typeof EventUpdateType[keyof typeof EventUpdateType];

@@ -326,6 +326,83 @@ export const useUpdateMe = <TError = ErrorType<unknown>,
       return useMutation(getUpdateMeMutationOptions(options));
     }
 
+export const getListMyEventLocationsUrl = () => {
+
+
+
+
+  return `/api/me/event-locations`
+}
+
+/**
+ * @summary Recently used event locations across teams the user staffs
+ */
+export const listMyEventLocations = async ( options?: RequestInit): Promise<string[]> => {
+
+  return customFetch<string[]>(getListMyEventLocationsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyEventLocationsQueryKey = () => {
+    return [
+    `/api/me/event-locations`
+    ] as const;
+    }
+
+
+export const getListMyEventLocationsQueryOptions = <TData = Awaited<ReturnType<typeof listMyEventLocations>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyEventLocations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyEventLocationsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyEventLocations>>> = ({ signal }) => listMyEventLocations({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyEventLocations>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMyEventLocationsQueryResult = NonNullable<Awaited<ReturnType<typeof listMyEventLocations>>>
+export type ListMyEventLocationsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Recently used event locations across teams the user staffs
+ */
+
+export function useListMyEventLocations<TData = Awaited<ReturnType<typeof listMyEventLocations>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyEventLocations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMyEventLocationsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getGetClubUrl = () => {
 
 

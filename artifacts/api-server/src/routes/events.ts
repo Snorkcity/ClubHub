@@ -59,6 +59,10 @@ router.post("/teams/:teamId/events", requireAuth, async (req, res) => {
       startsAt: new Date(body.startsAt),
       endsAt: body.endsAt ? new Date(body.endsAt) : null,
       notes: body.notes ?? null,
+      invitedRoles: (body.invitedRoles && body.invitedRoles.length
+        ? body.invitedRoles
+        : ["coaches", "players", "parents"]
+      ).join(","),
     })
     .returning();
   const [built] = await buildEvents([event], localUser.id);

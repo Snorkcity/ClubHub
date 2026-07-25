@@ -71,6 +71,20 @@ paths:
               schema:
                 $ref: "#/components/schemas/Person"
 
+  /me/event-locations:
+    get:
+      operationId: listMyEventLocations
+      tags: [me]
+      summary: Recently used event locations across teams the user staffs
+      responses:
+        "200":
+          description: Distinct locations, most recent first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: string }
+
   /club:
     get:
       operationId: getClub
@@ -1194,6 +1208,9 @@ components:
         outCount: { type: integer }
         noResponseCount: { type: integer }
         myRsvp: { type: ["string", "null"], enum: [going, maybe, out, null] }
+        invitedRoles:
+          type: array
+          items: { type: string, enum: [coaches, players, parents] }
 
     EventDetail:
       type: object
@@ -1391,6 +1408,10 @@ components:
         startsAt: { type: string }
         endsAt: { type: string }
         notes: { type: string }
+        invitedRoles:
+          type: array
+          items: { type: string, enum: [coaches, players, parents] }
+          minItems: 1
 
     EventUpdate:
       type: object

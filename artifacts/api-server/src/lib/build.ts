@@ -104,6 +104,9 @@ export async function buildEvents(events: Event[], myUserId?: number) {
       myRsvp: mine
         ? (mine.status as "going" | "maybe" | "out")
         : null,
+      invitedRoles: (e.invitedRoles ?? "coaches,players,parents")
+        .split(",")
+        .filter(Boolean) as ("coaches" | "players" | "parents")[],
     };
   });
 }

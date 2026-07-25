@@ -5,6 +5,7 @@
  * ClubHub API — multi-team soccer club management
  * OpenAPI spec version: 0.1.0
  */
+import type { EventInputInvitedRolesItem } from './eventInputInvitedRolesItem';
 import type { EventInputType } from './eventInputType';
 
 export interface EventInput {
@@ -16,4 +17,6 @@ export interface EventInput {
   startsAt: string;
   endsAt?: string;
   notes?: string;
+  /** @minItems 1 */
+  invitedRoles?: EventInputInvitedRolesItem[];
 }
