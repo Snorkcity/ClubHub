@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { and, asc, eq, gte, inArray } from "drizzle-orm";
-import { db, eventsTable, rsvpsTable, usersTable } from "@workspace/db";
+import { db, eventsTable, rsvpsTable, teamMembersTable, usersTable } from "@workspace/db";
 import { CreateEventBody, UpdateEventBody, SetRsvpBody } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
 import { buildEvents } from "../lib/build";
@@ -83,6 +83,18 @@ router.get("/events/:eventId", requireAuth, async (req, res) => {
     .innerJoin(usersTable, eq(rsvpsTable.userId, usersTable.id))
     .where(eq(rsvpsTable.eventId, eventId));
 
+  // Team role per user for this event's team (staff roles outrank player).
+  const memberRows = await db
+    .select({ userId: teamMembersTable.userId, role: teamMembersTable.role })
+    .from(teamMembersTable)
+    .where(eq(teamMembersTable.teamId, event.teamId));
+  const rank = (role: string) => (role === "manager" ? 3 : role === "coach" ? 2 : 1);
+  const roleByUser = new Map<number, string>();
+  for (const m of memberRows) {
+    const cur = roleByUser.get(m.userId);
+    if (!cur || rank(m.role) > rank(cur)) roleByUser.set(m.userId, m.role);
+  }
+
   return res.json({
     event: built,
     rsvps: rows.map(({ r, u }) => ({
@@ -91,6 +103,7 @@ router.get("/events/:eventId", requireAuth, async (req, res) => {
       status: r.status,
       reason: r.reason ?? null,
       respondedAt: iso(r.respondedAt),
+      role: roleByUser.get(u.id) ?? null,
       person: toPerson(u),
     })),
   });

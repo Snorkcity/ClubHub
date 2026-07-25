@@ -70,6 +70,7 @@ export * from './rpeInput';
 export * from './rsvp';
 export * from './rsvpInput';
 export * from './rsvpInputStatus';
+export * from './rsvpRole';
 export * from './rsvpStatus';
 export * from './season';
 export * from './seasonMinutes';

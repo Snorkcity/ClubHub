@@ -1213,6 +1213,7 @@ components:
         status: { type: string, enum: [going, maybe, out] }
         reason: { type: ["string", "null"] }
         respondedAt: { type: ["string", "null"] }
+        role: { type: ["string", "null"], enum: [manager, coach, player, null] }
         person: { $ref: "#/components/schemas/Person" }
 
     Chat:

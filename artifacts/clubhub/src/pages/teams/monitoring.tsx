@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useParams } from "wouter";
 import { format } from "date-fns";
-import { Activity, AlertTriangle, ArrowLeft, Eye } from "lucide-react";
+import { Activity, AlertTriangle, ArrowLeft, ChevronDown, Eye } from "lucide-react";
 import {
   useGetTeamMonitoring,
   getGetTeamMonitoringQueryKey,
@@ -37,6 +37,55 @@ function acwrTone(v: number | null | undefined): string {
   if (v >= 1.5 || v < 0.6) return "bg-red-50 text-red-700 font-bold";
   if (v >= 1.3 || v < 0.8) return "bg-amber-50 text-amber-700";
   return "bg-green-50 text-green-700";
+}
+
+const WELLNESS_ELEMENTS = [
+  { key: "sleepQuality", label: "Sleep" },
+  { key: "energy", label: "Energy" },
+  { key: "soreness", label: "Soreness" },
+  { key: "stress", label: "Stress" },
+  { key: "mood", label: "Mood" },
+] as const;
+
+/** One-sentence explanation of what's dragging the wellness score down. */
+function wellnessExplanation(p: PlayerMonitoring): string {
+  const scored = WELLNESS_ELEMENTS
+    .map((e) => ({ label: e.label, value: p[e.key] as number | null }))
+    .filter((e) => e.value != null) as { label: string; value: number }[];
+  if (scored.length === 0) return "No wellness check-ins in this window yet.";
+  const red = scored.filter((e) => e.value < 2.5).map((e) => e.label.toLowerCase());
+  const amber = scored.filter((e) => e.value >= 2.5 && e.value < 3.5).map((e) => e.label.toLowerCase());
+  const listWords = (arr: string[]) =>
+    arr.length === 1 ? arr[0] : `${arr.slice(0, -1).join(", ")} and ${arr[arr.length - 1]}`;
+  if (red.length > 0) {
+    return `The concern here is mainly coming from ${listWords(red)}${
+      amber.length > 0 ? `, with ${listWords(amber)} also below par` : ""
+    }. Worth a quiet check-in about that specifically.`;
+  }
+  if (amber.length > 0) {
+    return `Nothing is in the red, but ${listWords(amber)} ${amber.length === 1 ? "is" : "are"} a bit below par this week — keep an eye on it.`;
+  }
+  const belowBaseline =
+    p.wellnessBaseline != null && p.wellnessComposite != null && p.wellnessComposite < p.wellnessBaseline - 0.4;
+  if (belowBaseline) {
+    return `All five elements look fine on their own, but the overall score is lower than this player's usual — something may be slipping.`;
+  }
+  return "All five elements look fine — nothing needs attention right now.";
+}
+
+/** One-sentence explanation of the ACWR colour. */
+function acwrExplanation(p: PlayerMonitoring): string {
+  if (p.acwr == null)
+    return "Not enough training history yet to compare this week against their 4-week norm.";
+  if (p.acwr >= 1.5)
+    return `This week's load (${p.acuteLoad}) is well above their usual week (≈${Math.round(p.chronicWeeklyLoad ?? 0)}) — a sharp spike like this is when injury risk climbs. Consider easing their next session or two.`;
+  if (p.acwr >= 1.3)
+    return `This week's load (${p.acuteLoad}) is running above their usual week (≈${Math.round(p.chronicWeeklyLoad ?? 0)}). Not alarming yet, but avoid stacking more heavy sessions on top.`;
+  if (p.acwr < 0.6)
+    return `This week's load (${p.acuteLoad}) is far below their usual week (≈${Math.round(p.chronicWeeklyLoad ?? 0)}). A sudden return to full training from here is its own risk — build back up gradually.`;
+  if (p.acwr < 0.8)
+    return `This week's load (${p.acuteLoad}) is a bit lighter than their usual week (≈${Math.round(p.chronicWeeklyLoad ?? 0)}) — fine if it's planned recovery, worth asking about if not.`;
+  return `This week's load (${p.acuteLoad}) is in line with their usual week (≈${Math.round(p.chronicWeeklyLoad ?? 0)}) — right in the sweet spot.`;
 }
 
 function Cell({ value, tone, suffix }: { value: number | null | undefined; tone: string; suffix?: string }) {
@@ -77,6 +126,119 @@ function FlagBadges({ player }: { player: PlayerMonitoring }) {
         </ul>
       </TooltipContent>
     </Tooltip>
+  );
+}
+
+/** Mobile card: two big tappable scores; tap opens the breakdown + a plain-English sentence. */
+function PlayerCard({ p }: { p: PlayerMonitoring }) {
+  const [open, setOpen] = useState<"wellness" | "acwr" | null>(null);
+  const toggle = (which: "wellness" | "acwr") => setOpen((o) => (o === which ? null : which));
+
+  return (
+    <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
+      <div className="p-3 flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <Link href={`/people/${p.person.id}`} className="font-semibold text-sm hover:underline truncate block">
+            {p.person.fullName}
+          </Link>
+          <p className="text-[11px] text-muted-foreground">
+            {p.wellnessCount} check-in{p.wellnessCount === 1 ? "" : "s"}
+            {p.lastWellnessDate ? ` · last ${format(new Date(p.lastWellnessDate + "T12:00:00"), "d MMM")}` : ""}
+          </p>
+        </div>
+        <FlagBadges player={p} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 px-3 pb-3">
+        <button
+          onClick={() => toggle("wellness")}
+          className={`rounded-xl px-3 py-3 text-left transition-colors ${wellnessTone(p.wellnessComposite)} ${
+            open === "wellness" ? "ring-2 ring-foreground/20" : ""
+          }`}
+        >
+          <div className="text-[10px] font-bold uppercase tracking-wider opacity-70">Wellness</div>
+          <div className="text-xl font-display font-bold tabular-nums">
+            {p.wellnessComposite == null ? "–" : p.wellnessComposite}
+            <span className="text-xs font-normal opacity-60"> / 5</span>
+          </div>
+          <div className="text-[10px] opacity-70 flex items-center gap-0.5">
+            details <ChevronDown className={`h-3 w-3 transition-transform ${open === "wellness" ? "rotate-180" : ""}`} />
+          </div>
+        </button>
+        <button
+          onClick={() => toggle("acwr")}
+          className={`rounded-xl px-3 py-3 text-left transition-colors ${acwrTone(p.acwr)} ${
+            open === "acwr" ? "ring-2 ring-foreground/20" : ""
+          }`}
+        >
+          <div className="text-[10px] font-bold uppercase tracking-wider opacity-70">Load · ACWR</div>
+          <div className="text-xl font-display font-bold tabular-nums">
+            {p.acwr == null ? "–" : p.acwr.toFixed(2)}
+          </div>
+          <div className="text-[10px] opacity-70 flex items-center gap-0.5">
+            details <ChevronDown className={`h-3 w-3 transition-transform ${open === "acwr" ? "rotate-180" : ""}`} />
+          </div>
+        </button>
+      </div>
+
+      {open === "wellness" && (
+        <div className="border-t bg-muted/20 p-3 space-y-2 animate-in fade-in slide-in-from-top-1 duration-150">
+          <div className="grid grid-cols-5 gap-1.5">
+            {WELLNESS_ELEMENTS.map((e) => {
+              const v = p[e.key] as number | null;
+              return (
+                <div key={e.key} className={`rounded-lg px-1 py-1.5 text-center ${wellnessTone(v)}`}>
+                  <div className="text-[9px] font-bold uppercase tracking-wide opacity-70">{e.label}</div>
+                  <div className="text-sm font-bold tabular-nums">{v == null ? "–" : v}</div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed">{wellnessExplanation(p)}</p>
+          {p.wellnessBaseline != null && p.wellnessComposite != null && (
+            <p className="text-[11px] text-muted-foreground">
+              Their usual (28-day) score is {p.wellnessBaseline} — this window is {p.wellnessComposite}.
+            </p>
+          )}
+        </div>
+      )}
+
+      {open === "acwr" && (
+        <div className="border-t bg-muted/20 p-3 space-y-2 animate-in fade-in slide-in-from-top-1 duration-150">
+          <div className="grid grid-cols-3 gap-1.5">
+            <div className="rounded-lg px-1 py-1.5 text-center bg-muted/40">
+              <div className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground">This week</div>
+              <div className="text-sm font-bold tabular-nums">{p.acuteLoad}</div>
+            </div>
+            <div className="rounded-lg px-1 py-1.5 text-center bg-muted/40">
+              <div className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground">Usual week</div>
+              <div className="text-sm font-bold tabular-nums">
+                {p.chronicWeeklyLoad == null ? "–" : Math.round(p.chronicWeeklyLoad)}
+              </div>
+            </div>
+            <div className={`rounded-lg px-1 py-1.5 text-center ${acwrTone(p.acwr)}`}>
+              <div className="text-[9px] font-bold uppercase tracking-wide opacity-70">Ratio</div>
+              <div className="text-sm font-bold tabular-nums">{p.acwr == null ? "–" : p.acwr.toFixed(2)}</div>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed">{acwrExplanation(p)}</p>
+          {p.windowExternalLoad ? (
+            <p className="text-[11px] text-muted-foreground">
+              Includes {p.windowExternalLoad} from sessions outside the club (rep, school, other).
+            </p>
+          ) : null}
+          {p.flags.length > 0 && (
+            <ul className="space-y-0.5">
+              {p.flags.map((f, i) => (
+                <li key={i} className="text-[11px] text-muted-foreground">
+                  {f.severity === "alert" ? "⚠ " : "👁 "}{f.message}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -148,7 +310,16 @@ export default function TeamMonitoring() {
             icon={Activity}
           />
         ) : (
-          <div className="rounded-2xl border bg-card shadow-sm overflow-x-auto">
+          <>
+          {/* Mobile: tappable score cards */}
+          <div className="space-y-3 md:hidden">
+            {data.players.map((p) => (
+              <PlayerCard key={p.person.id} p={p} />
+            ))}
+          </div>
+
+          {/* Desktop: full table */}
+          <div className="hidden md:block rounded-2xl border bg-card shadow-sm overflow-x-auto">
             <table className="w-full min-w-[860px] border-collapse">
               <thead>
                 <tr className="text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -248,6 +419,7 @@ export default function TeamMonitoring() {
               </tbody>
             </table>
           </div>
+          </>
         )}
 
         <p className="text-xs text-muted-foreground">

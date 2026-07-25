@@ -1038,6 +1038,7 @@ export const GetEventResponse = zod.object({
   "status": zod.enum(['going', 'maybe', 'out']),
   "reason": zod.string().nullish(),
   "respondedAt": zod.string().nullish(),
+  "role": zod.union([zod.literal('manager'),zod.literal('coach'),zod.literal('player'),zod.literal(null)]).nullish(),
   "person": zod.object({
   "id": zod.number(),
   "firstName": zod.string(),
@@ -1114,6 +1115,7 @@ export const SetRsvpResponse = zod.object({
   "status": zod.enum(['going', 'maybe', 'out']),
   "reason": zod.string().nullish(),
   "respondedAt": zod.string().nullish(),
+  "role": zod.union([zod.literal('manager'),zod.literal('coach'),zod.literal('player'),zod.literal(null)]).nullish(),
   "person": zod.object({
   "id": zod.number(),
   "firstName": zod.string(),

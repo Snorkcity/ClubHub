@@ -272,6 +272,18 @@ export const RsvpStatus = {
   out: 'out',
 } as const;
 
+/**
+ * @nullable
+ */
+export type RsvpRole = typeof RsvpRole[keyof typeof RsvpRole] | null;
+
+
+export const RsvpRole = {
+  manager: 'manager',
+  coach: 'coach',
+  player: 'player',
+} as const;
+
 export interface Rsvp {
   id: number;
   eventId: number;
@@ -280,6 +292,8 @@ export interface Rsvp {
   reason?: string | null;
   /** @nullable */
   respondedAt?: string | null;
+  /** @nullable */
+  role?: RsvpRole;
   person: Person;
 }
 

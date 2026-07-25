@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Person } from './person';
+import type { RsvpRole } from './rsvpRole';
 import type { RsvpStatus } from './rsvpStatus';
 
 export interface Rsvp {
@@ -16,5 +17,7 @@ export interface Rsvp {
   reason?: string | null;
   /** @nullable */
   respondedAt?: string | null;
+  /** @nullable */
+  role?: RsvpRole;
   person: Person;
 }

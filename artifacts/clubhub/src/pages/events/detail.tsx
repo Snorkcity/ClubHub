@@ -30,6 +30,7 @@ export default function EventDetail() {
   const { data: me } = useGetMe({ query: { queryKey: getGetMeQueryKey() } });
   const [notOpen, setNotOpen] = useState(false);
   const [notReason, setNotReason] = useState("");
+  const [editingRsvp, setEditingRsvp] = useState(false);
 
   if (isLoading) return <LoadingScreen message="Loading event details..." />;
   if (error || !eventData) return <ErrorState onRetry={() => refetch()} />;
@@ -48,12 +49,16 @@ export default function EventDetail() {
       data: { status, ...(status === 'out' ? { reason: reason ?? null } : {}) }
     }, {
       onSuccess: () => {
+        setEditingRsvp(false);
         queryClient.invalidateQueries({ queryKey: getGetEventQueryKey(eventId) });
         queryClient.invalidateQueries({ queryKey: getListUpcomingEventsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetTeamSummaryQueryKey(event.teamId) });
       }
     });
   }
+
+  const myPersonId = me?.person?.id;
+  const showRsvpCard = !event.myRsvp || editingRsvp;
 
   const typeColors = {
     game: "bg-blue-600 text-white border-transparent",
@@ -133,6 +138,7 @@ export default function EventDetail() {
             </div>
             
             {/* My RSVP Action */}
+            {showRsvpCard && (
             <div className="w-full md:w-auto bg-muted/30 rounded-2xl p-5 border text-center shrink-0">
               <h3 className="font-display font-bold text-lg mb-3">Your RSVP</h3>
               <div className="flex flex-row md:flex-col gap-2">
@@ -145,7 +151,7 @@ export default function EventDetail() {
                   <CheckCircle2 className="h-5 w-5 mr-2" /> Going
                 </Button>
                 <Button 
-                  onClick={() => { if (event.myRsvp !== 'out') handleRsvp('out'); setNotOpen(true); }} 
+                  onClick={() => setNotOpen(true)} 
                   disabled={setRsvp.isPending}
                   variant={event.myRsvp === 'out' ? 'default' : 'outline'}
                   className={`rounded-xl h-12 flex-1 md:w-48 justify-start ${event.myRsvp === 'out' ? 'bg-red-600 hover:bg-red-700 text-white' : 'text-red-700 border-red-300'}`}
@@ -172,7 +178,16 @@ export default function EventDetail() {
                   </Button>
                 </div>
               )}
+              {editingRsvp && (
+                <button
+                  onClick={() => { setEditingRsvp(false); setNotOpen(false); }}
+                  className="mt-3 text-xs font-semibold text-muted-foreground hover:text-foreground"
+                >
+                  Cancel
+                </button>
+              )}
             </div>
+            )}
           </div>
           
           {event.notes && (
@@ -200,38 +215,73 @@ export default function EventDetail() {
             </div>
           </div>
 
-          <div className="bg-card border rounded-3xl overflow-hidden shadow-sm">
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-px bg-border">
-              {[...rsvps]
-                .sort((a, b) =>
-                  a.status === b.status
-                    ? a.person.fullName.localeCompare(b.person.fullName)
-                    : a.status === "going" ? -1 : b.status === "going" ? 1 : 0,
-                )
-                .map((rsvp) => (
-                <div key={rsvp.id} className="bg-card p-4 flex items-center gap-4 hover:bg-muted/30 transition-colors">
-                  <Avatar className="h-12 w-12 border shadow-sm">
+          {(() => {
+            const byName = (a: typeof rsvps[number], b: typeof rsvps[number]) =>
+              a.person.fullName.localeCompare(b.person.fullName);
+            const isStaffRole = (r: typeof rsvps[number]) => r.role === "coach" || r.role === "manager";
+            const staffGoing = rsvps.filter((r) => r.status === "going" && isStaffRole(r)).sort(byName);
+            const playersGoing = rsvps.filter((r) => r.status === "going" && !isStaffRole(r)).sort(byName);
+            const unavailable = rsvps.filter((r) => r.status !== "going").sort(byName);
+
+            const Row = ({ rsvp }: { rsvp: typeof rsvps[number] }) => {
+              const isMe = myPersonId != null && rsvp.person.id === myPersonId;
+              return (
+                <div
+                  key={rsvp.id}
+                  onClick={isMe ? () => { setEditingRsvp(true); setNotOpen(false); window.scrollTo({ top: 0, behavior: "smooth" }); } : undefined}
+                  className={`bg-card p-3 flex items-center gap-3 transition-colors ${
+                    isMe ? "cursor-pointer hover:bg-muted/50 active:bg-muted" : ""
+                  }`}
+                >
+                  <Avatar className="h-10 w-10 border shadow-sm">
                     <AvatarImage src={rsvp.person.avatarUrl || undefined} />
                     <AvatarFallback>{rsvp.person.firstName?.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col flex-1 min-w-0">
-                    <span className="font-semibold text-sm truncate">{rsvp.person.fullName}</span>
-                    <span className={`text-xs font-bold uppercase ${
-                      rsvp.status === 'going' ? 'text-green-600' : 'text-red-500'
-                    }`}>
-                      {rsvp.status === 'going' ? 'Going' : 'Not going'}
+                    <span className="font-semibold text-sm truncate">
+                      {rsvp.person.fullName}
+                      {isMe && <span className="text-muted-foreground font-normal"> (you)</span>}
                     </span>
-                    {rsvp.reason && rsvp.status !== 'going' && (
+                    {rsvp.reason && rsvp.status !== "going" && (
                       <span className="text-xs text-muted-foreground truncate italic">{rsvp.reason}</span>
                     )}
                   </div>
+                  {rsvp.status === "out" && (
+                    <span className="text-[11px] font-bold uppercase text-red-500 shrink-0">Not going</span>
+                  )}
+                  {rsvp.status === "maybe" && (
+                    <span className="text-[11px] font-bold uppercase text-amber-600 shrink-0">Maybe</span>
+                  )}
+                  {isMe && (
+                    <span className="text-[11px] font-semibold text-muted-foreground shrink-0">Tap to change</span>
+                  )}
                 </div>
-              ))}
-            </div>
-            {rsvps.length === 0 && (
-              <EmptyState title="No RSVPs yet" message="Be the first to respond to this event." icon={FileQuestion} />
-            )}
-          </div>
+              );
+            };
+
+            const Section = ({ title, items, accent }: { title: string; items: typeof rsvps; accent: string }) =>
+              items.length === 0 ? null : (
+                <div>
+                  <div className={`px-4 py-2 text-[11px] font-bold uppercase tracking-wider ${accent} bg-muted/40 border-y first:border-t-0`}>
+                    {title} · {items.length}
+                  </div>
+                  <div className="divide-y">
+                    {items.map((r) => <Row key={r.id} rsvp={r} />)}
+                  </div>
+                </div>
+              );
+
+            return (
+              <div className="bg-card border rounded-3xl overflow-hidden shadow-sm">
+                <Section title="Coaches & managers going" items={staffGoing} accent="text-emerald-700" />
+                <Section title="Players going" items={playersGoing} accent="text-green-700" />
+                <Section title="Unavailable" items={unavailable} accent="text-red-600" />
+                {rsvps.length === 0 && (
+                  <EmptyState title="No RSVPs yet" message="Be the first to respond to this event." icon={FileQuestion} />
+                )}
+              </div>
+            );
+          })()}
         </div>
       </div>
     </div>
