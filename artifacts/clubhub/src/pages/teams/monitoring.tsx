@@ -249,7 +249,11 @@ function FlagBadges({ player }: { player: PlayerMonitoring }) {
 }
 
 /** Mobile card: two big tappable scores; tap opens the breakdown + a plain-English sentence. */
-function PlayerCard({ p }: { p: PlayerMonitoring }) {
+function windowLabel(days: number): string {
+  return days === 1 ? "24-hour" : `${days}-day`;
+}
+
+function PlayerCard({ p, windowDays }: { p: PlayerMonitoring; windowDays: number }) {
   const [open, setOpen] = useState<"wellness" | "acwr" | null>(null);
   const toggle = (which: "wellness" | "acwr") => setOpen((o) => (o === which ? null : which));
 
@@ -316,7 +320,7 @@ function PlayerCard({ p }: { p: PlayerMonitoring }) {
           <p className="text-base text-foreground/80 leading-relaxed">{wellnessExplanation(p)}</p>
           {p.wellnessBaseline != null && p.wellnessComposite != null && (
             <p className="text-base text-muted-foreground">
-              Their usual (28-day) score is {p.wellnessBaseline} — this window is {p.wellnessComposite}.
+              Their usual (28-day) score is {p.wellnessBaseline} — this {windowLabel(windowDays)} window is {p.wellnessComposite}.
             </p>
           )}
         </div>
@@ -454,7 +458,7 @@ export default function TeamMonitoring() {
           {/* Mobile: tappable score cards */}
           <div className="space-y-3 md:hidden">
             {sortedPlayers.map((p) => (
-              <PlayerCard key={p.person.id} p={p} />
+              <PlayerCard key={p.person.id} p={p} windowDays={windowDays} />
             ))}
           </div>
 
@@ -529,7 +533,7 @@ export default function TeamMonitoring() {
                   </DialogHeader>
                   <div className="space-y-4 text-sm">
                     <p className="text-xs text-muted-foreground -mt-2">
-                      {selected.wellnessCount} check-in{selected.wellnessCount === 1 ? "" : "s"} in this window
+                      {selected.wellnessCount} check-in{selected.wellnessCount === 1 ? "" : "s"} in this {windowLabel(windowDays)} window
                       {selected.lastWellnessDate ? ` · last ${format(new Date(selected.lastWellnessDate + "T12:00:00"), "d MMM")}` : ""}
                       {" · "}
                       <Link href={`/people/${selected.person.id}`} className="underline hover:text-foreground">
@@ -539,9 +543,14 @@ export default function TeamMonitoring() {
 
                     <div>
                       <h4 className="font-bold text-xs uppercase tracking-wider text-muted-foreground mb-1.5">
-                        Wellness {selected.wellnessComposite != null ? `· ${selected.wellnessComposite}/5` : ""}
-                        {selected.wellnessBaseline != null ? ` (usual ${selected.wellnessBaseline})` : ""}
+                        Wellness {selected.wellnessComposite != null ? `· ${selected.wellnessComposite}/5 (${windowLabel(windowDays)} avg)` : ""}
+                        {selected.wellnessBaseline != null ? ` · usual ${selected.wellnessBaseline}` : ""}
                       </h4>
+                      {selected.wellnessBaseline != null && selected.wellnessComposite != null && (
+                        <p className="text-xs text-muted-foreground mb-1.5">
+                          Their usual (28-day) score is {selected.wellnessBaseline} — this {windowLabel(windowDays)} window is {selected.wellnessComposite}.
+                        </p>
+                      )}
                       <div className="grid grid-cols-5 gap-1.5 mb-2">
                         {WELLNESS_ELEMENTS.map((e) => {
                           const v = selected[e.key] as number | null;
