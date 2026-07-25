@@ -180,11 +180,11 @@ function acwrExplanation(p: PlayerMonitoring): string {
 
 /** One short sentence comparing this player's week against the squad. */
 function squadLoadContext(p: PlayerMonitoring, players: PlayerMonitoring[]): string | null {
-  const loads = players.map((x) => x.acuteLoad).filter((v) => v > 0);
+  const loads = players.map((x) => x.acuteLoad ?? 0).filter((v) => v > 0);
   if (loads.length < 3) return null;
   const avg = Math.round(loads.reduce((a, b) => a + b, 0) / loads.length);
   if (avg <= 0) return null;
-  const ratio = p.acuteLoad / avg;
+  const ratio = (p.acuteLoad ?? 0) / avg;
   const firstName = p.person.fullName.split(" ")[0];
   const rel =
     ratio >= 1.25 ? `well above that (${ratio.toFixed(1)}×)`
