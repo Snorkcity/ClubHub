@@ -195,7 +195,9 @@ function NewChatDialog({ myId }: { myId?: number }) {
           New <Plus className="h-4 w-4 ml-1" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md rounded-2xl p-0 gap-0 overflow-hidden">
+      {/* Anchored near the top on phones so the on-screen keyboard doesn't
+          cover the search field; centered on larger screens. */}
+      <DialogContent className="max-w-md rounded-2xl p-0 gap-0 overflow-hidden top-6 translate-y-0 sm:top-[50%] sm:translate-y-[-50%] max-h-[calc(100dvh-3rem)] flex flex-col">
         <DialogHeader className="p-4 pb-3 border-b">
           <DialogTitle className="font-display">New chat</DialogTitle>
           <div className="relative mt-2">
@@ -209,7 +211,7 @@ function NewChatDialog({ myId }: { myId?: number }) {
           </div>
         </DialogHeader>
 
-        <div className="max-h-72 overflow-y-auto divide-y">
+        <div className="max-h-72 overflow-y-auto divide-y flex-1 min-h-0">
           {isLoading && <p className="p-4 text-sm text-muted-foreground">Loading people...</p>}
           {!isLoading && filtered.length === 0 && (
             <p className="p-4 text-sm text-muted-foreground">No one found.</p>
