@@ -147,6 +147,8 @@ router.post("/events/:eventId/cancel", requireAuth, async (req, res) => {
     .from(eventsTable)
     .where(eq(eventsTable.id, eventId));
   if (!existing) return res.status(404).json({ error: "Event not found" });
+  if (existing.cancelledAt)
+    return res.status(409).json({ error: "This event is already cancelled" });
   if (!(await isTeamStaff(localUser.id, existing.teamId, clubId, isClubAdmin)))
     return res.status(403).json({ error: "You cannot cancel this event" });
   const body = CancelEventBody.parse(req.body);
@@ -182,6 +184,8 @@ router.put("/events/:eventId/rsvp", requireAuth, async (req, res) => {
     .from(eventsTable)
     .where(eq(eventsTable.id, eventId));
   if (!event) return res.status(404).json({ error: "Event not found" });
+  if (event.cancelledAt)
+    return res.status(409).json({ error: "This event has been cancelled" });
   if (!(await canAccessTeam(localUser.id, event.teamId, clubId, isClubAdmin)))
     return res.status(403).json({ error: "You cannot respond to this event" });
 

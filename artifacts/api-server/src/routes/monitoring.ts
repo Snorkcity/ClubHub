@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, lte } from "drizzle-orm";
 import {
   db,
   eventsTable,
@@ -157,6 +157,7 @@ router.get("/monitoring/checkin", requireAuth, async (req, res) => {
       and(
         inArray(eventsTable.teamId, allTeamIds),
         inArray(eventsTable.type, ["training", "game"]),
+        isNull(eventsTable.cancelledAt),
         gte(eventsTable.startsAt, daysAgo(3)),
         lte(eventsTable.startsAt, new Date()),
       ),

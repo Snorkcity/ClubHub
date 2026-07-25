@@ -160,7 +160,8 @@ function ScheduleCard({ event }: { event: any }) {
           </div>
         </Link>
 
-        {/* RSVP: Going / Not */}
+        {/* RSVP: Going / Not (hidden for cancelled events) */}
+        {!event.cancelledAt && (
         <div className="flex gap-1.5 shrink-0">
           <button
             onClick={handleGoing}
@@ -185,6 +186,7 @@ function ScheduleCard({ event }: { event: any }) {
             Not
           </button>
         </div>
+        )}
       </div>
 
       {/* Reason field, shown when marking Not */}
