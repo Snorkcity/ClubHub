@@ -130,7 +130,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* Mobile Header */}
+      {/* Mobile Header — only on Home; other pages have their own compact headers */}
+      {location === "/home" && (
       <header className="md:hidden h-16 bg-background border-b flex items-center justify-between px-4 sticky top-0 z-40">
         <div className="flex items-center gap-1 min-w-0">
           <Link href="/home" className="flex items-center shrink-0">
@@ -151,6 +152,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           isStaff={isStaff}
         />
       </header>
+      )}
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col w-full max-w-full overflow-hidden pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">

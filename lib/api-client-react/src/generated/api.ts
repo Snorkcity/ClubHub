@@ -59,6 +59,7 @@ import type {
   RsvpInput,
   Season,
   SeasonMinutes,
+  StartPeriodInput,
   Team,
   TeamInput,
   TeamMember,
@@ -3843,14 +3844,15 @@ export const getStartPeriodUrl = (eventId: number,) => {
 /**
  * @summary Start the next period (half) of the game clock (staff only)
  */
-export const startPeriod = async (eventId: number, options?: RequestInit): Promise<TimekeepingState> => {
+export const startPeriod = async (eventId: number,
+    startPeriodInput?: StartPeriodInput, options?: RequestInit): Promise<TimekeepingState> => {
 
   return customFetch<TimekeepingState>(getStartPeriodUrl(eventId),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(startPeriodInput)
   }
 );}
 
@@ -3859,8 +3861,8 @@ export const startPeriod = async (eventId: number, options?: RequestInit): Promi
 
 
 export const getStartPeriodMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startPeriod>>, TError,{eventId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof startPeriod>>, TError,{eventId: number}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startPeriod>>, TError,{eventId: number;data?: BodyType<StartPeriodInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startPeriod>>, TError,{eventId: number;data?: BodyType<StartPeriodInput>}, TContext> => {
 
 const mutationKey = ['startPeriod'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -3872,10 +3874,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startPeriod>>, {eventId: number}> = (props) => {
-          const {eventId} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startPeriod>>, {eventId: number;data?: BodyType<StartPeriodInput>}> = (props) => {
+          const {eventId,data} = props ?? {};
 
-          return  startPeriod(eventId,requestOptions)
+          return  startPeriod(eventId,data,requestOptions)
         }
 
 
@@ -3886,18 +3888,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type StartPeriodMutationResult = NonNullable<Awaited<ReturnType<typeof startPeriod>>>
-
+    export type StartPeriodMutationBody = BodyType<StartPeriodInput> | undefined
     export type StartPeriodMutationError = ErrorType<unknown>
 
     /**
  * @summary Start the next period (half) of the game clock (staff only)
  */
 export const useStartPeriod = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startPeriod>>, TError,{eventId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startPeriod>>, TError,{eventId: number;data?: BodyType<StartPeriodInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof startPeriod>>,
         TError,
-        {eventId: number},
+        {eventId: number;data?: BodyType<StartPeriodInput>},
         TContext
       > => {
       return useMutation(getStartPeriodMutationOptions(options));

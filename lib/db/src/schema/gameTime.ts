@@ -14,6 +14,7 @@ export const gamePeriodsTable = pgTable("game_periods", {
     .notNull()
     .references(() => eventsTable.id),
   periodNumber: integer("period_number").notNull(), // 1 = first half, 2 = second half, ...
+  plannedMinutes: integer("planned_minutes"), // countdown target; null = count up
   startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
   endedAt: timestamp("ended_at", { withTimezone: true }),
 }, (t) => [

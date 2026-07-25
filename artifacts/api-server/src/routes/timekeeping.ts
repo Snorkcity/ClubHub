@@ -1,10 +1,12 @@
 import { Router, type IRouter } from "express";
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
+import { StartPeriodBody } from "@workspace/api-zod";
 import {
   db,
   eventsTable,
   gamePeriodsTable,
   gameStintsTable,
+  rsvpsTable,
   teamMembersTable,
   usersTable,
   type GamePeriod,
@@ -80,6 +82,11 @@ async function buildState(eventId: number, teamId: number) {
     .where(
       and(eq(teamMembersTable.teamId, teamId), eq(teamMembersTable.role, "player")),
     );
+  const rsvps = await db
+    .select()
+    .from(rsvpsTable)
+    .where(eq(rsvpsTable.eventId, eventId));
+  const rsvpByUser = new Map(rsvps.map((r) => [r.userId, r.status]));
 
   const running = periods.find((p) => !p.endedAt) ?? null;
   const stintsByUser = new Map<number, GameStint[]>();
@@ -97,6 +104,7 @@ async function buildState(eventId: number, teamId: number) {
       periodNumber: p.periodNumber,
       startedAt: iso(p.startedAt),
       endedAt: p.endedAt ? iso(p.endedAt) : null,
+      plannedMinutes: p.plannedMinutes ?? null,
     })),
     players: roster
       .map(({ m, u }) => {
@@ -107,6 +115,7 @@ async function buildState(eventId: number, teamId: number) {
           position: m.position,
           onPitch: userStints.some((s) => !s.endedAt),
           secondsPlayed: overlapSeconds(userStints, periods, now),
+          rsvpStatus: rsvpByUser.get(u.id) ?? null,
         };
       })
       .sort((a, b) => (a.jerseyNumber ?? 999) - (b.jerseyNumber ?? 999)),
@@ -139,12 +148,14 @@ router.post(
       .where(eq(gamePeriodsTable.eventId, eventId));
     if (periods.some((p) => !p.endedAt))
       return res.status(409).json({ error: "A period is already running" });
+    const body = StartPeriodBody.parse(req.body ?? {});
     const nextNumber =
       periods.reduce((max, p) => Math.max(max, p.periodNumber), 0) + 1;
     try {
       await db.insert(gamePeriodsTable).values({
         eventId,
         periodNumber: nextNumber,
+        plannedMinutes: body.plannedMinutes ?? null,
         startedAt: new Date(),
       });
     } catch (e: any) {

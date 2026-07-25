@@ -6,9 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface GamePeriod {
-  periodNumber: number;
-  startedAt: string;
-  endedAt?: string | null;
+export interface StartPeriodInput {
+  /**
+     * @minimum 1
+     * @maximum 120
+     */
   plannedMinutes?: number | null;
 }

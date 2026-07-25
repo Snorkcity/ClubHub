@@ -1587,7 +1587,8 @@ export const GetTimekeepingResponse = zod.object({
   "periods": zod.array(zod.object({
   "periodNumber": zod.number(),
   "startedAt": zod.string(),
-  "endedAt": zod.string().nullish()
+  "endedAt": zod.string().nullish(),
+  "plannedMinutes": zod.number().nullish()
 })),
   "players": zod.array(zod.object({
   "person": zod.object({
@@ -1609,7 +1610,8 @@ export const GetTimekeepingResponse = zod.object({
   "jerseyNumber": zod.number().nullish(),
   "position": zod.string().nullish(),
   "onPitch": zod.boolean(),
-  "secondsPlayed": zod.number()
+  "secondsPlayed": zod.number(),
+  "rsvpStatus": zod.enum(['going', 'maybe', 'out']).nullish()
 }))
 })
 
@@ -1617,6 +1619,14 @@ export const GetTimekeepingResponse = zod.object({
 /**
  * @summary Start the next period (half) of the game clock (staff only)
  */
+export const startPeriodBodyPlannedMinutesMax = 120;
+
+
+
+export const StartPeriodBody = zod.object({
+  "plannedMinutes": zod.number().min(1).max(startPeriodBodyPlannedMinutesMax).nullish()
+})
+
 export const StartPeriodResponse = zod.object({
   "clockRunning": zod.boolean(),
   "currentPeriodNumber": zod.number().nullish(),
@@ -1624,7 +1634,8 @@ export const StartPeriodResponse = zod.object({
   "periods": zod.array(zod.object({
   "periodNumber": zod.number(),
   "startedAt": zod.string(),
-  "endedAt": zod.string().nullish()
+  "endedAt": zod.string().nullish(),
+  "plannedMinutes": zod.number().nullish()
 })),
   "players": zod.array(zod.object({
   "person": zod.object({
@@ -1646,7 +1657,8 @@ export const StartPeriodResponse = zod.object({
   "jerseyNumber": zod.number().nullish(),
   "position": zod.string().nullish(),
   "onPitch": zod.boolean(),
-  "secondsPlayed": zod.number()
+  "secondsPlayed": zod.number(),
+  "rsvpStatus": zod.enum(['going', 'maybe', 'out']).nullish()
 }))
 })
 
@@ -1661,7 +1673,8 @@ export const EndPeriodResponse = zod.object({
   "periods": zod.array(zod.object({
   "periodNumber": zod.number(),
   "startedAt": zod.string(),
-  "endedAt": zod.string().nullish()
+  "endedAt": zod.string().nullish(),
+  "plannedMinutes": zod.number().nullish()
 })),
   "players": zod.array(zod.object({
   "person": zod.object({
@@ -1683,7 +1696,8 @@ export const EndPeriodResponse = zod.object({
   "jerseyNumber": zod.number().nullish(),
   "position": zod.string().nullish(),
   "onPitch": zod.boolean(),
-  "secondsPlayed": zod.number()
+  "secondsPlayed": zod.number(),
+  "rsvpStatus": zod.enum(['going', 'maybe', 'out']).nullish()
 }))
 })
 
@@ -1698,7 +1712,8 @@ export const TogglePlayerOnPitchResponse = zod.object({
   "periods": zod.array(zod.object({
   "periodNumber": zod.number(),
   "startedAt": zod.string(),
-  "endedAt": zod.string().nullish()
+  "endedAt": zod.string().nullish(),
+  "plannedMinutes": zod.number().nullish()
 })),
   "players": zod.array(zod.object({
   "person": zod.object({
@@ -1720,7 +1735,8 @@ export const TogglePlayerOnPitchResponse = zod.object({
   "jerseyNumber": zod.number().nullish(),
   "position": zod.string().nullish(),
   "onPitch": zod.boolean(),
-  "secondsPlayed": zod.number()
+  "secondsPlayed": zod.number(),
+  "rsvpStatus": zod.enum(['going', 'maybe', 'out']).nullish()
 }))
 })
 

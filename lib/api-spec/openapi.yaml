@@ -882,6 +882,12 @@ paths:
       summary: Start the next period (half) of the game clock (staff only)
       parameters:
         - $ref: "#/components/parameters/EventId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartPeriodInput"
       responses:
         "200":
           description: Updated timekeeping state
@@ -1582,6 +1588,12 @@ components:
         periodNumber: { type: integer }
         startedAt: { type: string }
         endedAt: { type: string, nullable: true }
+        plannedMinutes: { type: integer, nullable: true }
+
+    StartPeriodInput:
+      type: object
+      properties:
+        plannedMinutes: { type: integer, nullable: true, minimum: 1, maximum: 120 }
 
     TimekeepingPlayer:
       type: object
@@ -1593,6 +1605,10 @@ components:
         position: { type: string, nullable: true }
         onPitch: { type: boolean }
         secondsPlayed: { type: integer }
+        rsvpStatus:
+          type: string
+          enum: [going, maybe, out]
+          nullable: true
 
     TimekeepingState:
       type: object

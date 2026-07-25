@@ -226,43 +226,37 @@ function MemberDashboard({ me }: { me: any }) {
     <div className="grid lg:grid-cols-3 gap-8">
       <div className="lg:col-span-2 space-y-8">
         
-        {/* Next Event Hero */}
+        {/* Next Event — compact banner so posts stay visible below it */}
         {nextEvent && (
-          <div className="bg-primary text-primary-foreground rounded-3xl p-6 md:p-8 shadow-lg relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-              <CalendarDays className="h-48 w-48 -mt-12 -mr-12" />
-            </div>
-            <div className="relative z-10">
-              <div className="inline-flex items-center rounded-full bg-black/20 backdrop-blur-sm px-3 py-1 text-xs font-semibold uppercase tracking-wider mb-6">
-                Up Next • {formatEventDateDay(nextEvent.startsAt)}
-              </div>
-              <h2 className="text-3xl md:text-4xl font-display font-bold mb-2">
-                {nextEvent.title}
-              </h2>
-              <p className="text-primary-foreground/80 font-medium text-lg mb-8">
-                {nextEvent.teamName}
-              </p>
-              
-              <div className="flex flex-wrap gap-4 md:gap-6 mb-8 text-sm">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 opacity-70" />
-                  <span>{format(new Date(nextEvent.startsAt), "h:mm a")}</span>
+          <Link
+            href={`/events/${nextEvent.id}`}
+            className="block bg-primary text-primary-foreground rounded-2xl px-4 py-3 shadow-md relative overflow-hidden active:scale-[0.99] transition-transform"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] font-semibold uppercase tracking-wider opacity-80 mb-0.5">
+                  Up Next • {formatEventDateDay(nextEvent.startsAt)}
                 </div>
-                {nextEvent.location && (
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5 opacity-70" />
-                    <span>{nextEvent.location}</span>
-                  </div>
-                )}
+                <div className="font-display font-bold text-base truncate">
+                  {nextEvent.title}
+                  <span className="font-medium opacity-80"> · {nextEvent.teamName}</span>
+                </div>
+                <div className="flex items-center gap-3 text-xs opacity-90 mt-0.5">
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5" />
+                    {format(new Date(nextEvent.startsAt), "h:mm a")}
+                  </span>
+                  {nextEvent.location && (
+                    <span className="flex items-center gap-1 truncate">
+                      <MapPin className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">{nextEvent.location}</span>
+                    </span>
+                  )}
+                </div>
               </div>
-
-              <div className="flex items-center gap-3">
-                <Button asChild size="lg" className="bg-white text-primary hover:bg-gray-100 rounded-full font-bold px-8">
-                  <Link href={`/events/${nextEvent.id}`}>View Details</Link>
-                </Button>
-              </div>
+              <ChevronRight className="h-5 w-5 opacity-70 shrink-0" />
             </div>
-          </div>
+          </Link>
         )}
 
         {/* Team Feed */}

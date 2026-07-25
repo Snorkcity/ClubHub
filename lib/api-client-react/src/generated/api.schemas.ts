@@ -750,7 +750,25 @@ export interface GamePeriod {
   periodNumber: number;
   startedAt: string;
   endedAt?: string | null;
+  plannedMinutes?: number | null;
 }
+
+export interface StartPeriodInput {
+  /**
+     * @minimum 1
+     * @maximum 120
+     */
+  plannedMinutes?: number | null;
+}
+
+export type TimekeepingPlayerRsvpStatus = typeof TimekeepingPlayerRsvpStatus[keyof typeof TimekeepingPlayerRsvpStatus] | null;
+
+
+export const TimekeepingPlayerRsvpStatus = {
+  going: 'going',
+  maybe: 'maybe',
+  out: 'out',
+} as const;
 
 export interface TimekeepingPlayer {
   person: Person;
@@ -758,6 +776,7 @@ export interface TimekeepingPlayer {
   position?: string | null;
   onPitch: boolean;
   secondsPlayed: number;
+  rsvpStatus?: TimekeepingPlayerRsvpStatus;
 }
 
 export interface TimekeepingState {

@@ -147,7 +147,12 @@ router.put("/events/:eventId/rsvp", requireAuth, async (req, res) => {
 
   const body = SetRsvpBody.parse(req.body);
   const targetId = body.onBehalfOfPersonId ?? localUser.id;
-  if (!(await canActFor(localUser.id, targetId, isClubAdmin))) {
+  // Self, guardian or club admin — or the team's own staff (coach/manager),
+  // so a coach can mark a player as Going when they haven't used the app.
+  const allowed =
+    (await canActFor(localUser.id, targetId, isClubAdmin)) ||
+    (await isTeamStaff(localUser.id, event.teamId, clubId, isClubAdmin));
+  if (!allowed) {
     return res
       .status(403)
       .json({ error: "You cannot respond on behalf of this person" });

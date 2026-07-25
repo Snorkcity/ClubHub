@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Person } from './person';
+import type { TimekeepingPlayerRsvpStatus } from './timekeepingPlayerRsvpStatus';
 
 export interface TimekeepingPlayer {
   person: Person;
@@ -13,4 +14,5 @@ export interface TimekeepingPlayer {
   position?: string | null;
   onPitch: boolean;
   secondsPlayed: number;
+  rsvpStatus?: TimekeepingPlayerRsvpStatus;
 }
