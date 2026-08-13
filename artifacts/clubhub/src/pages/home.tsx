@@ -19,6 +19,7 @@ import {
 } from "@workspace/api-client-react";
 
 import { LoadingScreen, ErrorState, EmptyState } from "@/components/ui/states";
+import { locationName } from "@/lib/location";
 import { useTeamUnreads } from "@/components/layout/team-switcher";
 import { PostComposer } from "@/components/feed/post-composer";
 import { PostCard } from "@/components/feed/post-card";
@@ -29,18 +30,28 @@ import { Badge } from "@/components/ui/badge";
 
 export default function Home() {
   const { data: me, isLoading: meLoading } = useGetMe({ query: { queryKey: getGetMeQueryKey() } });
+  const { activeTeamId } = useActiveTeam();
+  const { data: teams } = useListTeams({ query: { queryKey: getListTeamsQueryKey() } });
+  const activeTeam = teams?.find((t) => t.id === activeTeamId);
 
   if (meLoading) return <LoadingScreen />;
   if (!me) return <ErrorState />;
 
   return (
     <div className="flex-1 overflow-y-auto overflow-x-hidden">
-      <div className="container mx-auto p-4 md:p-8 lg:max-w-6xl space-y-8">
-        <header className="mb-8">
-          <h1 className="text-3xl font-display font-bold tracking-tight">
-            Welcome back, {me.person.firstName}!
-          </h1>
-          <p className="text-muted-foreground mt-1">
+      <div className="container mx-auto p-4 md:p-8 lg:max-w-6xl space-y-6">
+        {/* Compact header: which team you're viewing + today's date. */}
+        <header>
+          {activeTeam && (
+            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 text-primary px-3 py-1 text-sm font-display font-bold mb-1.5">
+              <span
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: (activeTeam as any).colorHex || "currentColor" }}
+              />
+              {activeTeam.name}
+            </div>
+          )}
+          <p className="text-muted-foreground text-sm font-medium">
             {format(new Date(), "EEEE, MMMM do")}
           </p>
         </header>
@@ -252,7 +263,7 @@ function MemberDashboard({ me }: { me: any }) {
                   {nextEvent.location && (
                     <span className="flex items-center gap-1 truncate">
                       <MapPin className="h-3.5 w-3.5 shrink-0" />
-                      <span className="truncate">{nextEvent.location}</span>
+                      <span className="truncate">{locationName(nextEvent.location)}</span>
                     </span>
                   )}
                 </div>
@@ -265,7 +276,7 @@ function MemberDashboard({ me }: { me: any }) {
         {/* Team Feed */}
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-display font-bold">Team Feed</h2>
+            <h2 className="text-2xl font-display font-bold">Team News</h2>
           </div>
           
           {/* Mobile uses the floating pencil button instead of this card. */}
@@ -379,7 +390,7 @@ function EventCard({ event, compact = false }: { event: any, compact?: boolean }
           <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
             <span className="flex items-center"><Clock className="h-3 w-3 mr-1" /> {format(new Date(event.startsAt), "h:mm a")}</span>
             {!compact && event.location && (
-              <span className="flex items-center truncate"><MapPin className="h-3 w-3 mr-1" /> {event.location}</span>
+              <span className="flex items-center truncate"><MapPin className="h-3 w-3 mr-1" /> {locationName(event.location)}</span>
             )}
           </div>
         </div>

@@ -8,6 +8,7 @@ import {
   useListPeople, getListPeopleQueryKey, useCreateChat,
 } from "@workspace/api-client-react";
 
+import { useActiveTeam } from "@/lib/active-team";
 import { LoadingScreen, ErrorState, EmptyState } from "@/components/ui/states";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -133,7 +134,9 @@ function ChatRow({ chat, myId }: { chat: any; myId?: number }) {
   );
 }
 
-/** "New +" button — pick people from the club directory and start a chat. */
+/** "New +" button — pick people from your team and start a chat.
+ * Scoped to the active team so you only see your own team's coaches,
+ * players and parents (club admins with no team keep the full directory). */
 function NewChatDialog({ myId }: { myId?: number }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -141,8 +144,12 @@ function NewChatDialog({ myId }: { myId?: number }) {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
 
-  const { data: people, isLoading } = useListPeople(undefined, {
-    query: { queryKey: getListPeopleQueryKey(), enabled: open },
+  const { data: me } = useGetMe({ query: { queryKey: getGetMeQueryKey() } });
+  const { activeTeamId } = useActiveTeam();
+  const teamId = activeTeamId ?? me?.memberships?.[0]?.teamId;
+  const params = teamId != null ? { teamId } : undefined;
+  const { data: people, isLoading } = useListPeople(params, {
+    query: { queryKey: getListPeopleQueryKey(params), enabled: open },
   });
 
   const createChat = useCreateChat({

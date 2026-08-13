@@ -26,8 +26,10 @@ import type {
   CheckinStatus,
   Club,
   ClubOverview,
+  ClubPostInput,
   Comment,
   CommentInput,
+  CreateClubPost201,
   CurrentUser,
   Event,
   EventCancelInput,
@@ -1971,6 +1973,77 @@ export function useGetFeed<TData = Awaited<ReturnType<typeof getFeed>>, TError =
 
 
 
+
+export const getCreateClubPostUrl = () => {
+
+
+
+
+  return `/api/posts/club`
+}
+
+/**
+ * @summary Post an announcement to every team's feed (club admins only)
+ */
+export const createClubPost = async (clubPostInput: ClubPostInput, options?: RequestInit): Promise<CreateClubPost201> => {
+
+  return customFetch<CreateClubPost201>(getCreateClubPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(clubPostInput)
+  }
+);}
+
+
+
+
+
+export const getCreateClubPostMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createClubPost>>, TError,{data: BodyType<ClubPostInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createClubPost>>, TError,{data: BodyType<ClubPostInput>}, TContext> => {
+
+const mutationKey = ['createClubPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createClubPost>>, {data: BodyType<ClubPostInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createClubPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateClubPostMutationResult = NonNullable<Awaited<ReturnType<typeof createClubPost>>>
+    export type CreateClubPostMutationBody = BodyType<ClubPostInput>
+    export type CreateClubPostMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Post an announcement to every team's feed (club admins only)
+ */
+export const useCreateClubPost = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createClubPost>>, TError,{data: BodyType<ClubPostInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createClubPost>>,
+        TError,
+        {data: BodyType<ClubPostInput>},
+        TContext
+      > => {
+      return useMutation(getCreateClubPostMutationOptions(options));
+    }
 
 export const getListTeamPostsUrl = (teamId: number,) => {
 

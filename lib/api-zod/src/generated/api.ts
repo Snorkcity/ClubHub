@@ -436,6 +436,7 @@ export const RemoveTeamMemberResponse = zod.void()
  * @summary List all people in the club
  */
 export const ListPeopleQueryParams = zod.object({
+  "teamId": zod.coerce.number().optional().describe('Restrict to members of this team plus guardians of its players'),
   "search": zod.coerce.string().optional(),
   "role": zod.enum(['manager', 'coach', 'player', 'parent']).optional()
 })
@@ -734,6 +735,23 @@ export const GetFeedResponseItem = zod.object({
   "commentCount": zod.number()
 })
 export const GetFeedResponse = zod.array(GetFeedResponseItem)
+
+
+/**
+ * @summary Post an announcement to every team's feed (club admins only)
+ */
+
+
+
+export const CreateClubPostBody = zod.object({
+  "title": zod.string().optional(),
+  "body": zod.string().min(1),
+  "pinned": zod.boolean().optional()
+})
+
+export const CreateClubPostResponse = zod.object({
+  "created": zod.number()
+})
 
 
 /**
@@ -1082,7 +1100,9 @@ export const GetEventResponse = zod.object({
   "isMinor": zod.boolean(),
   "hasLogin": zod.boolean().optional()
 })
-}))
+})),
+  "teamPlayerCount": zod.number().optional(),
+  "teamStaffCount": zod.number().optional()
 })
 
 

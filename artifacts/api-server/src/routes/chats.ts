@@ -6,6 +6,8 @@ import {
   chatMembersTable,
   messagesTable,
   teamsTable,
+  teamMembersTable,
+  guardianshipsTable,
   usersTable,
 } from "@workspace/db";
 import { CreateChatBody, SendMessageBody } from "@workspace/api-zod";
@@ -111,6 +113,50 @@ router.post("/chats", requireAuth, async (req, res) => {
     .from(usersTable)
     .where(and(eq(usersTable.clubId, clubId), inArray(usersTable.id, requestedIds)));
   const memberIds = validMembers.map((m) => m.id);
+
+  // Non-admins can only chat with people who share a team with them.
+  // A guardian counts as belonging to their wards' teams.
+  if (!isClubAdmin) {
+    const guardianships = await db
+      .select({ guardianId: guardianshipsTable.guardianId, wardId: guardianshipsTable.playerId })
+      .from(guardianshipsTable)
+      .where(inArray(guardianshipsTable.guardianId, memberIds));
+    const wardsByGuardian = new Map<number, number[]>();
+    for (const g of guardianships) {
+      const list = wardsByGuardian.get(g.guardianId) ?? [];
+      list.push(g.wardId);
+      wardsByGuardian.set(g.guardianId, list);
+    }
+    const allIds = Array.from(
+      new Set([...memberIds, ...guardianships.map((g) => g.wardId)]),
+    );
+    const memberships = await db
+      .select({ userId: teamMembersTable.userId, teamId: teamMembersTable.teamId })
+      .from(teamMembersTable)
+      .where(inArray(teamMembersTable.userId, allIds));
+    const teamsByUser = new Map<number, Set<number>>();
+    for (const m of memberships) {
+      if (!teamsByUser.has(m.userId)) teamsByUser.set(m.userId, new Set());
+      teamsByUser.get(m.userId)!.add(m.teamId);
+    }
+    const effectiveTeams = (userId: number) => {
+      const set = new Set(teamsByUser.get(userId) ?? []);
+      for (const ward of wardsByGuardian.get(userId) ?? [])
+        for (const t of teamsByUser.get(ward) ?? []) set.add(t);
+      return set;
+    };
+    const mine = effectiveTeams(localUser.id);
+    const strangers = memberIds.filter((id) => {
+      if (id === localUser.id) return false;
+      const theirs = effectiveTeams(id);
+      for (const t of theirs) if (mine.has(t)) return false;
+      return true;
+    });
+    if (strangers.length > 0)
+      return res
+        .status(403)
+        .json({ error: "You can only start chats with people from your own teams" });
+  }
 
   const [chat] = await db
     .insert(chatsTable)

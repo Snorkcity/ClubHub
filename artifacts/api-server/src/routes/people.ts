@@ -31,12 +31,31 @@ router.get("/people", requireAuth, async (req, res) => {
   const { clubId } = req as AuthedRequest;
   const search = (req.query.search as string | undefined)?.toLowerCase().trim();
   const role = req.query.role as string | undefined;
+  const teamId = req.query.teamId ? Number(req.query.teamId) : null;
 
   let people = await db
     .select()
     .from(usersTable)
     .where(eq(usersTable.clubId, clubId))
     .orderBy(asc(usersTable.firstName));
+
+  if (teamId) {
+    // Team members plus guardians of the team's players.
+    const members = await db
+      .select({ userId: teamMembersTable.userId, role: teamMembersTable.role })
+      .from(teamMembersTable)
+      .where(eq(teamMembersTable.teamId, teamId));
+    const memberIds = new Set(members.map((m) => m.userId));
+    const playerIds = members.filter((m) => m.role === "player").map((m) => m.userId);
+    if (playerIds.length) {
+      const guardians = await db
+        .select({ guardianId: guardianshipsTable.guardianId })
+        .from(guardianshipsTable)
+        .where(inArray(guardianshipsTable.playerId, playerIds));
+      for (const g of guardians) memberIds.add(g.guardianId);
+    }
+    people = people.filter((p) => memberIds.has(p.id));
+  }
 
   if (role === "parent") {
     const guardians = await db

@@ -12,7 +12,7 @@ import {
   messagesTable,
 } from "@workspace/db";
 import { and, gt, ne } from "drizzle-orm";
-import { CreatePostBody, UpdatePostBody, AddCommentBody } from "@workspace/api-zod";
+import { CreatePostBody, CreateClubPostBody, UpdatePostBody, AddCommentBody } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
 import { buildPosts } from "../lib/build";
 import { getVisibleTeamIds } from "../lib/queries";
@@ -175,6 +175,29 @@ router.post("/teams/:teamId/posts", requireAuth, async (req, res) => {
     .returning();
   const [built] = await buildPosts([post]);
   return res.status(201).json(built);
+});
+
+router.post("/posts/club", requireAuth, async (req, res) => {
+  const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
+  if (!isClubAdmin)
+    return res.status(403).json({ error: "Only club admins can post to every team" });
+  const body = CreateClubPostBody.parse(req.body);
+  const teams = await db
+    .select({ id: teamsTable.id })
+    .from(teamsTable)
+    .where(eq(teamsTable.clubId, clubId));
+  if (teams.length === 0) return res.status(201).json({ created: 0 });
+  await db.insert(postsTable).values(
+    teams.map((t) => ({
+      teamId: t.id,
+      authorId: localUser.id,
+      title: body.title ?? null,
+      body: body.body,
+      pinned: body.pinned ?? false,
+      pinnedAt: body.pinned ? new Date() : null,
+    })),
+  );
+  return res.status(201).json({ created: teams.length });
 });
 
 router.get("/posts/:postId", requireAuth, async (req, res) => {

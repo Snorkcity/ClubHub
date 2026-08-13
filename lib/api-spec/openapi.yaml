@@ -287,6 +287,12 @@ paths:
       tags: [people]
       summary: List all people in the club
       parameters:
+        - name: teamId
+          in: query
+          required: false
+          description: Restrict to members of this team plus guardians of its players
+          schema:
+            type: integer
         - name: search
           in: query
           required: false
@@ -435,6 +441,28 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Post"
+
+  /posts/club:
+    post:
+      operationId: createClubPost
+      tags: [feed]
+      summary: Post an announcement to every team's feed (club admins only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClubPostInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [created]
+                properties:
+                  created: { type: integer }
 
   /teams/{teamId}/posts:
     get:
@@ -1245,6 +1273,8 @@ components:
         rsvps:
           type: array
           items: { $ref: "#/components/schemas/Rsvp" }
+        teamPlayerCount: { type: integer }
+        teamStaffCount: { type: integer }
 
     Rsvp:
       type: object
@@ -1402,6 +1432,14 @@ components:
         unreadMessages: { type: integer }
 
     PostInput:
+      type: object
+      required: [body]
+      properties:
+        title: { type: string }
+        body: { type: string, minLength: 1 }
+        pinned: { type: boolean }
+
+    ClubPostInput:
       type: object
       required: [body]
       properties:

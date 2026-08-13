@@ -11,4 +11,6 @@ import type { Rsvp } from './rsvp';
 export interface EventDetail {
   event: Event;
   rsvps: Rsvp[];
+  teamPlayerCount?: number;
+  teamStaffCount?: number;
 }

@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { and, asc, eq, gte, inArray } from "drizzle-orm";
-import { db, eventsTable, rsvpsTable, teamMembersTable, usersTable } from "@workspace/db";
+import { db, eventsTable, rsvpsTable, teamMembersTable, guardianshipsTable, usersTable } from "@workspace/db";
 import { CreateEventBody, UpdateEventBody, SetRsvpBody, CancelEventBody } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
 import { buildEvents } from "../lib/build";
@@ -98,14 +98,36 @@ router.get("/events/:eventId", requireAuth, async (req, res) => {
     const cur = roleByUser.get(m.userId);
     if (!cur || rank(m.role) > rank(cur)) roleByUser.set(m.userId, m.role);
   }
+  let teamPlayerCount = 0;
+  let teamStaffCount = 0;
+  for (const role of roleByUser.values()) {
+    if (role === "player") teamPlayerCount++;
+    else teamStaffCount++;
+  }
+
+  // "Not going" reasons are private: only team staff/club admins, the person
+  // themselves, or their guardians may see them.
+  const viewerIsStaff = await isTeamStaff(localUser.id, event.teamId, clubId, isClubAdmin);
+  const wardIds = new Set<number>();
+  if (!viewerIsStaff) {
+    const wards = await db
+      .select({ wardId: guardianshipsTable.playerId })
+      .from(guardianshipsTable)
+      .where(eq(guardianshipsTable.guardianId, localUser.id));
+    for (const w of wards) wardIds.add(w.wardId);
+  }
+  const canSeeReason = (userId: number) =>
+    viewerIsStaff || userId === localUser.id || wardIds.has(userId);
 
   return res.json({
     event: built,
+    teamPlayerCount,
+    teamStaffCount,
     rsvps: rows.map(({ r, u }) => ({
       id: r.id,
       eventId: r.eventId,
       status: r.status,
-      reason: r.reason ?? null,
+      reason: canSeeReason(u.id) ? (r.reason ?? null) : null,
       respondedAt: iso(r.respondedAt),
       role: roleByUser.get(u.id) ?? null,
       person: toPerson(u),

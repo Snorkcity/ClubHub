@@ -3,8 +3,9 @@ import { useParams, Link } from "wouter";
 import { format } from "date-fns";
 import { 
   CalendarDays, MapPin, Clock, Users, ArrowLeft,
-  CheckCircle2, HelpCircle, XCircle, FileQuestion, MessageSquare, Timer
+  CheckCircle2, HelpCircle, XCircle, FileQuestion, MessageSquare, Timer, ExternalLink
 } from "lucide-react";
+import { locationName, mapsUrl } from "@/lib/location";
 import { 
   useGetEvent, useSetRsvp, useCancelEvent, useCreatePost,
   getGetEventQueryKey, getListUpcomingEventsQueryKey, getGetTeamSummaryQueryKey,
@@ -40,7 +41,6 @@ export default function EventDetail() {
   const { data: me } = useGetMe({ query: { queryKey: getGetMeQueryKey() } });
   const [notOpen, setNotOpen] = useState(false);
   const [notReason, setNotReason] = useState("");
-  const [editingRsvp, setEditingRsvp] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorMode, setEditorMode] = useState<"edit" | "create">("edit");
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -66,7 +66,6 @@ export default function EventDetail() {
       data: { status, ...(status === 'out' ? { reason: reason ?? null } : {}) }
     }, {
       onSuccess: () => {
-        setEditingRsvp(false);
         queryClient.invalidateQueries({ queryKey: getGetEventQueryKey(eventId) });
         queryClient.invalidateQueries({ queryKey: getListUpcomingEventsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetTeamSummaryQueryKey(event.teamId) });
@@ -90,7 +89,8 @@ export default function EventDetail() {
         ? invited.includes("coaches")
         : false;
   const isCancelled = !!event.cancelledAt;
-  const showRsvpCard = !isCancelled && amInvited && (!event.myRsvp || editingRsvp);
+  // The RSVP card stays visible after answering so it's easy to change.
+  const showRsvpCard = !isCancelled && amInvited;
 
   async function handleCancel(notify: boolean) {
     const reason = cancelReason.trim();
@@ -197,9 +197,14 @@ export default function EventDetail() {
                   {event.teamName}
                 </Link>
               </div>
-              <h1 className="text-3xl md:text-5xl font-display font-bold tracking-tight mb-6">
-                {event.title}
-              </h1>
+              {/* Skip the big heading when it just repeats the type badge (e.g. "Team training"). */}
+              {!["team training", "training", "training session", "game", "match"].includes(
+                event.title.trim().toLowerCase(),
+              ) && (
+                <h1 className="text-2xl md:text-4xl font-display font-bold tracking-tight mb-6">
+                  {event.title}
+                </h1>
+              )}
 
               {isCancelled && (
                 <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-900 p-4">
@@ -247,15 +252,22 @@ export default function EventDetail() {
                 </div>
                 
                 {event.location && (
-                  <div className="flex items-center gap-3">
+                  <a
+                    href={mapsUrl(event.location)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 rounded-2xl -m-2 p-2 hover:bg-muted/50 active:bg-muted transition-colors"
+                  >
                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                       <MapPin className="h-5 w-5 text-primary" />
                     </div>
-                    <div>
-                      <p className="font-semibold">Location</p>
-                      <p className="text-sm text-muted-foreground line-clamp-1">{event.location}</p>
+                    <div className="min-w-0">
+                      <p className="font-semibold line-clamp-1">{locationName(event.location)}</p>
+                      <p className="text-sm text-primary font-semibold flex items-center gap-1">
+                        Open in maps <ExternalLink className="h-3 w-3" />
+                      </p>
                     </div>
-                  </div>
+                  </a>
                 )}
                 
                 {event.opponent && (
@@ -280,7 +292,11 @@ export default function EventDetail() {
             {/* My RSVP Action */}
             {showRsvpCard && (
             <div className="w-full md:w-auto bg-muted/30 rounded-2xl p-5 border text-center shrink-0">
-              <h3 className="font-display font-bold text-lg mb-3">Your RSVP</h3>
+              <h3 className="font-display font-bold text-lg mb-1">Your RSVP</h3>
+              {event.myRsvp && (
+                <p className="text-xs text-muted-foreground mb-3">Tap to change your answer</p>
+              )}
+              {!event.myRsvp && <div className="mb-3" />}
               <div className="flex flex-row md:flex-col gap-2">
                 <Button 
                   onClick={() => { setNotOpen(false); if (event.myRsvp !== 'going') handleRsvp('going'); }} 
@@ -318,14 +334,6 @@ export default function EventDetail() {
                   </Button>
                 </div>
               )}
-              {editingRsvp && (
-                <button
-                  onClick={() => { setEditingRsvp(false); setNotOpen(false); }}
-                  className="mt-3 text-xs font-semibold text-muted-foreground hover:text-foreground"
-                >
-                  Cancel
-                </button>
-              )}
             </div>
             )}
           </div>
@@ -341,18 +349,7 @@ export default function EventDetail() {
         {/* Availability Section */}
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-display font-bold">Team Availability</h2>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-card border rounded-2xl p-4 text-center">
-              <div className="text-3xl font-display font-bold text-green-600">{event.goingCount}</div>
-              <div className="text-xs font-semibold text-muted-foreground uppercase mt-1">Going</div>
-            </div>
-            <div className="bg-card border rounded-2xl p-4 text-center">
-              <div className="text-3xl font-display font-bold text-red-500">{event.outCount + event.maybeCount}</div>
-              <div className="text-xs font-semibold text-muted-foreground uppercase mt-1">Not going</div>
-            </div>
+            <h2 className="text-xl font-display font-bold">Team Availability</h2>
           </div>
 
           {(() => {
@@ -368,7 +365,7 @@ export default function EventDetail() {
               return (
                 <div
                   key={rsvp.id}
-                  onClick={isMe ? () => { setEditingRsvp(true); setNotOpen(false); window.scrollTo({ top: 0, behavior: "smooth" }); } : undefined}
+                  onClick={isMe ? () => { setNotOpen(false); window.scrollTo({ top: 0, behavior: "smooth" }); } : undefined}
                   className={`bg-card p-3 flex items-center gap-3 transition-colors ${
                     isMe ? "cursor-pointer hover:bg-muted/50 active:bg-muted" : ""
                   }`}
@@ -403,7 +400,7 @@ export default function EventDetail() {
               items.length === 0 ? null : (
                 <div>
                   <div className={`px-4 py-2 text-[11px] font-bold uppercase tracking-wider ${accent} bg-muted/40 border-y first:border-t-0`}>
-                    {title} · {items.length}
+                    {title}
                   </div>
                   <div className="divide-y">
                     {items.map((r) => <Row key={r.id} rsvp={r} />)}
@@ -411,15 +408,33 @@ export default function EventDetail() {
                 </div>
               );
 
+            const staffTotal = eventData.teamStaffCount ?? 0;
+            const playerTotal = eventData.teamPlayerCount ?? 0;
             return (
-              <div className="bg-card border rounded-3xl overflow-hidden shadow-sm">
-                <Section title="Coaches & managers going" items={staffGoing} accent="text-emerald-700" />
-                <Section title="Players going" items={playersGoing} accent="text-green-700" />
-                <Section title="Unavailable" items={unavailable} accent="text-red-600" />
-                {rsvps.length === 0 && (
-                  <EmptyState title="No RSVPs yet" message="Be the first to respond to this event." icon={FileQuestion} />
-                )}
-              </div>
+              <>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-xs font-bold">
+                    <span className="h-2 w-2 rounded-full bg-green-600" />
+                    Players {playersGoing.length}{playerTotal ? `/${playerTotal}` : ""} going
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-xs font-bold">
+                    <span className="h-2 w-2 rounded-full bg-emerald-600" />
+                    Coaches {staffGoing.length}{staffTotal ? `/${staffTotal}` : ""} going
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-xs font-bold text-red-600">
+                    <span className="h-2 w-2 rounded-full bg-red-500" />
+                    {unavailable.length} not going
+                  </span>
+                </div>
+                <div className="bg-card border rounded-3xl overflow-hidden shadow-sm">
+                  <Section title={`Coaches going · ${staffGoing.length}${staffTotal ? ` of ${staffTotal}` : ""}`} items={staffGoing} accent="text-emerald-700" />
+                  <Section title={`Players going · ${playersGoing.length}${playerTotal ? ` of ${playerTotal}` : ""}`} items={playersGoing} accent="text-green-700" />
+                  <Section title={`Not going · ${unavailable.length}`} items={unavailable} accent="text-red-600" />
+                  {rsvps.length === 0 && (
+                    <EmptyState title="No RSVPs yet" message="Be the first to respond to this event." icon={FileQuestion} />
+                  )}
+                </div>
+              </>
             );
           })()}
         </div>

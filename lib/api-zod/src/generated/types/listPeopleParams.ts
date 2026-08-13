@@ -8,6 +8,10 @@
 import type { ListPeopleRole } from './listPeopleRole';
 
 export type ListPeopleParams = {
+/**
+ * Restrict to members of this team plus guardians of its players
+ */
+teamId?: number;
 search?: string;
 role?: ListPeopleRole;
 };

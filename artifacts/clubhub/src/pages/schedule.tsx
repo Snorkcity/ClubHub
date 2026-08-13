@@ -9,6 +9,7 @@ import {
 import { queryClient } from "@/lib/queryClient";
 
 import { LoadingScreen, ErrorState, EmptyState } from "@/components/ui/states";
+import { locationName } from "@/lib/location";
 import { NewEventDialog } from "@/components/schedule/new-event-dialog";
 import { Button } from "@/components/ui/button";
 
@@ -59,7 +60,7 @@ export default function Schedule() {
 
               return (
                 <div key={day} className="space-y-4">
-                  <h2 className="text-xl font-display font-bold sticky top-12 bg-muted/10 backdrop-blur-md py-2 z-10">
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground sticky top-12 bg-muted/10 backdrop-blur-md py-1.5 z-10">
                     {dayLabel}
                   </h2>
                   <div className="flex flex-col gap-4">
@@ -152,7 +153,7 @@ function ScheduleCard({ event }: { event: any }) {
           </h3>
           <div className="flex flex-wrap gap-x-3 text-xs text-muted-foreground mt-0.5">
             {event.location && (
-              <span className="flex items-center truncate"><MapPin className="h-3 w-3 mr-1 opacity-70" /> {event.location}</span>
+              <span className="flex items-center truncate"><MapPin className="h-3 w-3 mr-1 opacity-70" /> {locationName(event.location)}</span>
             )}
             {event.opponent && (
               <span className="flex items-center"><Users className="h-3 w-3 mr-1 opacity-70" /> vs {event.opponent}</span>

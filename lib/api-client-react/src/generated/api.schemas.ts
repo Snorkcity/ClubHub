@@ -314,6 +314,8 @@ export interface Rsvp {
 export interface EventDetail {
   event: Event;
   rsvps: Rsvp[];
+  teamPlayerCount?: number;
+  teamStaffCount?: number;
 }
 
 export type ChatType = typeof ChatType[keyof typeof ChatType];
@@ -505,6 +507,13 @@ export interface TeamUnread {
 }
 
 export interface PostInput {
+  title?: string;
+  /** @minLength 1 */
+  body: string;
+  pinned?: boolean;
+}
+
+export interface ClubPostInput {
   title?: string;
   /** @minLength 1 */
   body: string;
@@ -872,6 +881,10 @@ export interface SeasonMinutes {
 export type NotFoundResponse = Error;
 
 export type ListPeopleParams = {
+/**
+ * Restrict to members of this team plus guardians of its players
+ */
+teamId?: number;
 search?: string;
 role?: ListPeopleRole;
 };
@@ -885,6 +898,10 @@ export const ListPeopleRole = {
   player: 'player',
   parent: 'parent',
 } as const;
+
+export type CreateClubPost201 = {
+  created: number;
+};
 
 export type GetCheckinStatusParams = {
 /**

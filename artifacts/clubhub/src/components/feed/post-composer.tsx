@@ -6,6 +6,7 @@ import {
   useGetMe,
   useListTeams,
   useCreatePost,
+  useCreateClubPost,
   getGetMeQueryKey,
   getListTeamsQueryKey,
   getGetFeedQueryKey,
@@ -121,7 +122,7 @@ export function PostComposer({
         <DialogHeader>
           <DialogTitle>New post</DialogTitle>
         </DialogHeader>
-        <ComposeForm teams={postableTeams} onDone={() => setOpen(false)} />
+        <ComposeForm teams={postableTeams} isClubAdmin={isClubAdmin} onDone={() => setOpen(false)} />
       </DialogContent>
     </Dialog>
   );
@@ -129,13 +130,15 @@ export function PostComposer({
 
 function ComposeForm({
   teams,
+  isClubAdmin,
   onDone,
 }: {
   teams: { id: number; name: string }[];
+  isClubAdmin?: boolean;
   onDone: () => void;
 }) {
   const [teamId, setTeamId] = useState<string>(
-    teams.length === 1 ? String(teams[0].id) : "",
+    teams.length === 1 && !isClubAdmin ? String(teams[0].id) : "",
   );
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -164,7 +167,26 @@ function ComposeForm({
     },
   });
 
-  const canSubmit = body.trim().length > 0 && teamId !== "" && !createPost.isPending;
+  const createClubPost = useCreateClubPost({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetFeedQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetClubOverviewQueryKey() });
+        toast({ title: "Posted", description: "Your update is live on every team's feed." });
+        onDone();
+      },
+      onError: () => {
+        toast({
+          title: "Couldn't post",
+          description: "Something went wrong — please try again.",
+          variant: "destructive",
+        });
+      },
+    },
+  });
+
+  const pending = createPost.isPending || createClubPost.isPending;
+  const canSubmit = body.trim().length > 0 && teamId !== "" && !pending;
 
   return (
     <form
@@ -172,17 +194,16 @@ function ComposeForm({
       onSubmit={(e) => {
         e.preventDefault();
         if (!canSubmit) return;
-        createPost.mutate({
-          teamId: Number(teamId),
-          data: {
-            body: body.trim(),
-            ...(title.trim() ? { title: title.trim() } : {}),
-            pinned,
-          },
-        });
+        const data = {
+          body: body.trim(),
+          ...(title.trim() ? { title: title.trim() } : {}),
+          pinned,
+        };
+        if (teamId === "all") createClubPost.mutate({ data });
+        else createPost.mutate({ teamId: Number(teamId), data });
       }}
     >
-      {teams.length > 1 ? (
+      {teams.length > 1 || isClubAdmin ? (
         <div className="space-y-2">
           <Label>Team</Label>
           <Select value={teamId} onValueChange={setTeamId}>
@@ -190,6 +211,9 @@ function ComposeForm({
               <SelectValue placeholder="Choose a team" />
             </SelectTrigger>
             <SelectContent>
+              {isClubAdmin && (
+                <SelectItem value="all">All teams (whole club)</SelectItem>
+              )}
               {teams.map((t) => (
                 <SelectItem key={t.id} value={String(t.id)}>
                   {t.name}
@@ -235,7 +259,7 @@ function ComposeForm({
           </Label>
         </div>
         <Button type="submit" disabled={!canSubmit} className="rounded-full px-6">
-          {createPost.isPending ? "Posting…" : "Post"}
+          {pending ? "Posting…" : "Post"}
         </Button>
       </div>
     </form>
