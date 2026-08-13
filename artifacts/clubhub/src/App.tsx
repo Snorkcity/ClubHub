@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { ClerkProvider, SignIn, SignUp, Show, useClerk, useAuth } from '@clerk/react';
 import { setAuthTokenGetter, setBaseUrl } from '@workspace/api-client-react';
 import { ActiveTeamProvider } from '@/lib/active-team';
+import { ThemeProvider } from '@/lib/theme';
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from 'wouter';
@@ -246,12 +247,14 @@ function ClerkProviderWithRoutes() {
 
 function App() {
   return (
+    <ThemeProvider>
     <TooltipProvider>
       <WouterRouter base={basePath}>
         <ClerkProviderWithRoutes />
       </WouterRouter>
       <Toaster />
     </TooltipProvider>
+    </ThemeProvider>
   );
 }
 

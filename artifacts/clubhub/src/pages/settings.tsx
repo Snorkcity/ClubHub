@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Save, UserCircle } from "lucide-react";
+import { Save, UserCircle, Sun, Moon, MonitorSmartphone, Palette } from "lucide-react";
+import { useTheme, type ThemePref } from "@/lib/theme";
 import { useGetMe, useUpdateMe, getGetMeQueryKey } from "@workspace/api-client-react";
 import { queryClient } from "@/lib/queryClient";
 
@@ -24,6 +25,46 @@ function PrivacySelect({ value, onChange }: { value: string; onChange: (v: strin
       <option value="admins">Admins only</option>
       <option value="private">Only me</option>
     </select>
+  );
+}
+
+/** Light / Dark / Auto theme picker — saved on this device. */
+function AppearanceCard() {
+  const { theme, setTheme } = useTheme();
+  const options: { value: ThemePref; label: string; icon: typeof Sun; hint: string }[] = [
+    { value: "light", label: "Light", icon: Sun, hint: "Bright & clean" },
+    { value: "dark", label: "Dark", icon: Moon, hint: "Easy on the eyes" },
+    { value: "system", label: "Auto", icon: MonitorSmartphone, hint: "Match my device" },
+  ];
+  return (
+    <Card className="p-6 md:p-8 rounded-3xl border shadow-sm">
+      <h2 className="text-xl font-bold mb-1 flex items-center gap-2">
+        <Palette className="h-5 w-5 text-primary" /> Appearance
+      </h2>
+      <p className="text-sm text-muted-foreground mb-5">Choose how ClubHub looks on this device.</p>
+      <div className="grid grid-cols-3 gap-2 md:gap-3">
+        {options.map(({ value, label, icon: Icon, hint }) => {
+          const active = theme === value;
+          return (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setTheme(value)}
+              aria-pressed={active}
+              className={`rounded-2xl border p-3 md:p-4 text-center transition-colors ${
+                active
+                  ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                  : "hover:bg-muted/50"
+              }`}
+            >
+              <Icon className={`h-5 w-5 mx-auto mb-1.5 ${active ? "text-primary" : "text-muted-foreground"}`} />
+              <div className="text-sm font-bold">{label}</div>
+              <div className="text-[11px] text-muted-foreground hidden md:block">{hint}</div>
+            </button>
+          );
+        })}
+      </div>
+    </Card>
   );
 }
 
@@ -108,6 +149,8 @@ export default function Settings() {
         </header>
 
         <div className="space-y-8">
+          <AppearanceCard />
+
           <Card className="p-6 md:p-8 rounded-3xl border shadow-sm">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
               <UserCircle className="h-5 w-5 text-primary" /> Personal Information

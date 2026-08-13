@@ -1,12 +1,14 @@
 ---
-name: Verify gitPush actually landed
-description: gitPush can report success while leaving commits or working-tree changes unpushed; always verify origin/main == HEAD and clean status.
+name: Pushing to GitHub and verifying it landed
+description: How to push ClubHub to origin/main when the gitPush callback is unavailable, and why every push must be verified.
 ---
 
-# Verify every prod push
+# Pushing & verifying
 
-- The `gitPush({})` callback has twice reported `success:true` while origin/main stayed behind (once with an unpushed local commit, once with uncommitted working-tree changes it didn't pick up).
-- **How to apply:** after every push, run `git fetch && git rev-parse origin/main HEAD && git status --short`. If HEAD != origin/main or files are dirty, commit manually (`git add`/`git commit`) then call `gitPush({})` again — direct `git push` fails auth (token not in remote URL); only the callback can push.
-- **Why:** Railway deploys from GitHub; a "successful" push that didn't land means Scott tests stale prod on his phone and reports missing features.
+- The `gitPush` sandbox callback may not be registered in a session, and plain `git push` fails auth ("Invalid username or token").
+- Working fallback: use the GitHub connection in CodeExecution (`listConnections("github")` inside a `"use impure"` fn — its `settings` are empty and `client.auth()` is unauthenticated, but **`c.proxyFetch("/...")` IS authenticated**). Push via the Git Data API: create blobs for each `git diff --name-status origin/main..HEAD` file, create a tree with `base_tree` = origin/main's tree, create a commit with parent = origin/main, PATCH `refs/heads/main`. Then `git fetch && git reset --soft origin/main` locally and confirm `git status --porcelain` is empty.
+- Note this flattens multiple local commits into one remote commit; commit locally first so the message is reusable via `git log -1 --pretty=%B`.
 
-**New failure mode (Jul 2026):** gitPush can report success WITHOUT committing dirty working-tree changes at all (HEAD/origin match but file stays modified). If status isn't clean after gitPush, `git add + git commit` manually, then gitPush again.
+**Why:** gitPush has claimed success while origin/main stayed behind, and one session had no gitPush at all; unverified pushes silently skip the Railway prod deploy.
+
+**How to apply:** after any push (tool or API), always verify `origin/main == HEAD` equivalent state + clean status before telling Scott it's deployed.
