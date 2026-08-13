@@ -289,45 +289,55 @@ export default function EventDetail() {
               )}
             </div>
             
-            {/* My RSVP Action */}
+            {/* My RSVP Action — one slim row: status (or question) + pill buttons */}
             {showRsvpCard && (
-            <div className="w-full md:w-auto bg-muted/30 rounded-2xl p-5 border text-center shrink-0">
-              <h3 className="font-display font-bold text-lg mb-1">Your RSVP</h3>
-              {event.myRsvp && (
-                <p className="text-xs text-muted-foreground mb-3">Tap to change your answer</p>
-              )}
-              {!event.myRsvp && <div className="mb-3" />}
-              <div className="flex flex-row md:flex-col gap-2">
-                <Button 
-                  onClick={() => { setNotOpen(false); if (event.myRsvp !== 'going') handleRsvp('going'); }} 
-                  disabled={setRsvp.isPending}
-                  variant={event.myRsvp === 'going' ? 'default' : 'outline'}
-                  className={`rounded-xl h-12 flex-1 md:w-48 justify-start ${event.myRsvp === 'going' ? 'bg-green-600 hover:bg-green-700' : 'text-green-700 border-green-300'}`}
-                >
-                  <CheckCircle2 className="h-5 w-5 mr-2" /> Going
-                </Button>
-                <Button 
-                  onClick={() => setNotOpen(true)} 
-                  disabled={setRsvp.isPending}
-                  variant={event.myRsvp === 'out' ? 'default' : 'outline'}
-                  className={`rounded-xl h-12 flex-1 md:w-48 justify-start ${event.myRsvp === 'out' ? 'bg-red-600 hover:bg-red-700 text-white' : 'text-red-700 border-red-300'}`}
-                >
-                  <XCircle className="h-5 w-5 mr-2" /> Not
-                </Button>
+            <div className="w-full md:w-auto md:min-w-[260px] bg-muted/30 rounded-2xl px-4 py-3 border shrink-0">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-semibold flex items-center gap-1.5 min-w-0">
+                  {event.myRsvp === 'going' ? (
+                    <><CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" /> You're going</>
+                  ) : event.myRsvp === 'out' ? (
+                    <><XCircle className="h-4 w-4 text-red-600 shrink-0" /> Not going</>
+                  ) : event.myRsvp === 'maybe' ? (
+                    <>Maybe going</>
+                  ) : (
+                    <>Are you going?</>
+                  )}
+                </span>
+                <div className="flex gap-1.5 shrink-0">
+                  <Button
+                    size="sm"
+                    onClick={() => { setNotOpen(false); if (event.myRsvp !== 'going') handleRsvp('going'); }}
+                    disabled={setRsvp.isPending}
+                    variant={event.myRsvp === 'going' ? 'default' : 'outline'}
+                    className={`rounded-full h-8 px-3 text-xs font-bold ${event.myRsvp === 'going' ? 'bg-green-600 hover:bg-green-700' : 'text-green-700 border-green-300'}`}
+                  >
+                    Going
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => setNotOpen(true)}
+                    disabled={setRsvp.isPending}
+                    variant={event.myRsvp === 'out' ? 'default' : 'outline'}
+                    className={`rounded-full h-8 px-3 text-xs font-bold ${event.myRsvp === 'out' ? 'bg-red-600 hover:bg-red-700 text-white' : 'text-red-700 border-red-300'}`}
+                  >
+                    Not
+                  </Button>
+                </div>
               </div>
               {notOpen && (
-                <div className="mt-3 flex flex-col gap-2 animate-in fade-in slide-in-from-top-1 duration-150">
+                <div className="mt-2.5 flex gap-2 animate-in fade-in slide-in-from-top-1 duration-150">
                   <input
                     autoFocus
                     value={notReason}
                     onChange={(e) => setNotReason(e.target.value)}
                     placeholder="Reason (optional)"
-                    className="h-10 rounded-xl border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
+                    className="h-9 flex-1 min-w-0 rounded-xl border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
                   />
                   <Button
                     size="sm"
                     disabled={setRsvp.isPending}
-                    className="rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold"
+                    className="rounded-xl h-9 bg-red-600 hover:bg-red-700 text-white font-bold shrink-0"
                     onClick={() => { handleRsvp('out', notReason.trim() || undefined); setNotOpen(false); }}
                   >
                     Save
