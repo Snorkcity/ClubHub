@@ -300,6 +300,13 @@ function TeamPosts({ teamId }: { teamId: number }) {
     query: { enabled: !!teamId, queryKey: getListTeamPostsQueryKey(teamId) },
   });
 
+  useEffect(() => {
+    if (!posts?.length || !window.location.hash.startsWith("#post-")) return;
+    const target = document.getElementById(window.location.hash.slice(1));
+    if (!target) return;
+    requestAnimationFrame(() => target.scrollIntoView({ behavior: "smooth", block: "center" }));
+  }, [posts]);
+
   if (isLoading) return <LoadingScreen />;
   if (!posts || posts.length === 0) {
     return (
@@ -313,7 +320,13 @@ function TeamPosts({ teamId }: { teamId: number }) {
   return (
     <div className="space-y-4">
       {posts.map((post) => (
-        <PostCard key={post.id} post={post} linkToTeam={false} />
+        <div
+          key={post.id}
+          id={`post-${post.id}`}
+          className={window.location.hash === `#post-${post.id}` ? "rounded-2xl ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}
+        >
+          <PostCard post={post} linkToTeam={false} />
+        </div>
       ))}
     </div>
   );

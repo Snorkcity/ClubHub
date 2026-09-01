@@ -104,7 +104,7 @@ describe("team notifications", () => {
   it("notifies staff, players, and guardians once for a team post with a team deep link", async () => {
     await request(app).post(`/api/teams/${teamId}/posts`).set(as("coach")).send({ title: PREFIX + "post", body: "hello" }).expect(201);
     const [notification] = await db.select().from(notificationsTable).where(and(eq(notificationsTable.actorId, actor), eq(notificationsTable.kind, "post"))).orderBy(notificationsTable.createdAt);
-    expect(notification.deepLink).toBe(`/teams/${teamId}`);
+    expect(notification.deepLink).toMatch(new RegExp(`^/teams/${teamId}#post-\\d+$`));
     const rows = await db.select({ userId: notificationRecipientsTable.userId }).from(notificationRecipientsTable).where(eq(notificationRecipientsTable.notificationId, notification.id));
     expect(new Set(rows.map((r) => r.userId))).toEqual(new Set([staff, player, guardian]));
     expect(rows).toHaveLength(3);

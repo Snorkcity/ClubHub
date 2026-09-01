@@ -215,7 +215,7 @@ router.post("/teams/:teamId/posts", requireAuth, async (req, res) => {
       .values(parsed.rows.map((r) => ({ ...r, postId: post.id })));
   await createNotification({
     clubId, actorId: localUser.id, kind: "post", title: post.title ?? "New team post",
-    body: post.body, deepLink: `/teams/${teamId}`,
+    body: post.body, deepLink: `/teams/${teamId}#post-${post.id}`,
     recipientIds: await resolvePostRecipients(clubId, [teamId], localUser.id),
   });
   const [built] = await buildPosts([post]);

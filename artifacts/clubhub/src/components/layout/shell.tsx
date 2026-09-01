@@ -313,7 +313,7 @@ function UserMenu({ me, clerkUser, onSignOut, avatarOnly = false, isStaff = fals
           <Link href="/notifications" className="flex items-center w-full justify-between">
             <div className="flex items-center">
               <Bell className="mr-2 h-4 w-4 text-muted-foreground" />
-              <span>Notifications</span>
+              <span>Notification Inbox</span>
             </div>
             {notificationsUnread > 0 && (
               <span className="bg-destructive text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
