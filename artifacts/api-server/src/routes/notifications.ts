@@ -1,9 +1,37 @@
 import { Router, type IRouter } from "express";
-import { and, count, desc, eq, isNull, lt } from "drizzle-orm";
+import { and, count, desc, eq, inArray, isNull, lt } from "drizzle-orm";
 import { db, notificationRecipientsTable, notificationsTable, pushSubscriptionsTable, usersTable } from "@workspace/db";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
 
 const router: IRouter = Router();
+const MAX_PUSH_SUBSCRIPTIONS_PER_USER = 10;
+const BASE64URL_PATTERN = /^[A-Za-z0-9_-]+$/;
+const PUSH_SERVICE_HOSTS = new Set([
+  "fcm.googleapis.com",
+  "updates.push.services.mozilla.com",
+  "push.services.mozilla.com",
+  "web.push.apple.com",
+]);
+
+function isTrustedPushEndpoint(endpoint: string) {
+  if (!endpoint || endpoint.length > 4096) return false;
+  try {
+    const url = new URL(endpoint);
+    return url.protocol === "https:" && (
+      PUSH_SERVICE_HOSTS.has(url.hostname) ||
+      url.hostname.endsWith(".notify.windows.com")
+    );
+  } catch {
+    return false;
+  }
+}
+
+function isValidPushKey(value: unknown, minLength: number, maxLength: number) {
+  return typeof value === "string" &&
+    value.length >= minLength &&
+    value.length <= maxLength &&
+    BASE64URL_PATTERN.test(value);
+}
 
 router.get("/notifications", requireAuth, async (req, res) => {
   const { localUser, clubId } = req as AuthedRequest;
@@ -62,11 +90,49 @@ router.get("/notifications/push-config", requireAuth, (_req, res) =>
 router.post("/notifications/subscriptions", requireAuth, async (req, res) => {
   const { localUser } = req as AuthedRequest;
   const { endpoint, keys, contentEncoding } = req.body ?? {};
-  if (typeof endpoint !== "string" || !endpoint || typeof keys?.p256dh !== "string" || typeof keys?.auth !== "string")
+  if (
+    typeof endpoint !== "string" ||
+    !isTrustedPushEndpoint(endpoint) ||
+    !isValidPushKey(keys?.p256dh, 40, 256) ||
+    !isValidPushKey(keys?.auth, 8, 128) ||
+    (contentEncoding != null && (
+      typeof contentEncoding !== "string" ||
+      !/^[a-z0-9-]{1,32}$/.test(contentEncoding)
+    ))
+  )
     return res.status(400).json({ error: "A valid push subscription is required" });
-  await db.insert(pushSubscriptionsTable).values({ userId: localUser.id, endpoint, p256dh: keys.p256dh, auth: keys.auth, contentEncoding: typeof contentEncoding === "string" ? contentEncoding : null })
-    .onConflictDoUpdate({ target: pushSubscriptionsTable.endpoint, set: { userId: localUser.id, p256dh: keys.p256dh, auth: keys.auth, contentEncoding: typeof contentEncoding === "string" ? contentEncoding : null, updatedAt: new Date() } });
-  await db.update(usersTable).set({ pushNotificationsEnabled: true }).where(eq(usersTable.id, localUser.id));
+  await db.transaction(async (tx) => {
+    await tx.insert(pushSubscriptionsTable).values({
+      userId: localUser.id,
+      endpoint,
+      p256dh: keys.p256dh,
+      auth: keys.auth,
+      contentEncoding: typeof contentEncoding === "string" ? contentEncoding : null,
+    }).onConflictDoUpdate({
+      target: pushSubscriptionsTable.endpoint,
+      set: {
+        userId: localUser.id,
+        p256dh: keys.p256dh,
+        auth: keys.auth,
+        contentEncoding: typeof contentEncoding === "string" ? contentEncoding : null,
+        updatedAt: new Date(),
+      },
+    });
+    const subscriptions = await tx.select({ id: pushSubscriptionsTable.id })
+      .from(pushSubscriptionsTable)
+      .where(eq(pushSubscriptionsTable.userId, localUser.id))
+      .orderBy(desc(pushSubscriptionsTable.updatedAt), desc(pushSubscriptionsTable.id));
+    const expiredIds = subscriptions
+      .slice(MAX_PUSH_SUBSCRIPTIONS_PER_USER)
+      .map(({ id }) => id);
+    if (expiredIds.length) {
+      await tx.delete(pushSubscriptionsTable)
+        .where(inArray(pushSubscriptionsTable.id, expiredIds));
+    }
+    await tx.update(usersTable)
+      .set({ pushNotificationsEnabled: true })
+      .where(eq(usersTable.id, localUser.id));
+  });
   return res.status(204).end();
 });
 

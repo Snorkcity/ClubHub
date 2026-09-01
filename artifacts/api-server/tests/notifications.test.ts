@@ -168,4 +168,37 @@ describe("team notifications", () => {
     const firstIds = new Set(first.body.notifications.map((n: { id: number }) => n.id));
     expect(second.body.notifications.some((n: { id: number }) => firstIds.has(n.id))).toBe(false);
   });
+
+  it("rejects unsafe subscriptions and keeps only the ten newest devices", async () => {
+    const p256dh = "A".repeat(87);
+    const auth = "B".repeat(22);
+    await request(app).post("/api/notifications/subscriptions").set(as("player"))
+      .send({ endpoint: "http://push.example.test/not-secure", keys: { p256dh, auth } })
+      .expect(400);
+    await request(app).post("/api/notifications/subscriptions").set(as("player"))
+      .send({ endpoint: "https://example.com/ssrf", keys: { p256dh, auth } })
+      .expect(400);
+    await request(app).post("/api/notifications/subscriptions").set(as("player"))
+      .send({
+        endpoint: "https://fcm.googleapis.com/fcm/send/oversized",
+        keys: { p256dh: "A".repeat(300), auth },
+      })
+      .expect(400);
+
+    for (let i = 0; i < 12; i++) {
+      await request(app).post("/api/notifications/subscriptions").set(as("player"))
+        .send({
+          endpoint: `https://fcm.googleapis.com/fcm/send/${PREFIX}${i}`,
+          keys: { p256dh, auth },
+          contentEncoding: "aes128gcm",
+        })
+        .expect(204);
+    }
+    const stored = await db.select({ endpoint: pushSubscriptionsTable.endpoint })
+      .from(pushSubscriptionsTable)
+      .where(eq(pushSubscriptionsTable.userId, player));
+    expect(stored).toHaveLength(10);
+    expect(stored.some(({ endpoint }) => endpoint.endsWith(`${PREFIX}11`))).toBe(true);
+    expect(stored.some(({ endpoint }) => endpoint.endsWith(`${PREFIX}0`))).toBe(false);
+  });
 });
