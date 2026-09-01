@@ -10,10 +10,11 @@ self.addEventListener("push", (event) => {
 
   const title = payload.title || "Squadly";
   const iconUrl = new URL("icons/icon-192.png", self.registration.scope).href;
+  const badgeUrl = new URL("icons/notification-badge.png", self.registration.scope).href;
   const options = {
     body: payload.body || "New notification",
     icon: iconUrl,
-    badge: iconUrl,
+    badge: badgeUrl,
     data: {
       path: payload.deepLink || "/",
     },
