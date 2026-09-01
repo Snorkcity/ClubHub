@@ -169,7 +169,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         <div className="flex items-center gap-1 min-w-0">
           <Link href="/home" className="flex items-center shrink-0">
             <div className="h-8 w-8 bg-primary rounded flex items-center justify-center">
-              <span className="text-primary-foreground font-display font-black text-sm leading-none">CH</span>
+              <span className="text-primary-foreground font-display font-black text-sm leading-none">S</span>
             </div>
           </Link>
           <TeamSwitcher compact />
