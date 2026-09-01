@@ -75,6 +75,7 @@ import type {
   TeamInput,
   TeamMember,
   TeamMemberInput,
+  TeamMemberPerson,
   TeamMemberUpdate,
   TeamMonitoring,
   TeamSummary,
@@ -2063,11 +2064,11 @@ export const getListPeopleUrl = (params?: ListPeopleParams,) => {
 }
 
 /**
- * @summary List all people in the club
+ * @summary List visible team members
  */
-export const listPeople = async (params?: ListPeopleParams, options?: RequestInit): Promise<Person[]> => {
+export const listPeople = async (params?: ListPeopleParams, options?: RequestInit): Promise<TeamMemberPerson[]> => {
 
-  return customFetch<Person[]>(getListPeopleUrl(params),
+  return customFetch<TeamMemberPerson[]>(getListPeopleUrl(params),
   {
     ...options,
     method: 'GET'
@@ -2110,7 +2111,7 @@ export type ListPeopleQueryError = ErrorType<unknown>
 
 
 /**
- * @summary List all people in the club
+ * @summary List visible team members
  */
 
 export function useListPeople<TData = Awaited<ReturnType<typeof listPeople>>, TError = ErrorType<unknown>>(

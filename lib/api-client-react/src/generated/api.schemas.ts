@@ -119,6 +119,25 @@ export interface Person {
   hasLogin?: boolean;
 }
 
+export type TeamMemberPersonTeamRolesItem = typeof TeamMemberPersonTeamRolesItem[keyof typeof TeamMemberPersonTeamRolesItem];
+
+
+export const TeamMemberPersonTeamRolesItem = {
+  manager: 'manager',
+  coach: 'coach',
+  player: 'player',
+} as const;
+
+export interface ConnectedChild {
+  id: number;
+  fullName: string;
+}
+
+export type TeamMemberPerson = Person & {
+  teamRoles: TeamMemberPersonTeamRolesItem[];
+  connectedChildren: ConnectedChild[];
+};
+
 export interface Club {
   id: number;
   name: string;

@@ -407,7 +407,7 @@ paths:
     get:
       operationId: listPeople
       tags: [people]
-      summary: List all people in the club
+      summary: List visible team members
       parameters:
         - name: teamId
           in: query
@@ -434,7 +434,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Person"
+                  $ref: "#/components/schemas/TeamMemberPerson"
     post:
       operationId: createPerson
       tags: [people]
@@ -1272,6 +1272,29 @@ components:
         dateOfBirth: { type: ["string", "null"] }
         isMinor: { type: boolean }
         hasLogin: { type: boolean }
+
+    TeamMemberPerson:
+      allOf:
+        - $ref: "#/components/schemas/Person"
+        - type: object
+          required: [teamRoles, connectedChildren]
+          properties:
+            teamRoles:
+              type: array
+              items:
+                type: string
+                enum: [manager, coach, player]
+            connectedChildren:
+              type: array
+              items:
+                $ref: "#/components/schemas/ConnectedChild"
+
+    ConnectedChild:
+      type: object
+      required: [id, fullName]
+      properties:
+        id: { type: integer }
+        fullName: { type: string }
 
     Club:
       type: object

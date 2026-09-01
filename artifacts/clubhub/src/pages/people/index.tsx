@@ -1,31 +1,72 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { Search, UserSquare2, ShieldCheck, Mail, Phone, MapPin } from "lucide-react";
-import { useListPeople, getListPeopleQueryKey } from "@workspace/api-client-react";
+import { Search, UserSquare2, Mail, Phone } from "lucide-react";
+import {
+  useGetMe,
+  getGetMeQueryKey,
+  useListPeople,
+  getListPeopleQueryKey,
+} from "@workspace/api-client-react";
 
 import { LoadingScreen, ErrorState, EmptyState } from "@/components/ui/states";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { useActiveTeam } from "@/lib/active-team";
 
 export default function PeopleList() {
   const [search, setSearch] = useState("");
-  const [role, setRole] = useState<string>("all");
-
-  const { data: people, isLoading, error, refetch } = useListPeople({
-    search: search || undefined,
-    role: role !== "all" ? role as any : undefined
-  }, { 
-    query: { queryKey: getListPeopleQueryKey({ search: search || undefined, role: role !== "all" ? role as any : undefined }) } 
+  const { activeTeamId } = useActiveTeam();
+  const { data: me, isLoading: meLoading } = useGetMe({
+    query: { queryKey: getGetMeQueryKey() },
   });
+  const staffedTeamIds = new Set(
+    (me?.memberships ?? [])
+      .filter((membership) => membership.role === "coach" || membership.role === "manager")
+      .map((membership) => membership.teamId),
+  );
+  const teamId = me?.isClubAdmin
+    ? activeTeamId ?? undefined
+    : activeTeamId && staffedTeamIds.has(activeTeamId)
+      ? activeTeamId
+      : staffedTeamIds.values().next().value;
+  const params = { teamId, search: search || undefined };
+
+  const { data: people, isLoading, error, refetch } = useListPeople(params, {
+    query: {
+      enabled: !meLoading && (!!me?.isClubAdmin || !!teamId),
+      queryKey: getListPeopleQueryKey(params),
+    },
+  });
+  const sections = [
+    {
+      title: "Admins & coaches",
+      people: people?.filter((person) =>
+        person.teamRoles.some((role) => role === "coach" || role === "manager"),
+      ) ?? [],
+    },
+    {
+      title: "Players",
+      people: people?.filter(
+        (person) =>
+          person.teamRoles.includes("player") &&
+          !person.teamRoles.some((role) => role === "coach" || role === "manager"),
+      ) ?? [],
+    },
+    {
+      title: "Parents & guardians",
+      people: people?.filter(
+        (person) => person.connectedChildren.length > 0 && person.teamRoles.length === 0,
+      ) ?? [],
+    },
+  ].filter((section) => section.people.length > 0);
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-muted/10">
       <div className="container mx-auto p-4 md:p-8 lg:max-w-6xl flex-1 flex flex-col h-full">
         <header className="mb-8 shrink-0">
-          <h1 className="text-3xl font-display font-bold tracking-tight">Directory</h1>
-          <p className="text-muted-foreground mt-1">Find members, players, and staff across the club.</p>
+          <h1 className="text-3xl font-display font-bold tracking-tight">Team Members</h1>
+          <p className="text-muted-foreground mt-1">Coaches, players, and parents connected to this team.</p>
         </header>
 
         <div className="flex flex-col sm:flex-row gap-4 mb-6 shrink-0">
@@ -38,23 +79,11 @@ export default function PeopleList() {
               className="pl-10 h-12 rounded-xl border-border/60 bg-card shadow-sm text-base"
             />
           </div>
-          <Select value={role} onValueChange={setRole}>
-            <SelectTrigger className="w-full sm:w-[200px] h-12 rounded-xl border-border/60 bg-card shadow-sm text-base font-medium">
-              <SelectValue placeholder="Filter by role" />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl">
-              <SelectItem value="all">All Roles</SelectItem>
-              <SelectItem value="player">Players</SelectItem>
-              <SelectItem value="coach">Coaches</SelectItem>
-              <SelectItem value="manager">Managers</SelectItem>
-              <SelectItem value="parent">Parents</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
 
         <div className="flex-1 overflow-y-auto overflow-x-hidden pb-8">
           {isLoading ? (
-            <LoadingScreen message="Searching directory..." />
+            <LoadingScreen message="Loading team members..." />
           ) : error || !people ? (
             <ErrorState onRetry={() => refetch()} />
           ) : people.length === 0 ? (
@@ -64,8 +93,14 @@ export default function PeopleList() {
               icon={UserSquare2}
             />
           ) : (
-            <div className="bg-card border rounded-3xl shadow-sm overflow-hidden flex flex-col divide-y">
-              {people.map(person => (
+            <div className="space-y-6">
+              {sections.map((section) => (
+                <section key={section.title}>
+                  <h2 className="mb-2 px-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    {section.title}
+                  </h2>
+                  <div className="bg-card border rounded-3xl shadow-sm overflow-hidden flex flex-col divide-y">
+              {section.people.map(person => (
                 <Link key={person.id} href={`/people/${person.id}`}>
                   <div className="p-4 md:p-6 flex flex-col sm:flex-row sm:items-center gap-4 hover:bg-muted/30 transition-colors cursor-pointer group">
                     <div className="flex items-center gap-4 flex-1">
@@ -80,6 +115,11 @@ export default function PeopleList() {
                           {person.fullName}
                           {person.isMinor && <Badge variant="secondary" className="text-[10px] py-0 h-4">MINOR</Badge>}
                         </h3>
+                        {person.connectedChildren.length > 0 && (
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            Parent of {person.connectedChildren.map((child) => child.fullName).join(", ")}
+                          </p>
+                        )}
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-muted-foreground">
                           {person.email && (
                             <span className="flex items-center"><Mail className="h-3 w-3 mr-1.5 opacity-70" /> {person.email}</span>
@@ -92,6 +132,9 @@ export default function PeopleList() {
                     </div>
                   </div>
                 </Link>
+              ))}
+                  </div>
+                </section>
               ))}
             </div>
           )}

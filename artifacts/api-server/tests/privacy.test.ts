@@ -319,5 +319,17 @@ describe("GET /people?teamId scoping", () => {
     expect(ids.has(s.guardianA)).toBe(true); // guardian of playerA
     expect(ids.has(s.outsider)).toBe(false); // other team
     expect(ids.has(s.admin)).toBe(false); // in club but not on the team
+    const guardian = res.body.find((p: { id: number }) => p.id === s.guardianA);
+    expect(guardian.connectedChildren).toEqual([
+      { id: s.playerA, fullName: "PlayerA Test" },
+    ]);
+  });
+
+  it("rejects a coach requesting another team or omitting a team", async () => {
+    await request(app)
+      .get(`/api/people?teamId=${s.teamIds[1]}`)
+      .set(as("coach"))
+      .expect(403);
+    await request(app).get("/api/people").set(as("coach")).expect(403);
   });
 });

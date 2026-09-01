@@ -592,7 +592,7 @@ export const RemoveTeamMemberResponse = zod.void()
 
 
 /**
- * @summary List all people in the club
+ * @summary List visible team members
  */
 export const ListPeopleQueryParams = zod.object({
   "teamId": zod.coerce.number().optional().describe('Restrict to members of this team plus guardians of its players'),
@@ -615,7 +615,13 @@ export const ListPeopleResponseItem = zod.object({
   "dateOfBirth": zod.string().nullish(),
   "isMinor": zod.boolean(),
   "hasLogin": zod.boolean().optional()
-})
+}).and(zod.object({
+  "teamRoles": zod.array(zod.enum(['manager', 'coach', 'player'])),
+  "connectedChildren": zod.array(zod.object({
+  "id": zod.number(),
+  "fullName": zod.string()
+}))
+}))
 export const ListPeopleResponse = zod.array(ListPeopleResponseItem)
 
 

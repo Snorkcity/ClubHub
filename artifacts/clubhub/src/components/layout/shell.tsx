@@ -79,7 +79,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     { label: "Schedule", href: "/schedule", icon: CalendarDays },
     ...(isPlayer ? [{ label: "Check-in", href: "/checkin", icon: ClipboardCheck }] : []),
     { label: "Messages", href: "/messages", icon: MessageSquare },
-    ...(isStaff ? [{ label: "Directory", href: "/people", icon: UserSquare2 }] : []),
+    ...(isStaff ? [{ label: "Team Members", href: "/people", icon: UserSquare2 }] : []),
     ...(isStaff && staffTeamId != null
       ? [{ label: "Monitoring", href: `/teams/${staffTeamId}/monitoring`, icon: Activity }]
       : []),
@@ -90,8 +90,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   // Parents: Home/Schedule/Messages. Staff: Home/Schedule/Messages/Monitoring.
   const tabItems = navItems.filter((i) =>
     isStaff
-      ? i.label !== "Check-in" && i.label !== "Directory"
-      : i.label !== "Monitoring" && i.label !== "Directory",
+      ? i.label !== "Check-in" && i.label !== "Team Members"
+      : i.label !== "Monitoring" && i.label !== "Team Members",
   );
 
   return (
@@ -333,7 +333,7 @@ function UserMenu({ me, clerkUser, onSignOut, avatarOnly = false, isStaff = fals
             <DropdownMenuItem asChild className="rounded-xl py-2 cursor-pointer">
               <Link href="/people" className="flex items-center w-full">
                 <UserSquare2 className="mr-2 h-4 w-4 text-muted-foreground" />
-                <span>Directory</span>
+                <span>Team Members</span>
               </Link>
             </DropdownMenuItem>
           </>
