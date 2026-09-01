@@ -206,7 +206,7 @@ function ClerkProviderWithRoutes() {
         },
         signUp: {
           start: {
-            title: "Join ClubHub",
+            title: "Join Squadly",
             subtitle: "Get started with your club",
           },
         },

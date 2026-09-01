@@ -1,11 +1,11 @@
-# ClubHub
+# Squadly
 
 A soccer club management web app (posts, rosters, scheduling, RSVP, and messaging) for a single club, structured to become multi-club SaaS.
 
 ## Run & Operate
 
 - `pnpm --filter @workspace/api-server run dev` — run the API server (serves `/api`)
-- `pnpm --filter @workspace/clubhub run dev` — run the ClubHub web app (served at `/`)
+- `pnpm --filter @workspace/clubhub run dev` — run the Squadly web app (served at `/`)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec

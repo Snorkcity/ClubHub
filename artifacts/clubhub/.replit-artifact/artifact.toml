@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "ClubHub"
+title = "Squadly"
 version = "1.0.0"
 id = "artifacts/clubhub"
 router = "path"

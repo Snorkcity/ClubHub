@@ -10,9 +10,9 @@ export default function Landing() {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-display font-black text-lg leading-none tracking-tight">CH</span>
+              <span className="text-primary-foreground font-display font-black text-lg leading-none tracking-tight">S</span>
             </div>
-            <span className="font-display font-bold text-xl tracking-tight">ClubHub</span>
+            <span className="font-display font-bold text-xl tracking-tight">Squadly</span>
           </div>
           <div className="flex items-center gap-4">
             <Link href="/sign-in" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
@@ -38,7 +38,7 @@ export default function Landing() {
               Run your entire club from one place.
             </h1>
             <p className="text-xl lg:text-2xl text-muted-foreground mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200 balance-text max-w-2xl mx-auto">
-              Replace scattered group chats and spreadsheets. ClubHub brings teams, rosters, scheduling, and communication under one roof.
+              Replace scattered group chats and spreadsheets. Squadly brings teams, rosters, scheduling, and communication under one roof.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-10 duration-700 delay-300">
               <Button asChild size="lg" className="rounded-full px-8 h-14 text-base font-bold shadow-lg shadow-primary/20 w-full sm:w-auto">
@@ -59,7 +59,7 @@ export default function Landing() {
             <div className="text-center mb-16">
               <h2 className="text-3xl lg:text-4xl font-display font-bold tracking-tight mb-4">Built for everyone on the pitch</h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Whether you're a club director managing 15 teams or a parent juggling three kids' schedules, ClubHub adapts to you.
+                Whether you're a club director managing 15 teams or a parent juggling three kids' schedules, Squadly adapts to you.
               </p>
             </div>
             
@@ -90,7 +90,7 @@ export default function Landing() {
           <div className="container mx-auto px-4 text-center max-w-3xl">
             <h2 className="text-4xl lg:text-5xl font-display font-bold tracking-tight mb-6">Ready to elevate your club?</h2>
             <p className="text-xl text-muted-foreground mb-10">
-              Join the ambitious clubs already using ClubHub to professionalize their operations.
+              Join the ambitious clubs already using Squadly to professionalize their operations.
             </p>
             <Button asChild size="lg" className="rounded-full px-10 h-16 text-lg font-bold shadow-xl shadow-primary/20">
               <Link href="/sign-up">
@@ -105,11 +105,11 @@ export default function Landing() {
         <div className="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <div className="h-6 w-6 bg-zinc-800 rounded flex items-center justify-center">
-              <span className="text-zinc-300 font-display font-black text-xs leading-none">CH</span>
+              <span className="text-zinc-300 font-display font-black text-xs leading-none">S</span>
             </div>
-            <span className="font-display font-bold text-zinc-200">ClubHub</span>
+            <span className="font-display font-bold text-zinc-200">Squadly</span>
           </div>
-          <p className="text-sm">&copy; {new Date().getFullYear()} ClubHub. All rights reserved.</p>
+          <p className="text-sm">&copy; {new Date().getFullYear()} Squadly. All rights reserved.</p>
         </div>
       </footer>
     </div>

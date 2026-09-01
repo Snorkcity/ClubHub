@@ -2,7 +2,7 @@
   <rect width="200" height="200" rx="40" fill="#141E30"/>
   <path d="M100 20 L160 50 V110 C160 150 100 180 100 180 C100 180 40 150 40 110 V50 L100 20 Z" fill="#22C55E"/>
   <path d="M100 20 L160 50 V110 C160 150 100 180 100 180 C100 180 40 150 40 110 V50 L100 20 Z" fill="url(#grad1)"/>
-  <text x="100" y="125" font-family="system-ui, sans-serif" font-weight="900" font-size="72" fill="#FFFFFF" text-anchor="middle" letter-spacing="-2">CH</text>
+  <text x="100" y="125" font-family="system-ui, sans-serif" font-weight="900" font-size="88" fill="#FFFFFF" text-anchor="middle">S</text>
   <defs>
     <linearGradient id="grad1" x1="0" y1="0" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#16A34A" stop-opacity="0.8"/>

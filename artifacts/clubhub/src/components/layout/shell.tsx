@@ -104,11 +104,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               <img src={club.logoUrl} alt={club.name} className="h-8 w-8 object-contain" />
             ) : (
               <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center shrink-0">
-                <span className="text-primary-foreground font-display font-black text-lg leading-none">CH</span>
+                <span className="text-primary-foreground font-display font-black text-lg leading-none">S</span>
               </div>
             )}
             <span className="font-display font-bold text-lg truncate">
-              {club?.name || "ClubHub"}
+              {club?.name || "Squadly"}
             </span>
           </Link>
         </div>

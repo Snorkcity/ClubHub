@@ -8,7 +8,7 @@ self.addEventListener("push", (event) => {
     return;
   }
 
-  const title = payload.title || "ClubHub";
+  const title = payload.title || "Squadly";
   const iconUrl = new URL("icons/icon-192.png", self.registration.scope).href;
   const options = {
     body: payload.body || "New notification",
