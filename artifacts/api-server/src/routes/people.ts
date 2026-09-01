@@ -28,6 +28,56 @@ async function getPersonInClub(personId: number, clubId: number) {
   return person ?? null;
 }
 
+/** Non-admins may view themselves, people they manage, or people connected to
+ * a team they coach/manage. This keeps direct profile URLs team-scoped too. */
+async function canViewPerson(
+  viewerId: number,
+  personId: number,
+  clubId: number,
+  isClubAdmin: boolean,
+) {
+  if (isClubAdmin || (await canActFor(viewerId, personId, false))) return true;
+
+  const viewerMemberships = await db
+    .select({ teamId: teamMembersTable.teamId, role: teamMembersTable.role })
+    .from(teamMembersTable)
+    .innerJoin(teamsTable, eq(teamMembersTable.teamId, teamsTable.id))
+    .where(
+      and(eq(teamMembersTable.userId, viewerId), eq(teamsTable.clubId, clubId)),
+    );
+  const staffedTeamIds = viewerMemberships
+    .filter((membership) => membership.role === "coach" || membership.role === "manager")
+    .map((membership) => membership.teamId);
+  if (!staffedTeamIds.length) return false;
+
+  const directMembership = await db
+    .select({ id: teamMembersTable.id })
+    .from(teamMembersTable)
+    .where(
+      and(
+        eq(teamMembersTable.userId, personId),
+        inArray(teamMembersTable.teamId, staffedTeamIds),
+      ),
+    );
+  if (directMembership.length) return true;
+
+  const wards = await db
+    .select({ playerId: guardianshipsTable.playerId })
+    .from(guardianshipsTable)
+    .where(eq(guardianshipsTable.guardianId, personId));
+  if (!wards.length) return false;
+  const wardMembership = await db
+    .select({ id: teamMembersTable.id })
+    .from(teamMembersTable)
+    .where(
+      and(
+        inArray(teamMembersTable.userId, wards.map((ward) => ward.playerId)),
+        inArray(teamMembersTable.teamId, staffedTeamIds),
+      ),
+    );
+  return wardMembership.length > 0;
+}
+
 router.get("/people", requireAuth, async (req, res) => {
   const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
   const search = (req.query.search as string | undefined)?.toLowerCase().trim();
@@ -132,10 +182,12 @@ router.post("/people", requireAuth, async (req, res) => {
 });
 
 router.get("/people/:personId", requireAuth, async (req, res) => {
-  const { clubId } = req as AuthedRequest;
+  const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
   const personId = Number(req.params.personId);
   const person = await getPersonInClub(personId, clubId);
   if (!person) return res.status(404).json({ error: "Person not found" });
+  if (!(await canViewPerson(localUser.id, personId, clubId, isClubAdmin)))
+    return res.status(403).json({ error: "You cannot view this person" });
 
   const memberships = await db
     .select({ m: teamMembersTable, t: teamsTable })
@@ -164,7 +216,6 @@ router.get("/people/:personId", requireAuth, async (req, res) => {
     : [];
   const byId = Object.fromEntries(related.map((u) => [u.id, u]));
 
-  const { localUser, isClubAdmin } = req as AuthedRequest;
   const viewer = { id: localUser.id, isClubAdmin };
   return res.json({
     person: toPerson(person, viewer),

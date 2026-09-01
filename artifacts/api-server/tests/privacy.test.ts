@@ -332,4 +332,10 @@ describe("GET /people?teamId scoping", () => {
       .expect(403);
     await request(app).get("/api/people").set(as("coach")).expect(403);
   });
+
+  it("applies the same team boundary to direct profile URLs", async () => {
+    await request(app).get(`/api/people/${s.playerA}`).set(as("coach")).expect(200);
+    await request(app).get(`/api/people/${s.guardianA}`).set(as("coach")).expect(200);
+    await request(app).get(`/api/people/${s.outsider}`).set(as("coach")).expect(403);
+  });
 });
