@@ -203,7 +203,7 @@ router.post("/teams/:teamId/posts", requireAuth, async (req, res) => {
     .values({
       teamId,
       authorId: localUser.id,
-      title: body.title ?? null,
+      title: null,
       body: body.body,
       pinned: body.pinned ?? false,
       pinnedAt: body.pinned ? new Date() : null,
@@ -214,7 +214,7 @@ router.post("/teams/:teamId/posts", requireAuth, async (req, res) => {
       .insert(postPhotosTable)
       .values(parsed.rows.map((r) => ({ ...r, postId: post.id })));
   await createNotification({
-    clubId, actorId: localUser.id, kind: "post", title: post.title ?? "New team post",
+    clubId, actorId: localUser.id, kind: "post", title: "New team post",
     body: post.body, deepLink: `/teams/${teamId}#post-${post.id}`,
     recipientIds: await resolvePostRecipients(clubId, [teamId], localUser.id),
   });
@@ -245,7 +245,7 @@ router.post("/posts/club", requireAuth, async (req, res) => {
       teams.map((t) => ({
         teamId: t.id,
         authorId: localUser.id,
-        title: body.title ?? null,
+        title: null,
         body: body.body,
         pinned: body.pinned ?? false,
         pinnedAt: body.pinned ? new Date() : null,
@@ -257,7 +257,7 @@ router.post("/posts/club", requireAuth, async (req, res) => {
       created.flatMap((p) => parsed.rows.map((r) => ({ ...r, postId: p.id }))),
     );
   await createNotification({
-    clubId, actorId: localUser.id, kind: "post", title: body.title ?? "New club post",
+    clubId, actorId: localUser.id, kind: "post", title: "New club post",
     body: body.body, deepLink: "/home",
     recipientIds: await resolvePostRecipients(clubId, teams.map((t) => t.id), localUser.id),
   });
@@ -306,10 +306,12 @@ router.patch("/posts/:postId", requireAuth, async (req, res) => {
   if (!(await isTeamStaff(localUser.id, existing.teamId, clubId, isClubAdmin)))
     return res.status(403).json({ error: "You cannot edit this post" });
   const body = UpdatePostBody.parse(req.body);
+  const { title: _ignoredTitle, ...postChanges } = body;
   const [post] = await db
     .update(postsTable)
     .set({
-      ...body,
+      ...postChanges,
+      title: null,
       // Toggling pin resets/clears the 2-day pin clock.
       ...(body.pinned !== undefined
         ? { pinnedAt: body.pinned ? new Date() : null }

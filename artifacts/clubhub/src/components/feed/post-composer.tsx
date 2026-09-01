@@ -24,7 +24,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -143,7 +142,6 @@ function ComposeForm({
   const [teamId, setTeamId] = useState<string>(
     teams.length === 1 && !isClubAdmin ? String(teams[0].id) : "",
   );
-  const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [pinned, setPinned] = useState(false);
   const [photos, setPhotos] = useState<string[]>([]);
@@ -225,7 +223,6 @@ function ComposeForm({
         if (!canSubmit) return;
         const data = {
           body: body.trim(),
-          ...(title.trim() ? { title: title.trim() } : {}),
           pinned,
           ...(photos.length > 0 ? { photos } : {}),
         };
@@ -257,17 +254,6 @@ function ComposeForm({
           Posting to <span className="font-semibold text-foreground">{teams[0].name}</span>
         </p>
       )}
-
-      <div className="space-y-2">
-        <Label htmlFor="post-title">Title (optional)</Label>
-        <Input
-          id="post-title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="e.g. Round 16 wrap-up"
-          maxLength={120}
-        />
-      </div>
 
       <div className="space-y-2">
         <Label htmlFor="post-body">Message</Label>

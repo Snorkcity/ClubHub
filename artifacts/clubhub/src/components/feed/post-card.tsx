@@ -106,7 +106,6 @@ export function PostCard({ post, linkToTeam = true }: { post: any; linkToTeam?: 
         </div>
       </div>
 
-      {post.title && <h4 className="font-bold mb-1.5">{post.title}</h4>}
       <p
         className={
           "text-sm text-foreground/90 leading-relaxed whitespace-pre-line" +
@@ -141,7 +140,7 @@ export function PostCard({ post, linkToTeam = true }: { post: any; linkToTeam?: 
   );
 
   if (!linkToTeam) return card;
-  return <Link href={`/teams/${post.teamId}?post=${post.id}`}>{card}</Link>;
+  return <Link href={`/teams/${post.teamId}#post-${post.id}`}>{card}</Link>;
 }
 
 /** Staff-only pin/unpin toggle. Re-pinning restarts the 2-day pin window. */
