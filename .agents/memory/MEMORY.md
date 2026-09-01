@@ -4,6 +4,7 @@
 - [Account claiming by email](account-claiming.md) — first-login can claim a pre-created person by VERIFIED email, single-match only (fail closed); identity read from Clerk backend, not session claims.
 - [Player Monitoring design](player-monitoring-design.md) — agreed RPE/wellness module decisions: capture first, live baseline-relative dashboard, on-demand reports, 16+ opt-in cycle tracking.
 - [UX direction](ux-direction.md) — mobile-first above all (phone is primary device); Heja is the familiarity baseline for the club's 15 teams — match habits, don't copy.
+- [Product name](product-name.md) — ClubHub is being renamed to Squadly; use Squadly for future product-facing naming work.
 - [API smoke testing](api-smoke-testing.md) — shared proxy 404s curl POSTs; hit api-server on its own PORT with a minted Clerk session JWT.
 - [Team switcher & unreads](team-switcher-unreads.md) — active team is localStorage-only; unread = content since team_reads.last_seen_at (14-day fallback); mark-seen after 2s view, never on switch.
 - [Client clock skew breaks auth](clock-skew-auth.md) — instant 401s with valid cookies can mean the user device clock is slow; dev server has 30-min skew tolerance.

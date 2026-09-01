@@ -12,8 +12,6 @@ import {
   getGetEventQueryKey,
   useListMyEventLocations,
   getListMyEventLocationsQueryKey,
-  useCreatePost,
-  getListTeamPostsQueryKey,
 } from "@workspace/api-client-react";
 import { format, parse } from "date-fns";
 
@@ -284,7 +282,6 @@ function EventForm({
 
   const createEvent = useCreateEvent();
   const updateEvent = useUpdateEvent();
-  const createPost = useCreatePost();
 
   const pickType = (t: string) => {
     const wasGame = type === "game";
@@ -361,29 +358,18 @@ function EventForm({
     try {
       const tid = Number(teamId);
       if (mode === "edit" && eventId) {
-        await updateEvent.mutateAsync({ eventId, data: buildPayload(eventDates[0]) });
+        await updateEvent.mutateAsync({
+          eventId,
+          data: { ...buildPayload(eventDates[0]), notifyRecipients: notify }
+        });
         queryClient.invalidateQueries({ queryKey: getGetEventQueryKey(eventId) });
       } else {
         for (const d of eventDates) {
-          await createEvent.mutateAsync({ teamId: tid, data: buildPayload(d) });
+          await createEvent.mutateAsync({
+            teamId: tid,
+            data: { ...buildPayload(d), notifyRecipients: notify }
+          });
         }
-      }
-      if (notify) {
-        const first = new Date(`${eventDates[0]}T${startTime}`);
-        const when = format(first, "EEEE d MMMM, h:mmaaa");
-        const repeatLine =
-          eventDates.length > 1
-            ? ` Repeats weekly (${eventDates.length} sessions) until ${format(new Date(`${eventDates[eventDates.length - 1]}T12:00:00`), "d MMMM")}.`
-            : "";
-        const heading = mode === "edit" ? "Updated event" : "New event";
-        await createPost.mutateAsync({
-          teamId: tid,
-          data: {
-            title: `${heading}: ${title.trim()}`,
-            body: `${title.trim()} — ${when}${location.trim() ? ` at ${location.trim()}` : ""}.${repeatLine}${finalNotes ? ` ${finalNotes}` : ""} Please check the Schedule page.`,
-          },
-        });
-        queryClient.invalidateQueries({ queryKey: getListTeamPostsQueryKey(tid) });
       }
       queryClient.invalidateQueries({ queryKey: getListUpcomingEventsQueryKey() });
       toast({
@@ -393,7 +379,7 @@ function EventForm({
             : eventDates.length > 1
               ? `${eventDates.length} events created`
               : "Event created",
-        ...(notify ? { description: "The team has been notified in the feed." } : {}),
+        ...(notify ? { description: "The invited people will receive a notification." } : {}),
       });
       onDone();
     } catch {
@@ -413,21 +399,36 @@ function EventForm({
       <div className="space-y-4 text-center py-2">
         <p className="font-semibold">
           {mode === "edit"
-            ? "Save changes and notify the team?"
+            ? "Save changes and notify everyone invited?"
             : eventDates.length > 1
-              ? `Create ${eventDates.length} events and notify the team?`
+              ? `Create ${eventDates.length} events and notify everyone invited?`
               : "Notify everyone invited?"}
         </p>
         <p className="text-sm text-muted-foreground">
-          Notifying posts an announcement to the team feed with the event details.
+          {eventDates.length > 1
+            ? "Warning: Sending notifications will send one alert per event created."
+            : "Sending a notification sends a push alert and in-app message to everyone invited."}
         </p>
         <div className="space-y-2">
-          <Button className="w-full rounded-xl h-11 font-bold" disabled={submitting} onClick={() => doSubmit(true)}>
-            {submitting ? "Saving…" : mode === "edit" ? "Save & notify team" : "Create & notify team"}
-          </Button>
-          <Button variant="outline" className="w-full rounded-xl h-11 font-bold" disabled={submitting} onClick={() => doSubmit(false)}>
-            {mode === "edit" ? "Save without notifying" : "Create without notifying"}
-          </Button>
+          {eventDates.length > 1 ? (
+             <>
+               <Button className="w-full rounded-xl h-11 font-bold" disabled={submitting} onClick={() => doSubmit(false)}>
+                 Create without notifying (Recommended)
+               </Button>
+               <Button variant="outline" className="w-full rounded-xl h-11 font-bold border-destructive text-destructive hover:bg-destructive/10" disabled={submitting} onClick={() => doSubmit(true)}>
+                 {submitting ? "Saving…" : "Create & send all notifications"}
+               </Button>
+             </>
+          ) : (
+             <>
+                <Button className="w-full rounded-xl h-11 font-bold" disabled={submitting} onClick={() => doSubmit(true)}>
+                  {submitting ? "Saving…" : mode === "edit" ? "Save & notify" : "Create & notify"}
+                </Button>
+                <Button variant="outline" className="w-full rounded-xl h-11 font-bold" disabled={submitting} onClick={() => doSubmit(false)}>
+                  {mode === "edit" ? "Save without notifying" : "Create without notifying"}
+                </Button>
+             </>
+          )}
           <Button variant="ghost" className="w-full" disabled={submitting} onClick={() => setConfirmingNotify(false)}>
             Back
           </Button>

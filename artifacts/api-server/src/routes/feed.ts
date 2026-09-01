@@ -20,6 +20,7 @@ import { getVisibleTeamIds } from "../lib/queries";
 import { canAccessTeam, isTeamStaff } from "../lib/authz";
 import { toPerson, iso } from "../lib/serialize";
 import { verifyPostPhotoToken } from "../lib/photoToken";
+import { createNotification, resolvePostRecipients } from "../lib/notifications";
 
 const router: IRouter = Router();
 
@@ -212,6 +213,11 @@ router.post("/teams/:teamId/posts", requireAuth, async (req, res) => {
     await db
       .insert(postPhotosTable)
       .values(parsed.rows.map((r) => ({ ...r, postId: post.id })));
+  await createNotification({
+    clubId, actorId: localUser.id, kind: "post", title: post.title ?? "New team post",
+    body: post.body, deepLink: `/teams/${teamId}`,
+    recipientIds: await resolvePostRecipients(clubId, [teamId], localUser.id),
+  });
   const [built] = await buildPosts([post]);
   return res.status(201).json(built);
 });
@@ -250,6 +256,11 @@ router.post("/posts/club", requireAuth, async (req, res) => {
     await db.insert(postPhotosTable).values(
       created.flatMap((p) => parsed.rows.map((r) => ({ ...r, postId: p.id }))),
     );
+  await createNotification({
+    clubId, actorId: localUser.id, kind: "post", title: body.title ?? "New club post",
+    body: body.body, deepLink: "/home",
+    recipientIds: await resolvePostRecipients(clubId, teams.map((t) => t.id), localUser.id),
+  });
   return res.status(201).json({ created: teams.length });
 });
 

@@ -49,7 +49,7 @@ export default function Schedule() {
             icon={CalendarDays}
           />
         ) : (
-          <div className="space-y-12">
+          <div className="space-y-8 md:space-y-12">
             {sortedDays.map((day) => {
               const dayEvents = groupedEvents[day];
               const dateObj = new Date(day + 'T12:00:00'); // Midday to avoid timezone shifting
@@ -63,7 +63,7 @@ export default function Schedule() {
                   <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground sticky top-12 bg-muted/10 backdrop-blur-md py-1.5 z-10">
                     {dayLabel}
                   </h2>
-                  <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-2 md:gap-4">
                     {dayEvents.map(event => (
                       <ScheduleCard key={event.id} event={event} />
                     ))}

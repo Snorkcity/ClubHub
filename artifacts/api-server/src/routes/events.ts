@@ -7,6 +7,7 @@ import { buildEvents } from "../lib/build";
 import { getVisibleTeamIds, canActFor } from "../lib/queries";
 import { canAccessTeam, isTeamStaff, isTeamMember } from "../lib/authz";
 import { toPerson, iso } from "../lib/serialize";
+import { createNotification, resolveTeamRecipients } from "../lib/notifications";
 
 const router: IRouter = Router();
 
@@ -66,6 +67,14 @@ router.post("/teams/:teamId/events", requireAuth, async (req, res) => {
     })
     .returning();
   const [built] = await buildEvents([event], localUser.id);
+  if (body.notifyRecipients) {
+    const roles = (event.invitedRoles.split(",") as ("coaches" | "players" | "parents")[]);
+    await createNotification({
+      clubId, actorId: localUser.id, kind: "event", title: "New event",
+      body: event.title, deepLink: `/events/${event.id}`,
+      recipientIds: await resolveTeamRecipients(clubId, teamId, roles, localUser.id),
+    });
+  }
   return res.status(201).json(built);
 });
 
@@ -147,6 +156,7 @@ router.patch("/events/:eventId", requireAuth, async (req, res) => {
     return res.status(403).json({ error: "You cannot edit this event" });
   const body = UpdateEventBody.parse(req.body);
   const patch: Record<string, unknown> = { ...body };
+  delete patch.notifyRecipients;
   if (body.startsAt) patch.startsAt = new Date(body.startsAt);
   if (body.endsAt) patch.endsAt = new Date(body.endsAt);
   if (body.invitedRoles && body.invitedRoles.length)
@@ -158,6 +168,14 @@ router.patch("/events/:eventId", requireAuth, async (req, res) => {
     .where(eq(eventsTable.id, eventId))
     .returning();
   const [built] = await buildEvents([event], localUser.id);
+  if (body.notifyRecipients) {
+    const roles = (event.invitedRoles.split(",") as ("coaches" | "players" | "parents")[]);
+    await createNotification({
+      clubId, actorId: localUser.id, kind: "event", title: "Event updated",
+      body: event.title, deepLink: `/events/${event.id}`,
+      recipientIds: await resolveTeamRecipients(clubId, event.teamId, roles, localUser.id),
+    });
+  }
   return res.json(built);
 });
 

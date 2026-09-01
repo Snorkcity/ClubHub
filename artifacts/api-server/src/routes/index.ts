@@ -10,6 +10,7 @@ import eventsRouter from "./events";
 import chatsRouter from "./chats";
 import monitoringRouter from "./monitoring";
 import timekeepingRouter from "./timekeeping";
+import notificationsRouter from "./notifications";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(eventsRouter);
 router.use(chatsRouter);
 router.use(monitoringRouter);
 router.use(timekeepingRouter);
+router.use(notificationsRouter);
 
 export default router;

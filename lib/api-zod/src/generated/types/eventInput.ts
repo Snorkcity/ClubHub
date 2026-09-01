@@ -17,6 +17,7 @@ export interface EventInput {
   startsAt: string;
   endsAt?: string;
   notes?: string;
+  notifyRecipients?: boolean;
   /** @minItems 1 */
   invitedRoles?: EventInputInvitedRolesItem[];
 }

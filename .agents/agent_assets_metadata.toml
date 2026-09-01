@@ -36,3 +36,10 @@ id = "fuIXW4CdJOgAQZgx9a7YI"
 uri = "file://attached_assets/generated_images/icon-concept-star.png"
 type = "image"
 title = "icon-concept-star.png"
+
+[[outputs]]
+id = "ekvZR4Um_Mu7QS-bzkStW"
+uri = "file://docs/vapid-key-generator.html"
+type = "text"
+title = "Squadly VAPID key generator"
+description = "Offline browser tool for generating the phone-notification keys without Replit Shell. It does not upload or store the private key."

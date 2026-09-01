@@ -2,10 +2,12 @@ import { Link, useLocation } from "wouter";
 import { useClerk, useUser } from "@clerk/react";
 import { 
   Home, Users, CalendarDays, MessageSquare, Settings, 
-  LogOut, ChevronDown, UserSquare2, ClipboardCheck, Activity
+  LogOut, ChevronDown, UserSquare2, ClipboardCheck, Activity, Bell
 } from "lucide-react";
-import { useGetMe, useGetClub } from "@workspace/api-client-react";
-import { getGetMeQueryKey, getGetClubQueryKey } from "@workspace/api-client-react";
+import {
+  useGetMe, useGetClub, useListNotifications,
+  getGetMeQueryKey, getGetClubQueryKey, getListNotificationsQueryKey
+} from "@workspace/api-client-react";
 
 import { Button } from "@/components/ui/button";
 import { PostComposer } from "@/components/feed/post-composer";
@@ -38,6 +40,18 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const homeUnread = (unreads ?? [])
     .filter((t) => (activeTeamId == null ? true : t.teamId === activeTeamId))
     .some((t) => t.unreadPosts + t.unreadMessages > 0);
+
+  const { data: notificationsData } = useListNotifications(
+    undefined,
+    {
+      query: {
+        queryKey: getListNotificationsQueryKey(),
+        refetchInterval: 20000,
+        refetchOnWindowFocus: true,
+      },
+    },
+  );
+  const notificationsUnread = notificationsData?.unreadCount ?? 0;
 
   // Staff (club admins, coaches, managers) see the full menu; players get a
   // simpler app: Home, Schedule, Check-in and Messages.
@@ -125,14 +139,33 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           })}
         </div>
 
-        <div className="p-4 border-t shrink-0">
-          <UserMenu me={me} clerkUser={clerkUser} onSignOut={() => signOut({ redirectUrl: "/" })} isStaff={isStaff} />
+        <div className="p-4 border-t shrink-0 flex flex-col gap-2">
+          <Link href="/notifications" className={`flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+            location.startsWith("/notifications")
+              ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+              : "text-foreground hover:bg-muted"
+          }`}>
+            <div className="flex items-center gap-3">
+              <Bell className="h-5 w-5" />
+              Notifications
+            </div>
+            {notificationsUnread > 0 && (
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                location.startsWith("/notifications")
+                  ? "bg-primary-foreground text-primary"
+                  : "bg-primary text-primary-foreground"
+              }`}>
+                {notificationsUnread}
+              </span>
+            )}
+          </Link>
+          <UserMenu me={me} clerkUser={clerkUser} onSignOut={() => signOut({ redirectUrl: "/" })} isStaff={isStaff} notificationsUnread={notificationsUnread} />
         </div>
       </aside>
 
       {/* Mobile Header — only on Home; other pages have their own compact headers */}
       {location === "/home" && (
-      <header className="md:hidden h-16 bg-background border-b flex items-center justify-between px-4 sticky top-0 z-40">
+      <header className="md:hidden h-16 bg-background border-b flex items-center justify-between px-4 sticky top-0 z-40 gap-2">
         <div className="flex items-center gap-1 min-w-0">
           <Link href="/home" className="flex items-center shrink-0">
             <div className="h-8 w-8 bg-primary rounded flex items-center justify-center">
@@ -142,15 +175,22 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           <TeamSwitcher compact />
         </div>
         
-        {/* Avatar menu replaces the old hamburger — profile, settings, staff
-            extras and log out all live here. */}
-        <UserMenu
-          me={me}
-          clerkUser={clerkUser}
-          onSignOut={() => signOut({ redirectUrl: "/" })}
-          avatarOnly
-          isStaff={isStaff}
-        />
+        <div className="flex items-center gap-1 shrink-0">
+          <Link href="/notifications" className="relative p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors">
+            <Bell className="h-6 w-6" />
+            {notificationsUnread > 0 && (
+              <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-background" />
+            )}
+          </Link>
+          <UserMenu
+            me={me}
+            clerkUser={clerkUser}
+            onSignOut={() => signOut({ redirectUrl: "/" })}
+            avatarOnly
+            isStaff={isStaff}
+            notificationsUnread={notificationsUnread}
+          />
+        </div>
       </header>
       )}
 
@@ -202,7 +242,7 @@ function roleLabel(me: any) {
   return "Member";
 }
 
-function UserMenu({ me, clerkUser, onSignOut, avatarOnly = false, isStaff = false }: { me: any, clerkUser: any, onSignOut: () => void, avatarOnly?: boolean, isStaff?: boolean }) {
+function UserMenu({ me, clerkUser, onSignOut, avatarOnly = false, isStaff = false, notificationsUnread = 0 }: { me: any, clerkUser: any, onSignOut: () => void, avatarOnly?: boolean, isStaff?: boolean, notificationsUnread?: number }) {
   const avatarUrl = me?.person?.avatarUrl || clerkUser?.imageUrl;
   const name = me?.person?.fullName || clerkUser?.fullName || "Loading...";
 
@@ -269,6 +309,19 @@ function UserMenu({ me, clerkUser, onSignOut, avatarOnly = false, isStaff = fals
           </>
         )}
         
+        <DropdownMenuItem asChild className="rounded-xl py-2 cursor-pointer md:hidden">
+          <Link href="/notifications" className="flex items-center w-full justify-between">
+            <div className="flex items-center">
+              <Bell className="mr-2 h-4 w-4 text-muted-foreground" />
+              <span>Notifications</span>
+            </div>
+            {notificationsUnread > 0 && (
+              <span className="bg-destructive text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                {notificationsUnread}
+              </span>
+            )}
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem asChild className="rounded-xl py-2 cursor-pointer">
           <Link href="/settings" className="flex items-center w-full">
             <Settings className="mr-2 h-4 w-4 text-muted-foreground" />

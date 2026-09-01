@@ -38,6 +38,7 @@ export const GetMeResponse = zod.object({
 }),
   "clubRole": zod.union([zod.literal('admin'),zod.literal('member'),zod.literal(null)]).nullish(),
   "isClubAdmin": zod.boolean(),
+  "pushNotificationsEnabled": zod.boolean(),
   "memberships": zod.array(zod.object({
   "id": zod.number(),
   "teamId": zod.number(),
@@ -106,6 +107,100 @@ export const UpdateMeResponse = zod.object({
  */
 export const ListMyEventLocationsResponseItem = zod.string()
 export const ListMyEventLocationsResponse = zod.array(ListMyEventLocationsResponseItem)
+
+
+/**
+ * @summary List the current user's notifications
+ */
+
+export const listNotificationsQueryLimitMax = 100;
+
+
+
+export const ListNotificationsQueryParams = zod.object({
+  "cursor": zod.coerce.number().min(1).optional().describe('Return items older than this recipient cursor'),
+  "limit": zod.coerce.number().min(1).max(listNotificationsQueryLimitMax).optional().describe('Page size (default 50, maximum 100)')
+})
+
+export const ListNotificationsResponse = zod.object({
+  "unreadCount": zod.number(),
+  "hasMore": zod.boolean(),
+  "nextCursor": zod.number().nullable(),
+  "notifications": zod.array(zod.object({
+  "id": zod.number(),
+  "kind": zod.enum(['event', 'post']),
+  "title": zod.string(),
+  "body": zod.string(),
+  "deepLink": zod.string(),
+  "createdAt": zod.string(),
+  "readAt": zod.string().nullable(),
+  "unread": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Mark all notifications as read
+ */
+export const ReadAllNotificationsResponse = zod.void()
+
+
+/**
+ * @summary Mark one notification as read
+ */
+export const ReadNotificationResponse = zod.void()
+
+
+/**
+ * @summary Get public web push configuration
+ */
+export const GetPushConfigResponse = zod.object({
+  "enabled": zod.boolean(),
+  "publicKey": zod.string().nullable()
+})
+
+
+/**
+ * @summary Save a browser web-push subscription
+ */
+
+
+
+
+
+export const SavePushSubscriptionBody = zod.object({
+  "endpoint": zod.string().min(1),
+  "contentEncoding": zod.string().optional(),
+  "keys": zod.object({
+  "p256dh": zod.string().min(1),
+  "auth": zod.string().min(1)
+})
+})
+
+export const SavePushSubscriptionResponse = zod.void()
+
+
+/**
+ * @summary Remove a browser web-push subscription
+ */
+
+
+
+export const DeletePushSubscriptionBody = zod.object({
+  "endpoint": zod.string().min(1)
+})
+
+export const DeletePushSubscriptionResponse = zod.void()
+
+
+/**
+ * @summary Update push notification preference
+ */
+export const UpdateNotificationPreferencesBody = zod.object({
+  "pushNotificationsEnabled": zod.boolean()
+})
+
+export const UpdateNotificationPreferencesResponse = zod.void()
 
 
 /**
@@ -1120,6 +1215,7 @@ export const CreateEventBody = zod.object({
   "startsAt": zod.string(),
   "endsAt": zod.string().optional(),
   "notes": zod.string().optional(),
+  "notifyRecipients": zod.boolean().optional(),
   "invitedRoles": zod.array(zod.enum(['coaches', 'players', 'parents'])).min(1).optional()
 })
 
@@ -1213,6 +1309,7 @@ export const UpdateEventBody = zod.object({
   "startsAt": zod.string().optional(),
   "endsAt": zod.string().optional(),
   "notes": zod.string().optional(),
+  "notifyRecipients": zod.boolean().optional(),
   "invitedRoles": zod.array(zod.enum(['coaches', 'players', 'parents'])).min(1).optional()
 })
 

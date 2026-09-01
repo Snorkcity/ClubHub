@@ -27,6 +27,7 @@ import ChatPage from "@/pages/messages/chat";
 import PeopleList from "@/pages/people/index";
 import PersonDetail from "@/pages/people/detail";
 import Settings from "@/pages/settings";
+import Notifications from "@/pages/notifications";
 import Shell from "@/components/layout/shell";
 
 const clerkPubKey = publishableKeyFromHost(
@@ -236,6 +237,7 @@ function ClerkProviderWithRoutes() {
           <ProtectedRoute path="/people" component={PeopleList} />
           <ProtectedRoute path="/people/:personId" component={PersonDetail} />
           <ProtectedRoute path="/settings" component={Settings} />
+          <ProtectedRoute path="/notifications" component={Notifications} />
           
           <Route component={NotFound} />
         </Switch>

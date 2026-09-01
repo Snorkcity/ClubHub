@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, date, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, date, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -20,6 +20,8 @@ export const usersTable = pgTable("users", {
   phone: text("phone"),
   avatarUrl: text("avatar_url"),
   bio: text("bio"),
+  // Push is opt-in: browsers require an explicit user gesture before permission.
+  pushNotificationsEnabled: boolean("push_notifications_enabled").notNull().default(false),
   // Per-field privacy: who can see this info. 'everyone' | 'admins' | 'private'
   phonePrivacy: text("phone_privacy").notNull().default("everyone"),
   emailPrivacy: text("email_privacy").notNull().default("everyone"),

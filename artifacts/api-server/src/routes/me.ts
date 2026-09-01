@@ -33,6 +33,7 @@ router.get("/me", requireAuth, async (req, res) => {
     person: toPerson(localUser, undefined, { full: true }),
     clubRole: isClubAdmin ? "admin" : "member",
     isClubAdmin,
+    pushNotificationsEnabled: localUser.pushNotificationsEnabled,
     memberships: memberships.map(({ m, t }) => ({
       id: m.id,
       teamId: m.teamId,

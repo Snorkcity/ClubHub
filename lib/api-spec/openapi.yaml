@@ -85,6 +85,79 @@ paths:
                 type: array
                 items: { type: string }
 
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [me]
+      summary: List the current user's notifications
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          description: Return items older than this recipient cursor
+          schema: { type: integer, minimum: 1 }
+        - name: limit
+          in: query
+          required: false
+          description: Page size (default 50, maximum 100)
+          schema: { type: integer, minimum: 1, maximum: 100 }
+      responses:
+        "200":
+          description: Notifications and unread count
+          content: { application/json: { schema: { $ref: "#/components/schemas/NotificationList" } } }
+  /notifications/read-all:
+    post:
+      operationId: readAllNotifications
+      tags: [me]
+      summary: Mark all notifications as read
+      responses: { "204": { description: Read } }
+  /notifications/{notificationId}/read:
+    post:
+      operationId: readNotification
+      tags: [me]
+      summary: Mark one notification as read
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses: { "204": { description: Read }, "404": { $ref: "#/components/responses/NotFound" } }
+  /notifications/push-config:
+    get:
+      operationId: getPushConfig
+      tags: [me]
+      summary: Get public web push configuration
+      responses:
+        "200":
+          description: Push configuration
+          content: { application/json: { schema: { $ref: "#/components/schemas/PushConfig" } } }
+  /notifications/subscriptions:
+    post:
+      operationId: savePushSubscription
+      tags: [me]
+      summary: Save a browser web-push subscription
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/PushSubscriptionInput" } } }
+      responses: { "204": { description: Saved } }
+    delete:
+      operationId: deletePushSubscription
+      tags: [me]
+      summary: Remove a browser web-push subscription
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/PushSubscriptionDelete" } } }
+      responses: { "204": { description: Removed } }
+  /notifications/preferences:
+    patch:
+      operationId: updateNotificationPreferences
+      tags: [me]
+      summary: Update push notification preference
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/NotificationPreferencesUpdate" } } }
+      responses: { "204": { description: Updated } }
+
   /club:
     get:
       operationId: getClub
@@ -1130,6 +1203,57 @@ components:
       required:
         - error
 
+    Notification:
+      type: object
+      required: [id, kind, title, body, deepLink, createdAt, readAt, unread]
+      properties:
+        id: { type: integer }
+        kind: { type: string, enum: [event, post] }
+        title: { type: string }
+        body: { type: string }
+        deepLink: { type: string }
+        createdAt: { type: string }
+        readAt: { type: ["string", "null"] }
+        unread: { type: boolean }
+    NotificationList:
+      type: object
+      required: [unreadCount, hasMore, nextCursor, notifications]
+      properties:
+        unreadCount: { type: integer }
+        hasMore: { type: boolean }
+        nextCursor: { type: ["integer", "null"] }
+        notifications:
+          type: array
+          items: { $ref: "#/components/schemas/Notification" }
+    PushConfig:
+      type: object
+      required: [enabled, publicKey]
+      properties:
+        enabled: { type: boolean }
+        publicKey: { type: ["string", "null"] }
+    PushSubscriptionInput:
+      type: object
+      required: [endpoint, keys]
+      properties:
+        endpoint: { type: string, minLength: 1 }
+        contentEncoding: { type: string }
+        keys:
+          type: object
+          required: [p256dh, auth]
+          properties:
+            p256dh: { type: string, minLength: 1 }
+            auth: { type: string, minLength: 1 }
+    PushSubscriptionDelete:
+      type: object
+      required: [endpoint]
+      properties:
+        endpoint: { type: string, minLength: 1 }
+    NotificationPreferencesUpdate:
+      type: object
+      required: [pushNotificationsEnabled]
+      properties:
+        pushNotificationsEnabled: { type: boolean }
+
     Person:
       type: object
       required: [id, firstName, lastName, fullName, isMinor]
@@ -1234,11 +1358,12 @@ components:
 
     CurrentUser:
       type: object
-      required: [person, isClubAdmin, memberships, guardianOf]
+      required: [person, isClubAdmin, memberships, guardianOf, pushNotificationsEnabled]
       properties:
         person: { $ref: "#/components/schemas/Person" }
         clubRole: { type: ["string", "null"], enum: [admin, member, null] }
         isClubAdmin: { type: boolean }
+        pushNotificationsEnabled: { type: boolean }
         memberships:
           type: array
           items: { $ref: "#/components/schemas/TeamMembership" }
@@ -1579,6 +1704,7 @@ components:
         startsAt: { type: string }
         endsAt: { type: string }
         notes: { type: string }
+        notifyRecipients: { type: boolean }
         invitedRoles:
           type: array
           items: { type: string, enum: [coaches, players, parents] }
@@ -1594,6 +1720,7 @@ components:
         startsAt: { type: string }
         endsAt: { type: string }
         notes: { type: string }
+        notifyRecipients: { type: boolean }
         invitedRoles:
           type: array
           items: { type: string, enum: [coaches, players, parents] }

@@ -17,6 +17,7 @@ export interface EventUpdate {
   startsAt?: string;
   endsAt?: string;
   notes?: string;
+  notifyRecipients?: boolean;
   /** @minItems 1 */
   invitedRoles?: EventUpdateInvitedRolesItem[];
 }

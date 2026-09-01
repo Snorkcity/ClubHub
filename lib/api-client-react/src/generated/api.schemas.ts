@@ -13,6 +13,63 @@ export interface Error {
   error: string;
 }
 
+export type NotificationKind = typeof NotificationKind[keyof typeof NotificationKind];
+
+
+export const NotificationKind = {
+  event: 'event',
+  post: 'post',
+} as const;
+
+export interface Notification {
+  id: number;
+  kind: NotificationKind;
+  title: string;
+  body: string;
+  deepLink: string;
+  createdAt: string;
+  /** @nullable */
+  readAt: string | null;
+  unread: boolean;
+}
+
+export interface NotificationList {
+  unreadCount: number;
+  hasMore: boolean;
+  /** @nullable */
+  nextCursor: number | null;
+  notifications: Notification[];
+}
+
+export interface PushConfig {
+  enabled: boolean;
+  /** @nullable */
+  publicKey: string | null;
+}
+
+export type PushSubscriptionInputKeys = {
+  /** @minLength 1 */
+  p256dh: string;
+  /** @minLength 1 */
+  auth: string;
+};
+
+export interface PushSubscriptionInput {
+  /** @minLength 1 */
+  endpoint: string;
+  contentEncoding?: string;
+  keys: PushSubscriptionInputKeys;
+}
+
+export interface PushSubscriptionDelete {
+  /** @minLength 1 */
+  endpoint: string;
+}
+
+export interface NotificationPreferencesUpdate {
+  pushNotificationsEnabled: boolean;
+}
+
 export type PersonPhonePrivacy = typeof PersonPhonePrivacy[keyof typeof PersonPhonePrivacy];
 
 
@@ -247,6 +304,7 @@ export interface CurrentUser {
   /** @nullable */
   clubRole?: CurrentUserClubRole;
   isClubAdmin: boolean;
+  pushNotificationsEnabled: boolean;
   memberships: TeamMembership[];
   guardianOf: Person[];
 }
@@ -622,6 +680,7 @@ export interface EventInput {
   startsAt: string;
   endsAt?: string;
   notes?: string;
+  notifyRecipients?: boolean;
   /** @minItems 1 */
   invitedRoles?: EventInputInvitedRolesItem[];
 }
@@ -654,6 +713,7 @@ export interface EventUpdate {
   startsAt?: string;
   endsAt?: string;
   notes?: string;
+  notifyRecipients?: boolean;
   /** @minItems 1 */
   invitedRoles?: EventUpdateInvitedRolesItem[];
 }
@@ -941,6 +1001,20 @@ export interface SeasonMinutes {
  * Resource not found
  */
 export type NotFoundResponse = Error;
+
+export type ListNotificationsParams = {
+/**
+ * Return items older than this recipient cursor
+ * @minimum 1
+ */
+cursor?: number;
+/**
+ * Page size (default 50, maximum 100)
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+};
 
 export type ListPeopleParams = {
 /**

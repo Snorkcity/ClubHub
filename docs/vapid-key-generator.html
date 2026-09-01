@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Squadly VAPID key generator</title>
+  <style>
+    :root { color-scheme: light dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f4f7f2; color: #12221a; }
+    main { width: min(680px, calc(100% - 32px)); margin: 32px auto; padding: 28px; box-sizing: border-box; border: 1px solid #d9e2da; border-radius: 24px; background: white; box-shadow: 0 18px 50px rgba(18,34,26,.10); }
+    h1 { margin: 0 0 8px; font-size: clamp(1.6rem, 5vw, 2.2rem); }
+    p { line-height: 1.55; color: #526158; }
+    .notice { padding: 14px 16px; border-radius: 14px; background: #eef8e9; border: 1px solid #c9e8b9; color: #26471f; }
+    label { display: block; margin-top: 18px; font-weight: 700; }
+    .field { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 7px; }
+    input { min-width: 0; padding: 12px; border: 1px solid #ccd6ce; border-radius: 10px; font: inherit; background: #fafcf9; color: inherit; }
+    button { padding: 12px 16px; border: 0; border-radius: 10px; background: #0b7a41; color: white; font: inherit; font-weight: 750; cursor: pointer; }
+    button.secondary { width: 100%; margin-top: 22px; background: #142a20; }
+    ol { padding-left: 22px; color: #34473c; line-height: 1.65; }
+    code { font-size: .9em; }
+    #status { min-height: 24px; margin-top: 12px; font-weight: 650; color: #0b7a41; }
+    @media (prefers-color-scheme: dark) {
+      body { background: #0f1813; color: #eef7f0; }
+      main { background: #17231c; border-color: #304438; }
+      p, ol { color: #b8c9be; }
+      input { background: #101a14; border-color: #3a5042; }
+      .notice { background: #1c3520; border-color: #3d653c; color: #d9f3d2; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Squadly phone notification keys</h1>
+    <p>This page generates a standard P-256 VAPID key pair entirely inside your browser.</p>
+    <div class="notice"><strong>Private:</strong> nothing is uploaded or stored. Keep the private key secret and never paste it into chat.</div>
+
+    <label for="publicKey">VAPID_PUBLIC_KEY</label>
+    <div class="field">
+      <input id="publicKey" readonly autocomplete="off" aria-label="VAPID public key">
+      <button type="button" data-copy="publicKey">Copy</button>
+    </div>
+
+    <label for="privateKey">VAPID_PRIVATE_KEY</label>
+    <div class="field">
+      <input id="privateKey" type="password" readonly autocomplete="off" aria-label="VAPID private key">
+      <button type="button" data-copy="privateKey">Copy</button>
+    </div>
+
+    <label for="subject">VAPID_SUBJECT</label>
+    <div class="field">
+      <input id="subject" value="mailto:" autocomplete="email" aria-label="VAPID subject">
+      <button type="button" data-copy="subject">Copy</button>
+    </div>
+    <p>After <code>mailto:</code>, enter a monitored club email address.</p>
+
+    <button type="button" class="secondary" id="regenerate">Generate a new pair</button>
+    <div id="status" role="status" aria-live="polite"></div>
+
+    <h2>Where to save them</h2>
+    <ol>
+      <li>Add all three values to Replit Secrets for development.</li>
+      <li>Add the exact same names and values to Railway Variables for production.</li>
+      <li>Do not regenerate after phones subscribe unless you intend to make every device re-enable notifications.</li>
+    </ol>
+  </main>
+  <script>
+    const encode = (bytes) => {
+      let binary = "";
+      bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+      return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    };
+    const decode = (value) => {
+      const padded = value.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - value.length % 4) % 4);
+      return Uint8Array.from(atob(padded), (character) => character.charCodeAt(0));
+    };
+    async function generate() {
+      const status = document.querySelector("#status");
+      status.textContent = "Generating securely…";
+      try {
+        const pair = await crypto.subtle.generateKey(
+          { name: "ECDSA", namedCurve: "P-256" },
+          true,
+          ["sign", "verify"],
+        );
+        const publicJwk = await crypto.subtle.exportKey("jwk", pair.publicKey);
+        const privateJwk = await crypto.subtle.exportKey("jwk", pair.privateKey);
+        const x = decode(publicJwk.x);
+        const y = decode(publicJwk.y);
+        const publicKey = new Uint8Array(65);
+        publicKey[0] = 4;
+        publicKey.set(x, 1);
+        publicKey.set(y, 33);
+        document.querySelector("#publicKey").value = encode(publicKey);
+        document.querySelector("#privateKey").value = privateJwk.d;
+        status.textContent = "Key pair ready.";
+      } catch {
+        status.textContent = "This browser could not generate the keys. Try current Safari, Chrome, or Edge.";
+      }
+    }
+    document.querySelector("#regenerate").addEventListener("click", generate);
+    document.querySelectorAll("[data-copy]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const input = document.querySelector(`#${button.dataset.copy}`);
+        await navigator.clipboard.writeText(input.value);
+        document.querySelector("#status").textContent = `${input.id} copied.`;
+      });
+    });
+    generate();
+  </script>
+</body>
+</html>

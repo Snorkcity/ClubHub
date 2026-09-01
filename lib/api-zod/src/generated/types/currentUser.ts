@@ -14,6 +14,7 @@ export interface CurrentUser {
   /** @nullable */
   clubRole?: CurrentUserClubRole;
   isClubAdmin: boolean;
+  pushNotificationsEnabled: boolean;
   memberships: TeamMembership[];
   guardianOf: Person[];
 }
