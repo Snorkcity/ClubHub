@@ -3,7 +3,7 @@ import { useParams, Link } from "wouter";
 import { format } from "date-fns";
 import { 
   CalendarDays, MapPin, Clock, Users, ArrowLeft,
-  CheckCircle2, HelpCircle, XCircle, FileQuestion, MessageSquare, Timer, ExternalLink
+  CheckCircle2, ChevronDown, HelpCircle, XCircle, FileQuestion, MessageSquare, Timer, ExternalLink
 } from "lucide-react";
 import { locationName, mapsUrl } from "@/lib/location";
 import { 
@@ -40,6 +40,7 @@ export default function EventDetail() {
   const setRsvp = useSetRsvp();
   const { data: me } = useGetMe({ query: { queryKey: getGetMeQueryKey() } });
   const [notOpen, setNotOpen] = useState(false);
+  const [rsvpChoicesOpen, setRsvpChoicesOpen] = useState(false);
   const [notReason, setNotReason] = useState("");
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorMode, setEditorMode] = useState<"edit" | "create">("edit");
@@ -180,7 +181,7 @@ export default function EventDetail() {
         </DialogContent>
       </Dialog>
       <div className="container mx-auto p-4 md:p-8 lg:max-w-4xl space-y-8">
-        <Link href="/schedule" className="inline-flex items-center text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors mb-2">
+        <Link href="/schedule" className="inline-flex min-h-11 items-center px-3 -ml-3 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors mb-2">
           <ArrowLeft className="h-4 w-4 mr-1" /> Back to Schedule
         </Link>
         
@@ -304,10 +305,28 @@ export default function EventDetail() {
                     <>Are you going?</>
                   )}
                 </span>
-                <div className="flex gap-1.5 shrink-0">
+                 <div className="flex gap-1.5 shrink-0">
+                  {event.myRsvp && !rsvpChoicesOpen ? (
+                    <Button
+                      size="sm"
+                      onClick={() => setRsvpChoicesOpen(true)}
+                      disabled={setRsvp.isPending}
+                      className={`rounded-full h-9 px-2.5 gap-1.5 ${
+                        event.myRsvp === "going"
+                          ? "bg-green-600 hover:bg-green-700"
+                          : "bg-red-600 hover:bg-red-700 text-white"
+                      }`}
+                    >
+                      {event.myRsvp === "going"
+                        ? <CheckCircle2 className="h-4 w-4" />
+                        : <XCircle className="h-4 w-4" />}
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    </Button>
+                  ) : (
+                  <>
                   <Button
                     size="sm"
-                    onClick={() => { setNotOpen(false); if (event.myRsvp !== 'going') handleRsvp('going'); }}
+                    onClick={() => { setNotOpen(false); setRsvpChoicesOpen(false); if (event.myRsvp !== 'going') handleRsvp('going'); }}
                     disabled={setRsvp.isPending}
                     variant={event.myRsvp === 'going' ? 'default' : 'outline'}
                     className={`rounded-full h-8 px-3 text-xs font-bold ${event.myRsvp === 'going' ? 'bg-green-600 hover:bg-green-700' : 'text-green-700 border-green-300'}`}
@@ -323,6 +342,8 @@ export default function EventDetail() {
                   >
                     Not
                   </Button>
+                  </>
+                  )}
                 </div>
               </div>
               {notOpen && (

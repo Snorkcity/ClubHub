@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { format, isToday, isTomorrow } from "date-fns";
 import { Link } from "wouter";
-import { CalendarDays, MapPin, Users } from "lucide-react";
+import { CalendarDays, Check, ChevronDown, MapPin, Users, X } from "lucide-react";
 import { 
   useListUpcomingEvents, getListUpcomingEventsQueryKey,
   useSetRsvp, getGetEventQueryKey, getGetTeamSummaryQueryKey
@@ -94,6 +94,7 @@ export const eventTypeBar: Record<string, string> = {
 function ScheduleCard({ event }: { event: any }) {
   const setRsvp = useSetRsvp();
   const [reasonOpen, setReasonOpen] = useState(false);
+  const [rsvpChoicesOpen, setRsvpChoicesOpen] = useState(false);
   const [reason, setReason] = useState("");
 
   const typeColor = eventTypeColors[event.type] || eventTypeColors.other;
@@ -114,6 +115,7 @@ function ScheduleCard({ event }: { event: any }) {
 
   function handleGoing() {
     setReasonOpen(false);
+    setRsvpChoicesOpen(false);
     if (event.myRsvp === "going") return;
     submitRsvp("going");
   }
@@ -122,6 +124,7 @@ function ScheduleCard({ event }: { event: any }) {
     // Mark "Not" immediately, then let them optionally add a reason.
     if (event.myRsvp !== "out") submitRsvp("out");
     setReasonOpen(true);
+    setRsvpChoicesOpen(false);
   }
 
   return (
@@ -146,7 +149,6 @@ function ScheduleCard({ event }: { event: any }) {
                 Cancelled
               </span>
             )}
-            <span className="text-xs text-muted-foreground truncate">{event.teamName}</span>
           </div>
           <h3 className={`font-bold text-base group-hover:text-primary transition-colors truncate mt-0.5 ${event.cancelledAt ? "line-through text-muted-foreground" : ""}`}>
             {event.title}
@@ -161,9 +163,25 @@ function ScheduleCard({ event }: { event: any }) {
           </div>
         </Link>
 
-        {/* RSVP: Going / Not (hidden for cancelled events) */}
+        {/* RSVP: compact status after answering; expand only when changing it. */}
         {!event.cancelledAt && (
         <div className="flex gap-1.5 shrink-0">
+          {event.myRsvp && !rsvpChoicesOpen ? (
+            <button
+              onClick={() => setRsvpChoicesOpen(true)}
+              disabled={setRsvp.isPending}
+              aria-label={`RSVP: ${event.myRsvp === "going" ? "Going" : "Not going"}. Change response`}
+              className={`h-9 px-2.5 rounded-full flex items-center gap-1.5 border text-sm font-bold ${
+                event.myRsvp === "going"
+                  ? "bg-green-600 text-white border-transparent"
+                  : "bg-red-600 text-white border-transparent"
+              }`}
+            >
+              {event.myRsvp === "going" ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
+              <ChevronDown className="h-3.5 w-3.5" />
+            </button>
+          ) : (
+          <>
           <button
             onClick={handleGoing}
             disabled={setRsvp.isPending}
@@ -186,6 +204,8 @@ function ScheduleCard({ event }: { event: any }) {
           >
             Not
           </button>
+          </>
+          )}
         </div>
         )}
       </div>

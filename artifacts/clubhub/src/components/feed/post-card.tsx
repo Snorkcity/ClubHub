@@ -92,11 +92,9 @@ export function PostCard({ post, linkToTeam = true }: { post: any; linkToTeam?: 
         </Avatar>
         <div className="flex flex-col">
           <span className="font-semibold text-sm">{post.author.fullName}</span>
-          <div className="flex items-center text-xs text-muted-foreground">
-            <span>{post.teamName}</span>
-            <span className="mx-1.5">•</span>
-            <span>{format(new Date(post.createdAt), "MMM d")}</span>
-          </div>
+          <span className="text-xs text-muted-foreground">
+            {format(new Date(post.createdAt), "MMM d")}
+          </span>
         </div>
         <div className="ml-auto flex items-center gap-1.5">
           {post.pinned && (
