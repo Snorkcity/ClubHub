@@ -140,7 +140,16 @@ router.delete("/notifications/subscriptions", requireAuth, async (req, res) => {
   const { localUser } = req as AuthedRequest;
   const endpoint = req.body?.endpoint;
   if (typeof endpoint !== "string") return res.status(400).json({ error: "An endpoint is required" });
-  await db.delete(pushSubscriptionsTable).where(and(eq(pushSubscriptionsTable.userId, localUser.id), eq(pushSubscriptionsTable.endpoint, endpoint)));
+  await db.transaction(async (tx) => {
+    await tx.delete(pushSubscriptionsTable).where(and(eq(pushSubscriptionsTable.userId, localUser.id), eq(pushSubscriptionsTable.endpoint, endpoint)));
+    const remaining = await tx.select({ id: pushSubscriptionsTable.id })
+      .from(pushSubscriptionsTable)
+      .where(eq(pushSubscriptionsTable.userId, localUser.id))
+      .limit(1);
+    await tx.update(usersTable)
+      .set({ pushNotificationsEnabled: remaining.length > 0 })
+      .where(eq(usersTable.id, localUser.id));
+  });
   return res.status(204).end();
 });
 

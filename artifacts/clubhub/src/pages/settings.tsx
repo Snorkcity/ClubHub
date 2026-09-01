@@ -4,8 +4,7 @@ import { useTheme, type ThemePref } from "@/lib/theme";
 import {
   useGetMe, useUpdateMe, getGetMeQueryKey,
   useGetPushConfig, getGetPushConfigQueryKey,
-  useSavePushSubscription, useDeletePushSubscription,
-  useUpdateNotificationPreferences
+  useSavePushSubscription, useDeletePushSubscription
 } from "@workspace/api-client-react";
 import { queryClient } from "@/lib/queryClient";
 import {
@@ -88,9 +87,8 @@ function NotificationsCard({ me }: { me: any }) {
 
   const saveSub = useSavePushSubscription();
   const deleteSub = useDeletePushSubscription();
-  const updatePrefs = useUpdateNotificationPreferences();
 
-  const [localEnabled, setLocalEnabled] = useState(me.pushNotificationsEnabled);
+  const [localEnabled, setLocalEnabled] = useState(false);
   const [deviceSubscribed, setDeviceSubscribed] = useState<boolean | null>(null);
   const [isSubscribing, setIsSubscribing] = useState(false);
   const { toast } = useToast();
@@ -100,14 +98,17 @@ function NotificationsCard({ me }: { me: any }) {
       setDeviceSubscribed(false);
       return;
     }
-    void getSubscription(basePath).then(
-      (subscription) => setDeviceSubscribed(Boolean(subscription)),
-      () => setDeviceSubscribed(false),
-    );
+    void getSubscription(basePath).then((subscription) => {
+      const subscribed = Boolean(subscription);
+      setDeviceSubscribed(subscribed);
+      setLocalEnabled(subscribed);
+    }, () => {
+      setDeviceSubscribed(false);
+      setLocalEnabled(false);
+    });
   }, [pushSupport.isSupported]);
 
   const handleToggle = async (enabled: boolean) => {
-    setLocalEnabled(enabled);
     setIsSubscribing(true);
 
     try {
@@ -142,29 +143,28 @@ function NotificationsCard({ me }: { me: any }) {
           },
         });
         setDeviceSubscribed(true);
+        setLocalEnabled(true);
       } else {
         const endpoint = await unsubscribeFromPush(basePath);
         if (endpoint) {
           await deleteSub.mutateAsync({ data: { endpoint } });
         }
         setDeviceSubscribed(false);
+        setLocalEnabled(false);
       }
 
-      // Save user pref
-      await updatePrefs.mutateAsync({ data: { pushNotificationsEnabled: enabled } });
       queryClient.setQueryData(getGetMeQueryKey(), (old: any) =>
         old ? { ...old, pushNotificationsEnabled: enabled } : old
       );
-      toast({ title: enabled ? "Push notifications enabled" : "Push notifications disabled" });
-    } catch {
+      toast({ title: enabled ? "Notifications enabled on this device" : "Notifications disabled on this device" });
+    } catch (error) {
       toast({
         title: enabled ? "Notifications weren't enabled" : "Notifications weren't disabled",
         description: enabled
-          ? "Allow notifications when your phone asks, then try again."
+          ? error instanceof Error ? error.message : "Allow notifications when your phone asks, then try again."
           : "Please try again.",
         variant: "destructive",
       });
-      setLocalEnabled(!enabled); // revert
     } finally {
       setIsSubscribing(false);
     }
@@ -191,6 +191,7 @@ function NotificationsCard({ me }: { me: any }) {
             checked={localEnabled}
             onCheckedChange={handleToggle}
             disabled={
+              deviceSubscribed === null ||
               isSubscribing ||
               (!localEnabled &&
                 (!pushSupport.isSupported ||
@@ -200,6 +201,16 @@ function NotificationsCard({ me }: { me: any }) {
             }
           />
         </div>
+
+        {deviceSubscribed === false &&
+          pushConfig?.enabled &&
+          pushSupport.isSupported &&
+          !showIosWarning &&
+          pushSupport.permission !== "denied" && (
+            <p className="px-1 text-xs text-muted-foreground">
+              Notifications are not enabled on this device. Turn on the switch above to connect it.
+            </p>
+          )}
 
         {showIosWarning && (
           <div className="bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 p-4 rounded-2xl text-sm">
@@ -212,23 +223,6 @@ function NotificationsCard({ me }: { me: any }) {
             On iPhone or iPad, first open this site in Safari and choose Share → Add to Home Screen.
           </p>
         )}
-
-        {localEnabled &&
-          deviceSubscribed === false &&
-          pushConfig?.enabled &&
-          pushSupport.isSupported &&
-          !showIosWarning &&
-          pushSupport.permission !== "denied" && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => handleToggle(true)}
-              disabled={isSubscribing}
-              className="w-full rounded-xl"
-            >
-              Enable on this device
-            </Button>
-          )}
 
         {!pushSupport.isSupported && !pushSupport.isIos && (
           <div className="bg-muted p-4 rounded-2xl text-sm text-muted-foreground">

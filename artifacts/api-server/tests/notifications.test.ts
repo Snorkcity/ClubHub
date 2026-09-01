@@ -201,4 +201,30 @@ describe("team notifications", () => {
     expect(stored.some(({ endpoint }) => endpoint.endsWith(`${PREFIX}11`))).toBe(true);
     expect(stored.some(({ endpoint }) => endpoint.endsWith(`${PREFIX}0`))).toBe(false);
   });
+
+  it("disables only the removed device and keeps push enabled while another device remains", async () => {
+    const p256dh = "A".repeat(87);
+    const auth = "B".repeat(22);
+    const first = `https://fcm.googleapis.com/fcm/send/${PREFIX}android`;
+    const second = `https://web.push.apple.com/${PREFIX}iphone`;
+    await db.delete(pushSubscriptionsTable).where(eq(pushSubscriptionsTable.userId, player));
+
+    for (const endpoint of [first, second]) {
+      await request(app).post("/api/notifications/subscriptions").set(as("player"))
+        .send({ endpoint, keys: { p256dh, auth } })
+        .expect(204);
+    }
+
+    await request(app).delete("/api/notifications/subscriptions").set(as("player"))
+      .send({ endpoint: first })
+      .expect(204);
+    await request(app).get("/api/me").set(as("player"))
+      .expect((res) => expect(res.body.pushNotificationsEnabled).toBe(true));
+
+    await request(app).delete("/api/notifications/subscriptions").set(as("player"))
+      .send({ endpoint: second })
+      .expect(204);
+    await request(app).get("/api/me").set(as("player"))
+      .expect((res) => expect(res.body.pushNotificationsEnabled).toBe(false));
+  });
 });
