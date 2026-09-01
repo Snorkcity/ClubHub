@@ -22,6 +22,8 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AddMemberDialog, RemoveMemberButton } from "@/components/admin/team-roster-admin";
+import { TeamBannerEditor } from "@/components/admin/team-banner-editor";
+import { teamBannerUrl } from "@/lib/team-banner";
 
 export default function TeamDetail() {
   const params = useParams();
@@ -65,11 +67,24 @@ export default function TeamDetail() {
 
   return (
     <div className="flex-1 overflow-y-auto overflow-x-hidden bg-muted/5 relative">
-      {/* Team Header */}
-      <div 
-        className="h-32 md:h-48 w-full shrink-0"
+      {/* Team Header — photo banner when one is set, team color otherwise */}
+      <div
+        className="h-32 md:h-48 w-full shrink-0 relative overflow-hidden"
         style={{ backgroundColor: team.colorHex || "hsl(var(--primary))" }}
-      />
+      >
+        {team.bannerUrl && (
+          <img
+            src={teamBannerUrl(team.bannerUrl)}
+            alt={`${team.name} team photo`}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        )}
+        {isCoach && (
+          <div className="absolute top-3 right-3 md:top-4 md:right-8 z-10">
+            <TeamBannerEditor teamId={teamId} hasBanner={!!team.bannerUrl} />
+          </div>
+        )}
+      </div>
       
       <div className="container mx-auto px-4 md:px-8 pb-12 lg:max-w-6xl -mt-16 md:-mt-20">
         <div className="bg-card border rounded-3xl p-6 shadow-sm mb-8 flex flex-col md:flex-row gap-6 items-start md:items-center relative">

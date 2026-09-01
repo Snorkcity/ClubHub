@@ -111,6 +111,21 @@ paths:
               schema:
                 $ref: "#/components/schemas/ClubOverview"
 
+  /club/storage:
+    get:
+      operationId: getClubStorage
+      tags: [club]
+      summary: Get image and database storage health (club admin only)
+      responses:
+        "200":
+          description: Storage health
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubStorage"
+        "403":
+          description: Club admin access required
+
   /seasons:
     get:
       operationId: listSeasons
@@ -193,6 +208,40 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Team"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /teams/{teamId}/banner:
+    put:
+      operationId: setTeamBanner
+      tags: [teams]
+      summary: Set the team photo banner (staff only)
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamBannerInput"
+      responses:
+        "200":
+          description: Updated team
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteTeamBanner
+      tags: [teams]
+      summary: Remove the team photo banner (staff only)
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      responses:
+        "204":
+          description: Removed
         "404":
           $ref: "#/components/responses/NotFound"
 
@@ -1132,6 +1181,11 @@ components:
         seasonName: { type: ["string", "null"] }
         playerCount: { type: integer }
         staffCount: { type: integer }
+        bannerUpdatedAt: { type: ["string", "null"] }
+        bannerUrl:
+          type: ["string", "null"]
+          description: Signed, expiring relative URL for the team banner image
+
 
     TeamSummary:
       type: object
@@ -1220,6 +1274,18 @@ components:
         createdAt: { type: string }
         author: { $ref: "#/components/schemas/Person" }
         commentCount: { type: integer }
+        photos:
+          type: array
+          items: { $ref: "#/components/schemas/PostPhoto" }
+
+    PostPhoto:
+      type: object
+      required: [id, url]
+      properties:
+        id: { type: integer }
+        url:
+          type: string
+          description: Signed, expiring relative URL for the photo
 
     PostDetail:
       type: object
@@ -1346,6 +1412,29 @@ components:
           type: array
           items: { $ref: "#/components/schemas/Post" }
 
+    ClubStorage:
+      type: object
+      required: [status, postPhotos, bannersBytes, databaseBytes, thresholds, plan]
+      properties:
+        status:
+          type: string
+          enum: [ok, warning, critical]
+        postPhotos:
+          type: object
+          required: [bytes, count]
+          properties:
+            bytes: { type: integer }
+            count: { type: integer }
+        bannersBytes: { type: integer }
+        databaseBytes: { type: integer }
+        thresholds:
+          type: object
+          required: [warnBytes, criticalBytes]
+          properties:
+            warnBytes: { type: integer }
+            criticalBytes: { type: integer }
+        plan: { type: string }
+
     ProfileUpdate:
       type: object
       properties:
@@ -1376,6 +1465,15 @@ components:
         gender: { type: string }
         colorHex: { type: string }
         seasonId: { type: integer }
+
+    TeamBannerInput:
+      type: object
+      required: [imageData]
+      properties:
+        imageData:
+          type: string
+          minLength: 1
+          description: Image as a base64 data URL (e.g. data:image/jpeg;base64,...)
 
     TeamMemberInput:
       type: object
@@ -1438,6 +1536,11 @@ components:
         title: { type: string }
         body: { type: string, minLength: 1 }
         pinned: { type: boolean }
+        photos:
+          type: array
+          maxItems: 6
+          description: Photos as base64 data URLs (client resizes before upload)
+          items: { type: string, minLength: 1 }
 
     ClubPostInput:
       type: object
@@ -1446,6 +1549,11 @@ components:
         title: { type: string }
         body: { type: string, minLength: 1 }
         pinned: { type: boolean }
+        photos:
+          type: array
+          maxItems: 6
+          description: Photos as base64 data URLs (client resizes before upload)
+          items: { type: string, minLength: 1 }
 
     PostUpdate:
       type: object

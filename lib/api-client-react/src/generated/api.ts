@@ -27,6 +27,7 @@ import type {
   Club,
   ClubOverview,
   ClubPostInput,
+  ClubStorage,
   Comment,
   CommentInput,
   CreateClubPost201,
@@ -64,6 +65,7 @@ import type {
   SeasonMinutes,
   StartPeriodInput,
   Team,
+  TeamBannerInput,
   TeamInput,
   TeamMember,
   TeamMemberInput,
@@ -560,6 +562,83 @@ export function useGetClubOverview<TData = Awaited<ReturnType<typeof getClubOver
 
 
 
+export const getGetClubStorageUrl = () => {
+
+
+
+
+  return `/api/club/storage`
+}
+
+/**
+ * @summary Get image and database storage health (club admin only)
+ */
+export const getClubStorage = async ( options?: RequestInit): Promise<ClubStorage> => {
+
+  return customFetch<ClubStorage>(getGetClubStorageUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetClubStorageQueryKey = () => {
+    return [
+    `/api/club/storage`
+    ] as const;
+    }
+
+
+export const getGetClubStorageQueryOptions = <TData = Awaited<ReturnType<typeof getClubStorage>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClubStorage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetClubStorageQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getClubStorage>>> = ({ signal }) => getClubStorage({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getClubStorage>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetClubStorageQueryResult = NonNullable<Awaited<ReturnType<typeof getClubStorage>>>
+export type GetClubStorageQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get image and database storage health (club admin only)
+ */
+
+export function useGetClubStorage<TData = Awaited<ReturnType<typeof getClubStorage>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClubStorage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetClubStorageQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getListSeasonsUrl = () => {
 
 
@@ -932,6 +1011,149 @@ export const useUpdateTeam = <TError = ErrorType<NotFoundResponse>,
         TContext
       > => {
       return useMutation(getUpdateTeamMutationOptions(options));
+    }
+
+export const getSetTeamBannerUrl = (teamId: number,) => {
+
+
+
+
+  return `/api/teams/${teamId}/banner`
+}
+
+/**
+ * @summary Set the team photo banner (staff only)
+ */
+export const setTeamBanner = async (teamId: number,
+    teamBannerInput: TeamBannerInput, options?: RequestInit): Promise<Team> => {
+
+  return customFetch<Team>(getSetTeamBannerUrl(teamId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(teamBannerInput)
+  }
+);}
+
+
+
+
+
+export const getSetTeamBannerMutationOptions = <TError = ErrorType<NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setTeamBanner>>, TError,{teamId: number;data: BodyType<TeamBannerInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setTeamBanner>>, TError,{teamId: number;data: BodyType<TeamBannerInput>}, TContext> => {
+
+const mutationKey = ['setTeamBanner'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setTeamBanner>>, {teamId: number;data: BodyType<TeamBannerInput>}> = (props) => {
+          const {teamId,data} = props ?? {};
+
+          return  setTeamBanner(teamId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetTeamBannerMutationResult = NonNullable<Awaited<ReturnType<typeof setTeamBanner>>>
+    export type SetTeamBannerMutationBody = BodyType<TeamBannerInput>
+    export type SetTeamBannerMutationError = ErrorType<NotFoundResponse>
+
+    /**
+ * @summary Set the team photo banner (staff only)
+ */
+export const useSetTeamBanner = <TError = ErrorType<NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setTeamBanner>>, TError,{teamId: number;data: BodyType<TeamBannerInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setTeamBanner>>,
+        TError,
+        {teamId: number;data: BodyType<TeamBannerInput>},
+        TContext
+      > => {
+      return useMutation(getSetTeamBannerMutationOptions(options));
+    }
+
+export const getDeleteTeamBannerUrl = (teamId: number,) => {
+
+
+
+
+  return `/api/teams/${teamId}/banner`
+}
+
+/**
+ * @summary Remove the team photo banner (staff only)
+ */
+export const deleteTeamBanner = async (teamId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteTeamBannerUrl(teamId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteTeamBannerMutationOptions = <TError = ErrorType<NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTeamBanner>>, TError,{teamId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteTeamBanner>>, TError,{teamId: number}, TContext> => {
+
+const mutationKey = ['deleteTeamBanner'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteTeamBanner>>, {teamId: number}> = (props) => {
+          const {teamId} = props ?? {};
+
+          return  deleteTeamBanner(teamId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteTeamBannerMutationResult = NonNullable<Awaited<ReturnType<typeof deleteTeamBanner>>>
+
+    export type DeleteTeamBannerMutationError = ErrorType<NotFoundResponse>
+
+    /**
+ * @summary Remove the team photo banner (staff only)
+ */
+export const useDeleteTeamBanner = <TError = ErrorType<NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTeamBanner>>, TError,{teamId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteTeamBanner>>,
+        TError,
+        {teamId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteTeamBannerMutationOptions(options));
     }
 
 export const getGetTeamSummaryUrl = (teamId: number,) => {

@@ -6,6 +6,7 @@ export * from "./teams";
 export * from "./teamMembers";
 export * from "./guardianships";
 export * from "./posts";
+export * from "./postPhotos";
 export * from "./comments";
 export * from "./events";
 export * from "./rsvps";

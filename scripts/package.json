@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "hello": "tsx ./src/hello.ts",
+    "smoke:banner": "tsx ./src/banner-smoke.ts",
+    "smoke:post-photos": "tsx ./src/post-photo-smoke.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {

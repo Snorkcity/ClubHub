@@ -37,7 +37,10 @@ app.use(
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 
 app.use(cors({ credentials: true, origin: true }));
-app.use(express.json());
+// Image uploads (team banners, post photos) arrive as base64 JSON, client-
+// resized first. Budget: up to 6 post photos x 4MB binary ≈ 32MB base64, so
+// the aggregate body limit must sit above that.
+app.use(express.json({ limit: "36mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 app.use(

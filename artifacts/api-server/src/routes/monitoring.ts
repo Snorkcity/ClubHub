@@ -43,6 +43,26 @@ const WELLNESS_METRICS = [
   "mood",
 ] as const;
 
+export function sessionFrequencyFlag(
+  currentSessions: number,
+  priorThreeWeekSessions: number,
+  currentExternalSessions: number,
+): { metric: string; severity: "watch" | "alert"; message: string } | null {
+  const usualSessions = priorThreeWeekSessions / 3;
+  if (usualSessions <= 0) return null;
+  const increase = currentSessions - usualSessions;
+  const ratio = currentSessions / usualSessions;
+  if (increase < 2 || ratio < 1.5) return null;
+  const externalNote = currentExternalSessions
+    ? `; ${currentExternalSessions} external`
+    : "";
+  return {
+    metric: "sessions",
+    severity: increase >= 3 && ratio >= 1.75 ? "alert" : "watch",
+    message: `Session frequency up: ${currentSessions} this week vs usual ~${Math.round(usualSessions * 10) / 10}${externalNote}`,
+  };
+}
+
 function toWellness(w: WellnessEntry) {
   return {
     id: w.id,
@@ -499,9 +519,16 @@ router.get("/teams/:teamId/monitoring", requireAuth, async (req, res) => {
       new Date(`${s.sessionDate}T12:00:00Z`).getTime();
     const cut7 = daysAgo(7).getTime();
     const cutWin = daysAgo(windowDays).getTime();
-    const extraAcute = sumExtras(myExtras.filter((s) => extraTime(s) >= cut7));
-    const acute =
-      sum(myLoad.filter((row) => row.startsAt >= daysAgo(7))) + extraAcute;
+    const acuteLoadRows = myLoad.filter((row) => row.startsAt >= daysAgo(7));
+    const acuteExtraRows = myExtras.filter((s) => extraTime(s) >= cut7);
+    const priorLoadRows = myLoad.filter(
+      (row) => row.startsAt >= daysAgo(28) && row.startsAt < daysAgo(7),
+    );
+    const priorExtraRows = myExtras.filter(
+      (s) => extraTime(s) >= daysAgo(28).getTime() && extraTime(s) < cut7,
+    );
+    const extraAcute = sumExtras(acuteExtraRows);
+    const acute = sum(acuteLoadRows) + extraAcute;
     const chronicTotal = sum(myLoad) + sumExtras(myExtras);
     const chronicWeekly = chronicTotal > 0 ? chronicTotal / 4 : null;
     const windowExternalLoad = sumExtras(
@@ -537,6 +564,15 @@ router.get("/teams/:teamId/monitoring", requireAuth, async (req, res) => {
         severity: "watch",
         message: `Load rising: ${acwr}× their 4-week norm`,
       });
+    // A load spike can come from harder sessions OR simply doing many more of
+    // them. Surface frequency independently so a coach can see the likely
+    // cause, especially when school/rep/private sessions are stacking up.
+    const frequencyFlag = sessionFrequencyFlag(
+      acuteLoadRows.length + acuteExtraRows.length,
+      priorLoadRows.length + priorExtraRows.length,
+      acuteExtraRows.length,
+    );
+    if (frequencyFlag) flags.push(frequencyFlag);
     if (composite !== null && baseline !== null) {
       const delta = composite - baseline;
       if (delta <= -1)

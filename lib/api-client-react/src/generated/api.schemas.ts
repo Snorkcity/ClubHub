@@ -95,6 +95,13 @@ export interface Team {
   seasonName?: string | null;
   playerCount: number;
   staffCount: number;
+  /** @nullable */
+  bannerUpdatedAt?: string | null;
+  /**
+     * Signed, expiring relative URL for the team banner image
+     * @nullable
+     */
+  bannerUrl?: string | null;
 }
 
 export type EventType = typeof EventType[keyof typeof EventType];
@@ -251,6 +258,12 @@ export interface PersonDetail {
   wards: Guardianship[];
 }
 
+export interface PostPhoto {
+  id: number;
+  /** Signed, expiring relative URL for the photo */
+  url: string;
+}
+
 export interface Post {
   id: number;
   teamId: number;
@@ -262,6 +275,7 @@ export interface Post {
   createdAt: string;
   author: Person;
   commentCount: number;
+  photos?: PostPhoto[];
 }
 
 export interface Comment {
@@ -371,6 +385,34 @@ export interface ClubOverview {
   recentPosts: Post[];
 }
 
+export type ClubStorageStatus = typeof ClubStorageStatus[keyof typeof ClubStorageStatus];
+
+
+export const ClubStorageStatus = {
+  ok: 'ok',
+  warning: 'warning',
+  critical: 'critical',
+} as const;
+
+export type ClubStoragePostPhotos = {
+  bytes: number;
+  count: number;
+};
+
+export type ClubStorageThresholds = {
+  warnBytes: number;
+  criticalBytes: number;
+};
+
+export interface ClubStorage {
+  status: ClubStorageStatus;
+  postPhotos: ClubStoragePostPhotos;
+  bannersBytes: number;
+  databaseBytes: number;
+  thresholds: ClubStorageThresholds;
+  plan: string;
+}
+
 export type ProfileUpdatePhonePrivacy = typeof ProfileUpdatePhonePrivacy[keyof typeof ProfileUpdatePhonePrivacy];
 
 
@@ -429,6 +471,14 @@ export interface TeamUpdate {
   gender?: string;
   colorHex?: string;
   seasonId?: number;
+}
+
+export interface TeamBannerInput {
+  /**
+     * Image as a base64 data URL (e.g. data:image/jpeg;base64,...)
+     * @minLength 1
+     */
+  imageData: string;
 }
 
 export type TeamMemberInputRole = typeof TeamMemberInputRole[keyof typeof TeamMemberInputRole];
@@ -511,6 +561,12 @@ export interface PostInput {
   /** @minLength 1 */
   body: string;
   pinned?: boolean;
+  /**
+     * Photos as base64 data URLs (client resizes before upload)
+     * @maxItems 6
+     * @items.minLength 1
+     */
+  photos?: string[];
 }
 
 export interface ClubPostInput {
@@ -518,6 +574,12 @@ export interface ClubPostInput {
   /** @minLength 1 */
   body: string;
   pinned?: boolean;
+  /**
+     * Photos as base64 data URLs (client resizes before upload)
+     * @maxItems 6
+     * @items.minLength 1
+     */
+  photos?: string[];
 }
 
 export interface PostUpdate {

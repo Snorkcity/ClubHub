@@ -20,4 +20,11 @@ export interface Team {
   seasonName?: string | null;
   playerCount: number;
   staffCount: number;
+  /** @nullable */
+  bannerUpdatedAt?: string | null;
+  /**
+     * Signed, expiring relative URL for the team banner image
+     * @nullable
+     */
+  bannerUrl?: string | null;
 }

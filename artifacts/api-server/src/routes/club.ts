@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq, gte, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import {
   db,
   clubsTable,
@@ -98,6 +98,59 @@ router.get("/club/overview", requireAuth, async (req, res) => {
     parentCount,
     upcomingEvents: await buildEvents(upcoming, localUser.id),
     recentPosts: await buildPosts(recent),
+  });
+});
+
+// Storage health check for image data kept in Postgres (post photos and
+// team banners). Threshold decision (see .agents/memory/image-storage.md):
+// stay in Postgres while image storage is small; plan the S3 move once
+// post_photos passes 1 GiB (warning) and do it before 5 GiB (critical) —
+// beyond that, backups/restores and row TOAST churn get expensive on
+// Railway Postgres. Club admins only.
+const STORAGE_WARN_BYTES = 1 * 1024 * 1024 * 1024;
+const STORAGE_CRITICAL_BYTES = 5 * 1024 * 1024 * 1024;
+
+router.get("/club/storage", requireAuth, async (req, res) => {
+  const { isClubAdmin } = req as AuthedRequest;
+  if (!isClubAdmin)
+    return res.status(403).json({ error: "Only club admins can view storage stats" });
+
+  const { rows: [row] } = await db.execute<{
+    post_photos_bytes: string;
+    photo_count: string;
+    banner_bytes: string;
+    database_bytes: string;
+  }>(sql`
+    select
+      pg_total_relation_size('post_photos') as post_photos_bytes,
+      (select count(*) from post_photos) as photo_count,
+      (select coalesce(sum(length(banner_image)), 0) from teams) as banner_bytes,
+      pg_database_size(current_database()) as database_bytes
+  `);
+
+  const postPhotosBytes = Number(row.post_photos_bytes);
+  const status =
+    postPhotosBytes >= STORAGE_CRITICAL_BYTES
+      ? "critical"
+      : postPhotosBytes >= STORAGE_WARN_BYTES
+        ? "warning"
+        : "ok";
+
+  return res.json({
+    status,
+    postPhotos: {
+      bytes: postPhotosBytes,
+      count: Number(row.photo_count),
+    },
+    bannersBytes: Number(row.banner_bytes),
+    databaseBytes: Number(row.database_bytes),
+    thresholds: {
+      warnBytes: STORAGE_WARN_BYTES,
+      criticalBytes: STORAGE_CRITICAL_BYTES,
+    },
+    // Human-readable summary of the migration plan for whoever checks this.
+    plan:
+      "Images stay in Postgres while small. At 'warning' (1 GiB of post photos), plan a move to S3-compatible storage keeping signed expiring URLs; complete it before 'critical' (5 GiB).",
   });
 });
 

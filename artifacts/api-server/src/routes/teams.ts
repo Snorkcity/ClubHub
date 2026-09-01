@@ -13,6 +13,7 @@ import {
 import {
   CreateTeamBody,
   UpdateTeamBody,
+  SetTeamBannerBody,
   AddTeamMemberBody,
   UpdateTeamMemberBody,
 } from "@workspace/api-zod";
@@ -21,6 +22,7 @@ import { buildTeams, buildEvents } from "../lib/build";
 import { getVisibleTeamIds } from "../lib/queries";
 import { canAccessTeam, isTeamStaff, getTeamInClub } from "../lib/authz";
 import { toPerson } from "../lib/serialize";
+import { verifyBannerToken } from "../lib/bannerToken";
 
 const router: IRouter = Router();
 
@@ -82,6 +84,78 @@ router.patch("/teams/:teamId", requireAuth, async (req, res) => {
     .returning();
   const [built] = await buildTeams([team]);
   return res.json(built);
+});
+
+// Banner images live in Postgres (base64) so dev (Replit) and prod (Railway)
+// behave identically without an external storage service. Clients resize
+// before upload, so payloads stay small.
+const MAX_BANNER_BYTES = 4 * 1024 * 1024;
+const DATA_URL_RE = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/;
+
+router.put("/teams/:teamId/banner", requireAuth, async (req, res) => {
+  const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
+  const teamId = Number(req.params.teamId);
+  if (!(await isTeamStaff(localUser.id, teamId, clubId, isClubAdmin)))
+    return res.status(403).json({ error: "You cannot edit this team" });
+  const body = SetTeamBannerBody.parse(req.body);
+  const match = DATA_URL_RE.exec(body.imageData);
+  if (!match)
+    return res
+      .status(400)
+      .json({ error: "Image must be a JPEG, PNG or WebP data URL" });
+  const [, contentType, base64] = match;
+  if (Buffer.from(base64, "base64").length > MAX_BANNER_BYTES)
+    return res.status(400).json({ error: "Image too large (max 4MB)" });
+  const [team] = await db
+    .update(teamsTable)
+    .set({
+      bannerImage: base64,
+      bannerContentType: contentType,
+      bannerUpdatedAt: new Date(),
+    })
+    .where(and(eq(teamsTable.id, teamId), eq(teamsTable.clubId, clubId)))
+    .returning();
+  if (!team) return res.status(404).json({ error: "Team not found" });
+  const [built] = await buildTeams([team]);
+  return res.json(built);
+});
+
+router.delete("/teams/:teamId/banner", requireAuth, async (req, res) => {
+  const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
+  const teamId = Number(req.params.teamId);
+  if (!(await isTeamStaff(localUser.id, teamId, clubId, isClubAdmin)))
+    return res.status(403).json({ error: "You cannot edit this team" });
+  await db
+    .update(teamsTable)
+    .set({ bannerImage: null, bannerContentType: null, bannerUpdatedAt: null })
+    .where(and(eq(teamsTable.id, teamId), eq(teamsTable.clubId, clubId)));
+  return res.status(204).send();
+});
+
+// Serves the banner image itself. <img> tags can't attach auth headers
+// (the web client is cross-origin from the API on Railway prod), so access
+// control is enforced via a signed, expiring URL that only club members
+// receive from the authenticated team APIs (see lib/bannerToken.ts).
+router.get("/teams/:teamId/banner", async (req, res) => {
+  const teamId = Number(req.params.teamId);
+  if (!Number.isInteger(teamId)) return res.status(404).send();
+  if (!verifyBannerToken(teamId, req.query.u, req.query.e, req.query.s))
+    return res.status(403).send();
+  const [team] = await db
+    .select({
+      bannerImage: teamsTable.bannerImage,
+      bannerContentType: teamsTable.bannerContentType,
+    })
+    .from(teamsTable)
+    .where(eq(teamsTable.id, teamId));
+  if (!team?.bannerImage || !team.bannerContentType)
+    return res.status(404).send();
+  const buf = Buffer.from(team.bannerImage, "base64");
+  res.setHeader("Content-Type", team.bannerContentType);
+  // Short private cache: the URL embeds the banner version, but keep TTL
+  // modest so removed/replaced images don't linger in caches.
+  res.setHeader("Cache-Control", "private, max-age=3600");
+  return res.send(buf);
 });
 
 router.get("/teams/:teamId/summary", requireAuth, async (req, res) => {

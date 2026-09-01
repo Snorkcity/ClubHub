@@ -177,8 +177,31 @@ export const GetClubOverviewResponse = zod.object({
   "isMinor": zod.boolean(),
   "hasLogin": zod.boolean().optional()
 }),
-  "commentCount": zod.number()
+  "commentCount": zod.number(),
+  "photos": zod.array(zod.object({
+  "id": zod.number(),
+  "url": zod.string().describe('Signed, expiring relative URL for the photo')
+})).optional()
 }))
+})
+
+
+/**
+ * @summary Get image and database storage health (club admin only)
+ */
+export const GetClubStorageResponse = zod.object({
+  "status": zod.enum(['ok', 'warning', 'critical']),
+  "postPhotos": zod.object({
+  "bytes": zod.number(),
+  "count": zod.number()
+}),
+  "bannersBytes": zod.number(),
+  "databaseBytes": zod.number(),
+  "thresholds": zod.object({
+  "warnBytes": zod.number(),
+  "criticalBytes": zod.number()
+}),
+  "plan": zod.string()
 })
 
 
@@ -207,7 +230,9 @@ export const ListTeamsResponseItem = zod.object({
   "seasonId": zod.number().nullish(),
   "seasonName": zod.string().nullish(),
   "playerCount": zod.number(),
-  "staffCount": zod.number()
+  "staffCount": zod.number(),
+  "bannerUpdatedAt": zod.string().nullish(),
+  "bannerUrl": zod.string().nullish().describe('Signed, expiring relative URL for the team banner image')
 })
 export const ListTeamsResponse = zod.array(ListTeamsResponseItem)
 
@@ -236,7 +261,9 @@ export const CreateTeamResponse = zod.object({
   "seasonId": zod.number().nullish(),
   "seasonName": zod.string().nullish(),
   "playerCount": zod.number(),
-  "staffCount": zod.number()
+  "staffCount": zod.number(),
+  "bannerUpdatedAt": zod.string().nullish(),
+  "bannerUrl": zod.string().nullish().describe('Signed, expiring relative URL for the team banner image')
 })
 
 
@@ -252,7 +279,9 @@ export const GetTeamResponse = zod.object({
   "seasonId": zod.number().nullish(),
   "seasonName": zod.string().nullish(),
   "playerCount": zod.number(),
-  "staffCount": zod.number()
+  "staffCount": zod.number(),
+  "bannerUpdatedAt": zod.string().nullish(),
+  "bannerUrl": zod.string().nullish().describe('Signed, expiring relative URL for the team banner image')
 })
 
 
@@ -280,8 +309,41 @@ export const UpdateTeamResponse = zod.object({
   "seasonId": zod.number().nullish(),
   "seasonName": zod.string().nullish(),
   "playerCount": zod.number(),
-  "staffCount": zod.number()
+  "staffCount": zod.number(),
+  "bannerUpdatedAt": zod.string().nullish(),
+  "bannerUrl": zod.string().nullish().describe('Signed, expiring relative URL for the team banner image')
 })
+
+
+/**
+ * @summary Set the team photo banner (staff only)
+ */
+
+
+
+export const SetTeamBannerBody = zod.object({
+  "imageData": zod.string().min(1).describe('Image as a base64 data URL (e.g. data:image\/jpeg;base64,...)')
+})
+
+export const SetTeamBannerResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "ageGroup": zod.string(),
+  "gender": zod.string().nullish(),
+  "colorHex": zod.string().nullish(),
+  "seasonId": zod.number().nullish(),
+  "seasonName": zod.string().nullish(),
+  "playerCount": zod.number(),
+  "staffCount": zod.number(),
+  "bannerUpdatedAt": zod.string().nullish(),
+  "bannerUrl": zod.string().nullish().describe('Signed, expiring relative URL for the team banner image')
+})
+
+
+/**
+ * @summary Remove the team photo banner (staff only)
+ */
+export const DeleteTeamBannerResponse = zod.void()
 
 
 /**
@@ -297,7 +359,9 @@ export const GetTeamSummaryResponse = zod.object({
   "seasonId": zod.number().nullish(),
   "seasonName": zod.string().nullish(),
   "playerCount": zod.number(),
-  "staffCount": zod.number()
+  "staffCount": zod.number(),
+  "bannerUpdatedAt": zod.string().nullish(),
+  "bannerUrl": zod.string().nullish().describe('Signed, expiring relative URL for the team banner image')
 }),
   "nextEvent": zod.object({
   "id": zod.number(),
@@ -732,7 +796,11 @@ export const GetFeedResponseItem = zod.object({
   "isMinor": zod.boolean(),
   "hasLogin": zod.boolean().optional()
 }),
-  "commentCount": zod.number()
+  "commentCount": zod.number(),
+  "photos": zod.array(zod.object({
+  "id": zod.number(),
+  "url": zod.string().describe('Signed, expiring relative URL for the photo')
+})).optional()
 })
 export const GetFeedResponse = zod.array(GetFeedResponseItem)
 
@@ -742,11 +810,15 @@ export const GetFeedResponse = zod.array(GetFeedResponseItem)
  */
 
 
+export const createClubPostBodyPhotosMax = 6;
+
+
 
 export const CreateClubPostBody = zod.object({
   "title": zod.string().optional(),
   "body": zod.string().min(1),
-  "pinned": zod.boolean().optional()
+  "pinned": zod.boolean().optional(),
+  "photos": zod.array(zod.string().min(1)).max(createClubPostBodyPhotosMax).optional().describe('Photos as base64 data URLs (client resizes before upload)')
 })
 
 export const CreateClubPostResponse = zod.object({
@@ -781,7 +853,11 @@ export const ListTeamPostsResponseItem = zod.object({
   "isMinor": zod.boolean(),
   "hasLogin": zod.boolean().optional()
 }),
-  "commentCount": zod.number()
+  "commentCount": zod.number(),
+  "photos": zod.array(zod.object({
+  "id": zod.number(),
+  "url": zod.string().describe('Signed, expiring relative URL for the photo')
+})).optional()
 })
 export const ListTeamPostsResponse = zod.array(ListTeamPostsResponseItem)
 
@@ -791,11 +867,15 @@ export const ListTeamPostsResponse = zod.array(ListTeamPostsResponseItem)
  */
 
 
+export const createPostBodyPhotosMax = 6;
+
+
 
 export const CreatePostBody = zod.object({
   "title": zod.string().optional(),
   "body": zod.string().min(1),
-  "pinned": zod.boolean().optional()
+  "pinned": zod.boolean().optional(),
+  "photos": zod.array(zod.string().min(1)).max(createPostBodyPhotosMax).optional().describe('Photos as base64 data URLs (client resizes before upload)')
 })
 
 export const CreatePostResponse = zod.object({
@@ -822,7 +902,11 @@ export const CreatePostResponse = zod.object({
   "isMinor": zod.boolean(),
   "hasLogin": zod.boolean().optional()
 }),
-  "commentCount": zod.number()
+  "commentCount": zod.number(),
+  "photos": zod.array(zod.object({
+  "id": zod.number(),
+  "url": zod.string().describe('Signed, expiring relative URL for the photo')
+})).optional()
 })
 
 
@@ -854,7 +938,11 @@ export const GetPostResponse = zod.object({
   "isMinor": zod.boolean(),
   "hasLogin": zod.boolean().optional()
 }),
-  "commentCount": zod.number()
+  "commentCount": zod.number(),
+  "photos": zod.array(zod.object({
+  "id": zod.number(),
+  "url": zod.string().describe('Signed, expiring relative URL for the photo')
+})).optional()
 }),
   "comments": zod.array(zod.object({
   "id": zod.number(),
@@ -917,7 +1005,11 @@ export const UpdatePostResponse = zod.object({
   "isMinor": zod.boolean(),
   "hasLogin": zod.boolean().optional()
 }),
-  "commentCount": zod.number()
+  "commentCount": zod.number(),
+  "photos": zod.array(zod.object({
+  "id": zod.number(),
+  "url": zod.string().describe('Signed, expiring relative URL for the photo')
+})).optional()
 })
 
 

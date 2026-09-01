@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Pencil } from "lucide-react";
+import { ImagePlus, Pencil, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetMe,
@@ -36,6 +36,9 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { fileToBannerDataUrl } from "@/lib/team-banner";
+
+const MAX_PHOTOS = 6;
 
 /**
  * Heja-style post composer. Renders a "Share something with the team…" card
@@ -143,8 +146,33 @@ function ComposeForm({
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [pinned, setPinned] = useState(false);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [processing, setProcessing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  async function addFiles(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    setProcessing(true);
+    try {
+      const room = MAX_PHOTOS - photos.length;
+      const picked = Array.from(files).slice(0, room);
+      const dataUrls = await Promise.all(picked.map(fileToBannerDataUrl));
+      setPhotos((prev) => [...prev, ...dataUrls].slice(0, MAX_PHOTOS));
+      if (files.length > room)
+        toast({ title: `Up to ${MAX_PHOTOS} photos per post` });
+    } catch {
+      toast({
+        title: "Couldn't add photo",
+        description: "That image couldn't be processed — try another one.",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessing(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
 
   const createPost = useCreatePost({
     mutation: {
@@ -186,7 +214,8 @@ function ComposeForm({
   });
 
   const pending = createPost.isPending || createClubPost.isPending;
-  const canSubmit = body.trim().length > 0 && teamId !== "" && !pending;
+  const canSubmit =
+    body.trim().length > 0 && teamId !== "" && !pending && !processing;
 
   return (
     <form
@@ -198,6 +227,7 @@ function ComposeForm({
           body: body.trim(),
           ...(title.trim() ? { title: title.trim() } : {}),
           pinned,
+          ...(photos.length > 0 ? { photos } : {}),
         };
         if (teamId === "all") createClubPost.mutate({ data });
         else createPost.mutate({ teamId: Number(teamId), data });
@@ -251,15 +281,56 @@ function ComposeForm({
         />
       </div>
 
+      {photos.length > 0 && (
+        <div className="grid grid-cols-3 gap-2">
+          {photos.map((src, i) => (
+            <div key={i} className="relative aspect-square overflow-hidden rounded-lg border">
+              <img src={src} alt={`Photo ${i + 1}`} className="h-full w-full object-cover" />
+              <button
+                type="button"
+                aria-label="Remove photo"
+                className="absolute top-1 right-1 rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
+                onClick={() => setPhotos((prev) => prev.filter((_, j) => j !== i))}
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        multiple
+        className="hidden"
+        onChange={(e) => addFiles(e.target.files)}
+      />
+
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Switch id="post-pinned" checked={pinned} onCheckedChange={setPinned} />
-          <Label htmlFor="post-pinned" className="cursor-pointer">
-            Pin to top
-          </Label>
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Add photos"
+            title="Add photos"
+            className="h-9 w-9 text-muted-foreground"
+            disabled={processing || photos.length >= MAX_PHOTOS}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <ImagePlus className="h-5 w-5" />
+          </Button>
+          <div className="flex items-center gap-2">
+            <Switch id="post-pinned" checked={pinned} onCheckedChange={setPinned} />
+            <Label htmlFor="post-pinned" className="cursor-pointer">
+              Pin to top
+            </Label>
+          </div>
         </div>
         <Button type="submit" disabled={!canSubmit} className="rounded-full px-6">
-          {pending ? "Posting…" : "Post"}
+          {pending ? "Posting…" : processing ? "Adding photo…" : "Post"}
         </Button>
       </div>
     </form>

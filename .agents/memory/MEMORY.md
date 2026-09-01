@@ -8,4 +8,6 @@
 - [Team switcher & unreads](team-switcher-unreads.md) — active team is localStorage-only; unread = content since team_reads.last_seen_at (14-day fallback); mark-seen after 2s view, never on switch.
 - [Client clock skew breaks auth](clock-skew-auth.md) — instant 401s with valid cookies can mean the user device clock is slow; dev server has 30-min skew tolerance.
 - [Mobile x-overflow guard](mobile-x-overflow.md) — page scrollers need overflow-x-hidden (overflow-y-auto forces x scroll); min-w-0 on grid columns & native date/time inputs.
+- [Image storage strategy](image-storage.md) — uploaded images live in Postgres (Railway-portable), served only via signed expiring URLs; never add unauthenticated image routes.
 - [Verify pushes landed](git-push-verification.md) — gitPush can lie or be missing; fallback = GitHub connection proxyFetch + Git Data API; always verify origin/main == HEAD + clean status.
+- [Validation vs run button](validation-runbutton.md) — validation commands can hijack the Project run button in .replit; API tests run on a throwaway local Postgres, never the shared DB.

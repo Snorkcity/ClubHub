@@ -11,4 +11,10 @@ export interface ClubPostInput {
   /** @minLength 1 */
   body: string;
   pinned?: boolean;
+  /**
+     * Photos as base64 data URLs (client resizes before upload)
+     * @maxItems 6
+     * @items.minLength 1
+     */
+  photos?: string[];
 }

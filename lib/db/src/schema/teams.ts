@@ -15,6 +15,11 @@ export const teamsTable = pgTable("teams", {
   ageGroup: text("age_group").notNull(),
   gender: text("gender"),
   colorHex: text("color_hex"),
+  // Team photo banner (shown on Home). Stored inline as base64 so it works
+  // identically on Replit dev and Railway prod without external storage.
+  bannerImage: text("banner_image"),
+  bannerContentType: text("banner_content_type"),
+  bannerUpdatedAt: timestamp("banner_updated_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Person } from './person';
+import type { PostPhoto } from './postPhoto';
 
 export interface Post {
   id: number;
@@ -18,4 +19,5 @@ export interface Post {
   createdAt: string;
   author: Person;
   commentCount: number;
+  photos?: PostPhoto[];
 }

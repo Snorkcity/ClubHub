@@ -11,7 +11,10 @@ import {
   type Event,
   type Post,
 } from "@workspace/db";
+import { postPhotosTable } from "@workspace/db";
 import { iso, toPerson } from "./serialize";
+import { signedBannerPath } from "./bannerToken";
+import { signedPostPhotoPath } from "./photoToken";
 
 async function teamNameMap(teamIds: number[]): Promise<Record<number, string>> {
   if (teamIds.length === 0) return {};
@@ -50,6 +53,10 @@ export async function buildTeams(teams: Team[]) {
       colorHex: t.colorHex ?? null,
       seasonId: t.seasonId ?? null,
       seasonName: t.seasonId ? (seasonName[t.seasonId] ?? null) : null,
+      bannerUpdatedAt: t.bannerUpdatedAt?.toISOString() ?? null,
+      bannerUrl: t.bannerUpdatedAt
+        ? signedBannerPath(t.id, t.bannerUpdatedAt)
+        : null,
       playerCount: tm.filter((m) => m.role === "player").length,
       staffCount: tm.filter((m) => m.role === "coach" || m.role === "manager")
         .length,
@@ -118,14 +125,25 @@ export async function buildPosts(posts: Post[]) {
   const teamIds = Array.from(new Set(posts.map((p) => p.teamId)));
   const authorIds = Array.from(new Set(posts.map((p) => p.authorId)));
   const postIds = posts.map((p) => p.id);
-  const [authors, comments, names] = await Promise.all([
+  const [authors, comments, names, photos] = await Promise.all([
     db.select().from(usersTable).where(inArray(usersTable.id, authorIds)),
     db
       .select()
       .from(commentsTable)
       .where(inArray(commentsTable.postId, postIds)),
     teamNameMap(teamIds),
+    db
+      .select({
+        id: postPhotosTable.id,
+        postId: postPhotosTable.postId,
+        position: postPhotosTable.position,
+      })
+      .from(postPhotosTable)
+      .where(inArray(postPhotosTable.postId, postIds)),
   ]);
+  const photosByPost: Record<number, { id: number; position: number }[]> = {};
+  for (const ph of photos)
+    (photosByPost[ph.postId] ??= []).push({ id: ph.id, position: ph.position });
   const authorById = Object.fromEntries(authors.map((a) => [a.id, a]));
   const countByPost: Record<number, number> = {};
   for (const c of comments)
@@ -146,5 +164,8 @@ export async function buildPosts(posts: Post[]) {
     createdAt: iso(p.createdAt) as string,
     author: toPerson(authorById[p.authorId]),
     commentCount: countByPost[p.id] ?? 0,
+    photos: (photosByPost[p.id] ?? [])
+      .sort((a, b) => a.position - b.position)
+      .map((ph) => ({ id: ph.id, url: signedPostPhotoPath(p.id, ph.id) })),
   }));
 }

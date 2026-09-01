@@ -105,13 +105,16 @@ function conversationGuide(p: PlayerMonitoring): string {
   const worst = [...scored].sort((a, b) => a.value - b.value)[0];
   const loadHigh = p.acwr != null && p.acwr >= 1.3;
   const loadLow = p.acwr != null && p.acwr < 0.8;
+  const frequencyHigh = p.flags.some((f) => f.metric === "sessions");
 
   if (light === "none")
     return `No recent check-ins from ${firstName}. A casual "have you seen the check-in thing?" is the only conversation needed here.`;
   if (light === "green")
     return `${firstName} looks in good shape — nothing to raise. A quick "you're travelling well" goes a long way for buy-in.`;
-  if (loadHigh && worst && worst.value < 3.5)
+  if ((loadHigh || frequencyHigh) && worst && worst.value < 3.5)
     return `Double signal for ${firstName}: workload has spiked AND ${worst.label} is down. Open with "big week — how's the body holding up?" and consider trimming their next session rather than asking them to push through.`;
+  if (frequencyHigh)
+    return `${firstName} is doing more sessions than their recent pattern. Ask what extra school, rep or private training has been added — even moderate sessions can become a recovery risk when they stack up.`;
   if (loadHigh)
     return `${firstName}'s wellness is holding but their workload has jumped. Ask what else they've played this week (school, rep) — the risk is what you can't see on your own training plan.`;
   if (loadLow)

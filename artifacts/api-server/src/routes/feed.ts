@@ -3,6 +3,7 @@ import { desc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import {
   db,
   postsTable,
+  postPhotosTable,
   commentsTable,
   usersTable,
   teamsTable,
@@ -18,8 +19,35 @@ import { buildPosts } from "../lib/build";
 import { getVisibleTeamIds } from "../lib/queries";
 import { canAccessTeam, isTeamStaff } from "../lib/authz";
 import { toPerson, iso } from "../lib/serialize";
+import { verifyPostPhotoToken } from "../lib/photoToken";
 
 const router: IRouter = Router();
+
+// Post photos follow the team-banner pattern: base64 in Postgres, client
+// resizes before upload, delivery via signed expiring URLs only.
+const MAX_PHOTO_BYTES = 4 * 1024 * 1024;
+const MAX_PHOTOS_PER_POST = 6;
+const DATA_URL_RE = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/;
+
+/** Parses/validates photo data URLs; returns rows or an error message. */
+function parsePhotos(
+  photos: string[] | undefined,
+): { rows: { contentType: string; image: string; position: number }[] } | { error: string } {
+  const rows: { contentType: string; image: string; position: number }[] = [];
+  if (!photos) return { rows };
+  if (photos.length > MAX_PHOTOS_PER_POST)
+    return { error: `At most ${MAX_PHOTOS_PER_POST} photos per post` };
+  for (const [i, p] of photos.entries()) {
+    const match = DATA_URL_RE.exec(p);
+    if (!match)
+      return { error: "Each photo must be a JPEG, PNG or WebP data URL" };
+    const [, contentType, base64] = match;
+    if (Buffer.from(base64, "base64").length > MAX_PHOTO_BYTES)
+      return { error: "Photo too large (max 4MB)" };
+    rows.push({ contentType, image: base64, position: i });
+  }
+  return { rows };
+}
 
 // Pinned posts only stay on top for 2 days, then fall back into date order.
 // Re-pinning updates pinnedAt and restarts the clock.
@@ -161,7 +189,14 @@ router.post("/teams/:teamId/posts", requireAuth, async (req, res) => {
   const teamId = Number(req.params.teamId);
   if (!(await isTeamStaff(localUser.id, teamId, clubId, isClubAdmin)))
     return res.status(403).json({ error: "Only team staff can post" });
+  // Check the count before zod so an over-limit array yields a clean 400.
+  if (Array.isArray(req.body?.photos) && req.body.photos.length > MAX_PHOTOS_PER_POST)
+    return res
+      .status(400)
+      .json({ error: `At most ${MAX_PHOTOS_PER_POST} photos per post` });
   const body = CreatePostBody.parse(req.body);
+  const parsed = parsePhotos(body.photos);
+  if ("error" in parsed) return res.status(400).json({ error: parsed.error });
   const [post] = await db
     .insert(postsTable)
     .values({
@@ -173,6 +208,10 @@ router.post("/teams/:teamId/posts", requireAuth, async (req, res) => {
       pinnedAt: body.pinned ? new Date() : null,
     })
     .returning();
+  if (parsed.rows.length > 0)
+    await db
+      .insert(postPhotosTable)
+      .values(parsed.rows.map((r) => ({ ...r, postId: post.id })));
   const [built] = await buildPosts([post]);
   return res.status(201).json(built);
 });
@@ -181,22 +220,36 @@ router.post("/posts/club", requireAuth, async (req, res) => {
   const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
   if (!isClubAdmin)
     return res.status(403).json({ error: "Only club admins can post to every team" });
+  // Check the count before zod so an over-limit array yields a clean 400.
+  if (Array.isArray(req.body?.photos) && req.body.photos.length > MAX_PHOTOS_PER_POST)
+    return res
+      .status(400)
+      .json({ error: `At most ${MAX_PHOTOS_PER_POST} photos per post` });
   const body = CreateClubPostBody.parse(req.body);
+  const parsed = parsePhotos(body.photos);
+  if ("error" in parsed) return res.status(400).json({ error: parsed.error });
   const teams = await db
     .select({ id: teamsTable.id })
     .from(teamsTable)
     .where(eq(teamsTable.clubId, clubId));
   if (teams.length === 0) return res.status(201).json({ created: 0 });
-  await db.insert(postsTable).values(
-    teams.map((t) => ({
-      teamId: t.id,
-      authorId: localUser.id,
-      title: body.title ?? null,
-      body: body.body,
-      pinned: body.pinned ?? false,
-      pinnedAt: body.pinned ? new Date() : null,
-    })),
-  );
+  const created = await db
+    .insert(postsTable)
+    .values(
+      teams.map((t) => ({
+        teamId: t.id,
+        authorId: localUser.id,
+        title: body.title ?? null,
+        body: body.body,
+        pinned: body.pinned ?? false,
+        pinnedAt: body.pinned ? new Date() : null,
+      })),
+    )
+    .returning({ id: postsTable.id });
+  if (parsed.rows.length > 0)
+    await db.insert(postPhotosTable).values(
+      created.flatMap((p) => parsed.rows.map((r) => ({ ...r, postId: p.id }))),
+    );
   return res.status(201).json({ created: teams.length });
 });
 
@@ -268,8 +321,36 @@ router.delete("/posts/:postId", requireAuth, async (req, res) => {
   if (!(await isTeamStaff(localUser.id, existing.teamId, clubId, isClubAdmin)))
     return res.status(403).json({ error: "You cannot delete this post" });
   await db.delete(commentsTable).where(eq(commentsTable.postId, postId));
+  await db.delete(postPhotosTable).where(eq(postPhotosTable.postId, postId));
   await db.delete(postsTable).where(eq(postsTable.id, postId));
   return res.status(204).send();
+});
+
+// Serves a post photo. <img> tags can't attach auth headers (web client is
+// cross-origin from the API on Railway prod), so access control is enforced
+// via a signed, expiring URL that only club members receive from the
+// authenticated feed APIs (see lib/photoToken.ts).
+router.get("/posts/:postId/photos/:photoId", async (req, res) => {
+  const postId = Number(req.params.postId);
+  const photoId = Number(req.params.photoId);
+  if (!Number.isInteger(postId) || !Number.isInteger(photoId))
+    return res.status(404).send();
+  if (!verifyPostPhotoToken(postId, photoId, req.query.e, req.query.s))
+    return res.status(403).send();
+  const [photo] = await db
+    .select({
+      image: postPhotosTable.image,
+      contentType: postPhotosTable.contentType,
+    })
+    .from(postPhotosTable)
+    .where(
+      and(eq(postPhotosTable.id, photoId), eq(postPhotosTable.postId, postId)),
+    );
+  if (!photo) return res.status(404).send();
+  res.setHeader("Content-Type", photo.contentType);
+  // Photos are immutable per id; modest TTL keeps caches tidy after deletes.
+  res.setHeader("Cache-Control", "private, max-age=3600");
+  return res.send(Buffer.from(photo.image, "base64"));
 });
 
 router.post("/posts/:postId/comments", requireAuth, async (req, res) => {

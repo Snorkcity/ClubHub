@@ -9,17 +9,18 @@ import { Link } from "wouter";
 import { format, isToday, isTomorrow } from "date-fns";
 import { 
   Users, CalendarDays, Activity, MessageSquare, 
-  ChevronRight, MapPin, Clock, Plus
+  ChevronRight, MapPin, Clock, Plus, Database, AlertTriangle
 } from "lucide-react";
 import { 
-  useGetMe, useGetClubOverview, useGetFeed, 
+  useGetMe, useGetClubOverview, useGetClubStorage, useGetFeed,
   useListUpcomingEvents, useListTeams,
-  getGetMeQueryKey, getGetClubOverviewQueryKey, 
+  getGetMeQueryKey, getGetClubOverviewQueryKey, getGetClubStorageQueryKey,
   getGetFeedQueryKey, getListUpcomingEventsQueryKey, getListTeamsQueryKey
 } from "@workspace/api-client-react";
 
 import { LoadingScreen, ErrorState, EmptyState } from "@/components/ui/states";
 import { locationName } from "@/lib/location";
+import { teamBannerUrl } from "@/lib/team-banner";
 import { useTeamUnreads } from "@/components/layout/team-switcher";
 import { PostComposer } from "@/components/feed/post-composer";
 import { PostCard } from "@/components/feed/post-card";
@@ -27,6 +28,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress";
 
 export default function Home() {
   const { data: me, isLoading: meLoading } = useGetMe({ query: { queryKey: getGetMeQueryKey() } });
@@ -40,20 +43,48 @@ export default function Home() {
   return (
     <div className="flex-1 overflow-y-auto overflow-x-hidden">
       <div className="container mx-auto p-4 md:p-8 lg:max-w-6xl space-y-6">
-        {/* Compact header: which team you're viewing + today's date. */}
+        {/* Header: team photo banner when the active team has one, else the
+            compact name chip. Both show today's date. */}
         <header>
-          {activeTeam && (
-            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 text-primary px-3 py-1 text-sm font-display font-bold mb-1.5">
-              <span
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: (activeTeam as any).colorHex || "currentColor" }}
+          {activeTeam?.bannerUrl ? (
+            <div className="relative rounded-2xl overflow-hidden shadow-md mb-2 h-36 md:h-48">
+              <img
+                src={teamBannerUrl(activeTeam.bannerUrl)}
+                alt={`${activeTeam.name} team photo`}
+                className="absolute inset-0 h-full w-full object-cover"
               />
-              {activeTeam.name}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-4">
+                <div className="flex items-center gap-2">
+                  <span
+                    className="h-2.5 w-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: (activeTeam as any).colorHex || "#fff" }}
+                  />
+                  <h1 className="text-white font-display font-bold text-xl md:text-2xl leading-tight truncate drop-shadow">
+                    {activeTeam.name}
+                  </h1>
+                </div>
+                <p className="text-white/80 text-xs md:text-sm font-medium mt-0.5">
+                  {format(new Date(), "EEEE, MMMM do")}
+                </p>
+              </div>
             </div>
+          ) : (
+            <>
+              {activeTeam && (
+                <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 text-primary px-3 py-1 text-sm font-display font-bold mb-1.5">
+                  <span
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: (activeTeam as any).colorHex || "currentColor" }}
+                  />
+                  {activeTeam.name}
+                </div>
+              )}
+              <p className="text-muted-foreground text-sm font-medium">
+                {format(new Date(), "EEEE, MMMM do")}
+              </p>
+            </>
           )}
-          <p className="text-muted-foreground text-sm font-medium">
-            {format(new Date(), "EEEE, MMMM do")}
-          </p>
         </header>
 
         <UnreadActivityBanner />
@@ -130,6 +161,8 @@ function AdminDashboard() {
 
   return (
     <div className="space-y-8">
+      <StorageHealth />
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {stats.map((stat, i) => (
           <div key={i} className="bg-card border rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
@@ -189,6 +222,87 @@ function AdminDashboard() {
       </div>
     </div>
   );
+}
+
+function StorageHealth() {
+  const { data: storage, isLoading } = useGetClubStorage({
+    query: { queryKey: getGetClubStorageQueryKey(), staleTime: 5 * 60 * 1000 },
+  });
+
+  if (isLoading) {
+    return <div className="h-24 animate-pulse rounded-2xl border bg-muted/30" />;
+  }
+  if (!storage) return null;
+
+  const isAlert = storage.status !== "ok";
+  const percentOfCritical = Math.min(
+    100,
+    (storage.postPhotos.bytes / storage.thresholds.criticalBytes) * 100,
+  );
+
+  return (
+    <section className="space-y-3" aria-labelledby="storage-health-title">
+      {isAlert && (
+        <Alert
+          variant={storage.status === "critical" ? "destructive" : "default"}
+          className={storage.status === "warning" ? "border-amber-500/60 bg-amber-50 text-amber-950 dark:bg-amber-950/20 dark:text-amber-100 [&>svg]:text-amber-600" : ""}
+          data-testid={`status-storage-${storage.status}`}
+        >
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>
+            {storage.status === "critical" ? "Photo storage is critical" : "Photo storage needs attention"}
+          </AlertTitle>
+          <AlertDescription>{storage.plan}</AlertDescription>
+        </Alert>
+      )}
+
+      <Card className="rounded-2xl p-4 shadow-sm" data-testid="card-storage-health">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <Database className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 id="storage-health-title" className="font-display font-bold">Photo storage</h2>
+                <p className="text-xs text-muted-foreground">
+                  {storage.postPhotos.count.toLocaleString()} {storage.postPhotos.count === 1 ? "photo" : "photos"}
+                </p>
+              </div>
+              <Badge variant={storage.status === "critical" ? "destructive" : "secondary"} data-testid="status-storage-label">
+                {storage.status === "ok" ? "Healthy" : storage.status === "warning" ? "Warning" : "Critical"}
+              </Badge>
+            </div>
+            <Progress
+              value={percentOfCritical}
+              className="mt-3"
+              aria-label={`${formatBytes(storage.postPhotos.bytes)} of ${formatBytes(storage.thresholds.criticalBytes)} critical threshold used`}
+            />
+            <div className="mt-2 flex flex-wrap justify-between gap-x-4 gap-y-1 text-xs">
+              <span data-testid="text-storage-current">
+                <strong>{formatBytes(storage.postPhotos.bytes)}</strong> used
+              </span>
+              <span className="text-muted-foreground" data-testid="text-storage-thresholds">
+                Warn at {formatBytes(storage.thresholds.warnBytes)} · Critical at {formatBytes(storage.thresholds.criticalBytes)}
+              </span>
+            </div>
+          </div>
+        </div>
+      </Card>
+    </section>
+  );
+}
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  const units = ["KB", "MB", "GB", "TB"];
+  let value = bytes / 1024;
+  let unit = units[0];
+  for (let i = 1; value >= 1024 && i < units.length; i += 1) {
+    value /= 1024;
+    unit = units[i];
+  }
+  return `${value >= 10 ? value.toFixed(1) : value.toFixed(2)} ${unit}`;
 }
 
 /** Marks the given team's content as seen shortly after viewing, then
