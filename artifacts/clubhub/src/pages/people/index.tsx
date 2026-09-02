@@ -33,7 +33,7 @@ export default function PeopleList() {
       : staffedTeamIds.values().next().value;
   const params = { teamId, search: search || undefined };
 
-  const { data: people, isLoading, error, refetch } = useListPeople(params, {
+  const { data: people, isLoading, isFetching, error, refetch } = useListPeople(params, {
     query: {
       enabled: !meLoading && (!!me?.isClubAdmin || !!teamId),
       queryKey: getListPeopleQueryKey(params),
@@ -86,7 +86,7 @@ export default function PeopleList() {
         </div>
 
         <div className="flex-1 overflow-y-auto overflow-x-hidden pb-8">
-          {isLoading ? (
+          {meLoading || isLoading || (isFetching && !people) ? (
             <LoadingScreen message="Loading team members..." />
           ) : error || !people ? (
             <ErrorState onRetry={() => refetch()} />
