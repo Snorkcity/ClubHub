@@ -42,6 +42,8 @@ report that there are no schema changes.
   - `NODE_ENV=production`
 - Generate a public domain (Settings → Networking). Railway injects `PORT` automatically; the server reads it.
 - Health check path: `/api/healthz`
+- Production browser requests are accepted from `https://app.nahreo.com` and
+  the compatibility domain `https://clubhub.gameinsights.com.au`.
 
 ## 3. Web service (same repo, second service)
 - **Build command:** `pnpm install && BASE_PATH=/ pnpm --filter @workspace/clubhub run build`
@@ -55,7 +57,8 @@ report that there are no schema changes.
 ## Notes
 - The web client prefixes all `/api/...` calls with `VITE_API_URL` when set (see `setBaseUrl` in `artifacts/clubhub/src/App.tsx`). Leave it unset in environments where the API is same-origin (like Replit).
 - Keep the existing `@workspace/clubhub` package name, `artifacts/clubhub` directory, GitHub repository URL, Railway service domains, and PWA `start_url`/`scope` during the product rename. These are compatibility identifiers rather than user-facing branding; changing them without redirects or aliases can break Railway builds, installed PWAs, saved sessions, and deep links.
-- Railway service display labels may be renamed to **Nahreo API** and **Nahreo Web** without changing their generated domains. When a Nahreo production domain is introduced, attach it as an additional domain first, update Clerk/CORS configuration, and keep the old Squadly domains redirecting until existing installs and links have migrated.
+- Railway service display labels may be renamed to **Nahreo API** and **Nahreo Web** without changing their generated domains. `https://app.nahreo.com` is the primary public web address; keep the old ClubHub domain attached as a compatibility alias until existing installs and links have migrated.
 - The GitHub repository can be renamed separately once Railway is confirmed to follow GitHub redirects or has been reconnected to the new repository URL. The internal workspace package should remain `@workspace/clubhub` unless all Railway commands are updated and tested in the same change.
-- CORS on the API currently reflects any origin with credentials; tighten `cors({ origin })` to the web domain once URLs are stable.
+- API CORS is restricted in production to the Nahreo web address and the old
+  compatibility address. Development remains open to proxied/local origins.
 - To bring existing data across, `pg_dump` the source database and restore into the Railway Postgres before switching over.

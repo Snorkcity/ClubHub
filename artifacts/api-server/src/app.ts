@@ -10,6 +10,7 @@ import {
 } from "./middlewares/clerkProxyMiddleware";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { corsOrigin } from "./lib/cors";
 
 const app: Express = express();
 
@@ -36,7 +37,7 @@ app.use(
 // Clerk Frontend API proxy must be mounted before the body parsers.
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 
-app.use(cors({ credentials: true, origin: true }));
+app.use(cors({ credentials: true, origin: corsOrigin }));
 // Image uploads (team banners, post photos) arrive as base64 JSON, client-
 // resized first. Budget: up to 6 post photos x 4MB binary ≈ 32MB base64, so
 // the aggregate body limit must sit above that.
