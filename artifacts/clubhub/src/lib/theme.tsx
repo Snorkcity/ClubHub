@@ -22,7 +22,7 @@ function apply(pref: ThemePref) {
   document.documentElement.classList.toggle("dark", dark);
   document
     .querySelector('meta[name="theme-color"]')
-    ?.setAttribute("content", dark ? "#0f1729" : "#0b1f4b");
+    ?.setAttribute("content", dark ? "#101828" : "#173F8A");
 }
 
 const ThemeContext = createContext<{

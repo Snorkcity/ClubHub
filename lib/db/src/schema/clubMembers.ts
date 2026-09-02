@@ -1,4 +1,10 @@
-import { pgTable, serial, integer, text, unique } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  serial,
+  integer,
+  text,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -18,7 +24,9 @@ export const clubMembersTable = pgTable(
       .references(() => usersTable.id),
     role: text("role").notNull().default("member"), // admin | member
   },
-  (t) => [unique().on(t.clubId, t.userId)],
+  (t) => [
+    uniqueIndex("club_members_club_id_user_id_unique").on(t.clubId, t.userId),
+  ],
 );
 
 export const insertClubMemberSchema = createInsertSchema(clubMembersTable).omit({

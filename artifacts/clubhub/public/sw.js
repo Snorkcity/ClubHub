@@ -16,7 +16,7 @@ self.addEventListener("push", (event) => {
     return;
   }
 
-  const title = payload.title || "Squadly";
+  const title = payload.title || "Nahreo";
   const iconUrl = new URL("icons/icon-192.png", self.registration.scope).href;
   const badgeUrl = new URL("icons/notification-badge.png", self.registration.scope).href;
   const options = {

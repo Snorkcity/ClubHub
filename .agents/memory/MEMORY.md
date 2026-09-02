@@ -12,3 +12,4 @@
 - [Image storage strategy](image-storage.md) — uploaded images live in Postgres (Railway-portable), served only via signed expiring URLs; never add unauthenticated image routes.
 - [Verify pushes landed](git-push-verification.md) — gitPush can lie or be missing; fallback = GitHub connection proxyFetch + Git Data API; always verify origin/main == HEAD + clean status.
 - [Validation vs run button](validation-runbutton.md) — validation commands can hijack the Project run button in .replit; API tests run on a throwaway local Postgres, never the shared DB.
+- [Railway unique reconciliation](railway-unique-reconciliation.md) — prefer named unique indexes when Drizzle misreads Railway UNIQUE constraints and offers unsafe truncation.

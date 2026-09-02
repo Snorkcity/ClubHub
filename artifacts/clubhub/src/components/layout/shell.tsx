@@ -18,6 +18,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, 
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
+import { NahreoMark } from "@/components/brand/nahreo-logo";
 
 export default function Shell({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -103,12 +104,10 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             {club?.logoUrl ? (
               <img src={club.logoUrl} alt={club.name} className="h-8 w-8 object-contain" />
             ) : (
-              <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center shrink-0">
-                <span className="text-primary-foreground font-display font-black text-lg leading-none">S</span>
-              </div>
+              <NahreoMark className="h-8 w-8 shrink-0" />
             )}
             <span className="font-display font-bold text-lg truncate">
-              {club?.name || "Squadly"}
+              {club?.name || "Nahreo"}
             </span>
           </Link>
         </div>
@@ -168,9 +167,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       <header className="md:hidden h-16 bg-background border-b flex items-center justify-between px-4 sticky top-0 z-40 gap-2">
         <div className="flex items-center gap-1 min-w-0">
           <Link href="/home" className="flex items-center shrink-0">
-            <div className="h-8 w-8 bg-primary rounded flex items-center justify-center">
-              <span className="text-primary-foreground font-display font-black text-sm leading-none">S</span>
-            </div>
+            <NahreoMark className="h-8 w-8" />
           </Link>
           <TeamSwitcher compact />
         </div>

@@ -1,12 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
-  <rect width="200" height="200" rx="40" fill="#141E30"/>
-  <path d="M100 20 L160 50 V110 C160 150 100 180 100 180 C100 180 40 150 40 110 V50 L100 20 Z" fill="#22C55E"/>
-  <path d="M100 20 L160 50 V110 C160 150 100 180 100 180 C100 180 40 150 40 110 V50 L100 20 Z" fill="url(#grad1)"/>
-  <text x="100" y="125" font-family="system-ui, sans-serif" font-weight="900" font-size="88" fill="#FFFFFF" text-anchor="middle">S</text>
-  <defs>
-    <linearGradient id="grad1" x1="0" y1="0" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#16A34A" stop-opacity="0.8"/>
-      <stop offset="100%" stop-color="#14532D" stop-opacity="0.8"/>
-    </linearGradient>
-  </defs>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <title>Nahreo</title>
+  <path d="M20 57.5C20 36.5 35.8 21 56 21c9.5 0 17.9 3.4 24.4 9.5" stroke="#173F8A" stroke-width="12" stroke-linecap="round"/>
+  <path d="M80 42.5C80 63.5 64.2 79 44 79c-9.5 0-17.9-3.4-24.4-9.5" stroke="#173F8A" stroke-width="12" stroke-linecap="round"/>
+  <path d="M72.7 26.2 79.9 31.5 76.2 39.2" stroke="#FF6B5E" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m27.3 73.8-7.2-5.3 3.7-7.7" stroke="#FF6B5E" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="50" cy="50" r="7" fill="#FF6B5E"/>
 </svg>

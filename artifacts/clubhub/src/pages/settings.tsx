@@ -54,7 +54,7 @@ function AppearanceCard() {
       <h2 className="text-xl font-bold mb-1 flex items-center gap-2">
         <Palette className="h-5 w-5 text-primary" /> Appearance
       </h2>
-      <p className="text-sm text-muted-foreground mb-5">Choose how Squadly looks on this device.</p>
+      <p className="text-sm text-muted-foreground mb-5">Choose how Nahreo looks on this device.</p>
       <div className="grid grid-cols-3 gap-2 md:gap-3">
         {options.map(({ value, label, icon: Icon, hint }) => {
           const active = theme === value;

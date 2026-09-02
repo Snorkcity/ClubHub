@@ -31,6 +31,21 @@ export DATABASE_URL="postgresql://postgres@localhost:$PGPORT/clubhub_test?host=$
 # Create the schema from the drizzle definitions.
 pnpm --filter @workspace/db run push-force >/dev/null
 
+# Exercise the additive production repair from the drifted state: preserve all
+# rows, remove only the constraint, then prove the migration restores it.
+membership_count_before="$(psql "$DATABASE_URL" -X -Atc "SELECT COUNT(*) FROM club_members")"
+psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+  -c "DROP INDEX club_members_club_id_user_id_unique" \
+  >/dev/null
+psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+  -c "ALTER TABLE club_members ADD CONSTRAINT club_members_club_id_user_id_unique UNIQUE (club_id, user_id)" \
+  >/dev/null
+psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+  -f "$ARTIFACT_DIR/../../lib/db/migrations/20260901_club_members_unique.sql" \
+  >/dev/null
+membership_count_after="$(psql "$DATABASE_URL" -X -Atc "SELECT COUNT(*) FROM club_members")"
+test "$membership_count_before" = "$membership_count_after"
+
 # No `exec` here: the EXIT trap must run to stop and remove the cluster.
 cd "$ARTIFACT_DIR"
 pnpm exec vitest run "$@"
