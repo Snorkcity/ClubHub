@@ -39,6 +39,7 @@ report that there are no schema changes.
   - `CLERK_SECRET_KEY`
   - `CLERK_PUBLISHABLE_KEY`
   - `SESSION_SECRET`
+  - `RESEND_API_KEY` → Resend sending key for `nahreo.com`
   - `NODE_ENV=production`
 - Generate a public domain (Settings → Networking). Railway injects `PORT` automatically; the server reads it.
 - Health check path: `/api/healthz`

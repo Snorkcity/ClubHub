@@ -28,6 +28,7 @@ import PeopleList from "@/pages/people/index";
 import PersonDetail from "@/pages/people/detail";
 import Settings from "@/pages/settings";
 import Notifications from "@/pages/notifications";
+import JoinTeam from "@/pages/join";
 import Shell from "@/components/layout/shell";
 
 const clerkPubKey = publishableKeyFromHost(
@@ -222,6 +223,7 @@ function ClerkProviderWithRoutes() {
           <Route path="/" component={HomeRedirect} />
           <Route path="/sign-in/*?" component={SignInPage} />
           <Route path="/sign-up/*?" component={SignUpPage} />
+           <Route path="/join" component={JoinTeam} />
           
           <ProtectedRoute path="/home" component={Home} />
           <ProtectedRoute path="/teams" component={TeamsList} />

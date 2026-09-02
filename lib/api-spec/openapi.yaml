@@ -453,6 +453,67 @@ paths:
               schema:
                 $ref: "#/components/schemas/Person"
 
+  /team-invitations:
+    post:
+      operationId: createTeamInvitation
+      tags: [people]
+      summary: Invite a new person to a team
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamInvitationInput"
+      responses:
+        "201":
+          description: Invitation created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamInvitationResult"
+
+  /team-invitations/preview:
+    get:
+      operationId: previewTeamInvitation
+      tags: [people]
+      summary: Preview a team invitation
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Invitation details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamInvitationPreview"
+
+  /team-invitations/accept:
+    post:
+      operationId: acceptTeamInvitation
+      tags: [people]
+      summary: Confirm the signed-in invited account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamInvitationAcceptance"
+      responses:
+        "200":
+          description: Invitation accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accepted, teamId]
+                properties:
+                  accepted: { type: boolean }
+                  teamId: { type: integer }
+
   /people/{personId}:
     get:
       operationId: getPerson
@@ -1648,6 +1709,44 @@ components:
         email: { type: string }
         phone: { type: string }
         dateOfBirth: { type: string }
+
+    TeamInvitationInput:
+      type: object
+      required: [teamId, firstName, lastName, email, role]
+      properties:
+        teamId: { type: integer }
+        firstName: { type: string, minLength: 1 }
+        lastName: { type: string, minLength: 1 }
+        email:
+          type: string
+          minLength: 3
+          pattern: '^[^@\s]+@[^@\s]+\.[^@\s]+$'
+        role: { type: string, enum: [manager, coach, player] }
+
+    TeamInvitationResult:
+      type: object
+      required: [inviteLink, expiresAt, emailSent]
+      properties:
+        inviteLink: { type: string }
+        expiresAt: { type: string, format: date-time }
+        emailSent: { type: boolean }
+        warning: { type: string }
+
+    TeamInvitationPreview:
+      type: object
+      required: [firstName, teamName, role, expiresAt, accepted]
+      properties:
+        firstName: { type: string }
+        teamName: { type: string }
+        role: { type: string, enum: [manager, coach, player] }
+        expiresAt: { type: string, format: date-time }
+        accepted: { type: boolean }
+
+    TeamInvitationAcceptance:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string, minLength: 1 }
 
     PersonUpdate:
       type: object

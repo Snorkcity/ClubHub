@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useActiveTeam } from "@/lib/active-team";
+import { InvitePersonDialog } from "@/components/people/invite-person-dialog";
 
 export default function PeopleList() {
   const [search, setSearch] = useState("");
@@ -64,9 +65,12 @@ export default function PeopleList() {
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-muted/10">
       <div className="container mx-auto p-4 md:p-8 lg:max-w-6xl flex-1 flex flex-col h-full">
-        <header className="mb-8 shrink-0">
-          <h1 className="text-3xl font-display font-bold tracking-tight">Team Members</h1>
-          <p className="text-muted-foreground mt-1">Coaches, players, and parents connected to this team.</p>
+        <header className="mb-8 shrink-0 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-display font-bold tracking-tight">Team Members</h1>
+            <p className="text-muted-foreground mt-1">Coaches, players, and parents connected to this team.</p>
+          </div>
+          {me?.isClubAdmin && <InvitePersonDialog teamId={teamId} />}
         </header>
 
         <div className="flex flex-col sm:flex-row gap-4 mb-6 shrink-0">

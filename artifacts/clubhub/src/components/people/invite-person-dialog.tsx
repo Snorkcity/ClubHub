@@ -1,0 +1,192 @@
+import { useState } from "react";
+import { Check, Copy, MailPlus } from "lucide-react";
+import { useCreateTeamInvitation } from "@workspace/api-client-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+
+export function InvitePersonDialog({ teamId }: { teamId?: number }) {
+  const [open, setOpen] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<"manager" | "coach" | "player">("player");
+  const [result, setResult] = useState<{
+    inviteLink: string;
+    emailSent: boolean;
+    warning?: string;
+  } | null>(null);
+  const [copied, setCopied] = useState(false);
+  const createInvite = useCreateTeamInvitation();
+  const { toast } = useToast();
+
+  function reset() {
+    setFirstName("");
+    setLastName("");
+    setEmail("");
+    setRole("player");
+    setResult(null);
+    setCopied(false);
+  }
+
+  function submit(event: React.FormEvent) {
+    event.preventDefault();
+    if (!teamId) return;
+    createInvite.mutate(
+      { data: { teamId, firstName, lastName, email, role } },
+      {
+        onSuccess: (data) => setResult(data),
+        onError: (error: any) =>
+          toast({
+            title: "Could not create invitation",
+            description:
+              error?.data?.error ??
+              error?.message ??
+              "Check the details and try again.",
+            variant: "destructive",
+          }),
+      },
+    );
+  }
+
+  async function copyLink() {
+    if (!result) return;
+    await navigator.clipboard.writeText(result.inviteLink);
+    setCopied(true);
+    toast({ title: "Invitation link copied" });
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) reset();
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button
+          disabled={!teamId}
+          className="w-full sm:w-auto rounded-xl"
+          title={!teamId ? "Choose a team first" : undefined}
+        >
+          <MailPlus className="mr-2 h-4 w-4" />
+          Invite someone
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        {result ? (
+          <>
+            <DialogHeader>
+              <DialogTitle className="font-display text-2xl">
+                Invitation created
+              </DialogTitle>
+              <DialogDescription>
+                {result.emailSent
+                  ? `We emailed ${email}. You can also share this secure link by text.`
+                  : result.warning}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <Label htmlFor="invite-link">Secure invitation link</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="invite-link"
+                  readOnly
+                  value={result.inviteLink}
+                  className="min-w-0"
+                />
+                <Button type="button" variant="outline" onClick={copyLink}>
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  <span className="sr-only">Copy invitation link</span>
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                The link expires in seven days and must be opened by the invited
+                email address.
+              </p>
+            </div>
+            <Button onClick={() => setOpen(false)} className="rounded-xl">
+              Done
+            </Button>
+          </>
+        ) : (
+          <form onSubmit={submit} className="space-y-5">
+            <DialogHeader>
+              <DialogTitle className="font-display text-2xl">
+                Invite someone
+              </DialogTitle>
+              <DialogDescription>
+                Add them to this team and send a secure Nahreo invitation.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="invite-first-name">First name</Label>
+                <Input
+                  id="invite-first-name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="invite-last-name">Last name</Label>
+                <Input
+                  id="invite-last-name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="invite-email">Email</Label>
+              <Input
+                id="invite-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Team role</Label>
+              <Select value={role} onValueChange={(value) => setRole(value as typeof role)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="player">Player</SelectItem>
+                  <SelectItem value="coach">Coach</SelectItem>
+                  <SelectItem value="manager">Manager</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              type="submit"
+              disabled={createInvite.isPending}
+              className="w-full rounded-xl"
+            >
+              {createInvite.isPending ? "Sending invitation…" : "Send invitation"}
+            </Button>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
