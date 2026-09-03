@@ -25,6 +25,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -142,6 +143,7 @@ function ComposeForm({
   const [teamId, setTeamId] = useState<string>(
     teams.length === 1 && !isClubAdmin ? String(teams[0].id) : "",
   );
+  const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [pinned, setPinned] = useState(false);
   const [photos, setPhotos] = useState<string[]>([]);
@@ -222,6 +224,7 @@ function ComposeForm({
         e.preventDefault();
         if (!canSubmit) return;
         const data = {
+          ...(title.trim() ? { title: title.trim() } : {}),
           body: body.trim(),
           pinned,
           ...(photos.length > 0 ? { photos } : {}),
@@ -256,6 +259,17 @@ function ComposeForm({
       )}
 
       <div className="space-y-2">
+        <Label htmlFor="post-title">Title (optional)</Label>
+        <Input
+          id="post-title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Add a title"
+          autoFocus={teams.length === 1}
+        />
+      </div>
+
+      <div className="space-y-2">
         <Label htmlFor="post-body">Message</Label>
         <Textarea
           id="post-body"
@@ -263,7 +277,6 @@ function ComposeForm({
           onChange={(e) => setBody(e.target.value)}
           placeholder="Share something with the team…"
           rows={6}
-          autoFocus={teams.length === 1}
         />
       </div>
 

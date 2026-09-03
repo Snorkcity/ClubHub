@@ -203,7 +203,7 @@ router.post("/teams/:teamId/posts", requireAuth, async (req, res) => {
     .values({
       teamId,
       authorId: localUser.id,
-      title: null,
+      title: body.title?.trim() || null,
       body: body.body,
       pinned: body.pinned ?? false,
       pinnedAt: body.pinned ? new Date() : null,
@@ -245,7 +245,7 @@ router.post("/posts/club", requireAuth, async (req, res) => {
       teams.map((t) => ({
         teamId: t.id,
         authorId: localUser.id,
-        title: null,
+        title: body.title?.trim() || null,
         body: body.body,
         pinned: body.pinned ?? false,
         pinnedAt: body.pinned ? new Date() : null,
@@ -306,12 +306,11 @@ router.patch("/posts/:postId", requireAuth, async (req, res) => {
   if (!(await isTeamStaff(localUser.id, existing.teamId, clubId, isClubAdmin)))
     return res.status(403).json({ error: "You cannot edit this post" });
   const body = UpdatePostBody.parse(req.body);
-  const { title: _ignoredTitle, ...postChanges } = body;
   const [post] = await db
     .update(postsTable)
     .set({
-      ...postChanges,
-      title: null,
+      ...body,
+      ...(body.title !== undefined ? { title: body.title.trim() || null } : {}),
       // Toggling pin resets/clears the 2-day pin clock.
       ...(body.pinned !== undefined
         ? { pinnedAt: body.pinned ? new Date() : null }

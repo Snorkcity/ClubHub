@@ -155,8 +155,13 @@ describe("post photo attachments", () => {
     const res = await request(app)
       .post(`/api/teams/${teamId}/posts`)
       .set(as("coach"))
-      .send({ body: PREFIX + "with photos", photos: [DATA_URL, DATA_URL] })
+      .send({
+        title: "  Match update  ",
+        body: PREFIX + "with photos",
+        photos: [DATA_URL, DATA_URL],
+      })
       .expect(201);
+    expect(res.body.title).toBe("Match update");
     expect(res.body.photos).toHaveLength(2);
     for (const p of res.body.photos) {
       expect(p.url).toMatch(new RegExp(`^/api/posts/${res.body.id}/photos/\\d+\\?e=\\d+&s=`));
@@ -166,6 +171,7 @@ describe("post photo attachments", () => {
   it("feed and team posts carry photos", async () => {
     const feed = await request(app).get("/api/feed").set(as("player")).expect(200);
     const post = feed.body.find((p: any) => p.body === PREFIX + "with photos");
+    expect(post?.title).toBe("Match update");
     expect(post?.photos).toHaveLength(2);
   });
 
