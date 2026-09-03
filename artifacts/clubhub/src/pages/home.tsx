@@ -414,7 +414,7 @@ function MemberDashboard({ me }: { me: any }) {
         </div>
       </div>
 
-      <div className="space-y-8 min-w-0">
+      <div className="hidden min-w-0 space-y-8 lg:block">
         {/* Teams List */}
         <div className="bg-card border rounded-3xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-6">

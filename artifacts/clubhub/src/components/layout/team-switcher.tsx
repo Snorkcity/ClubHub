@@ -66,13 +66,25 @@ export function TeamSwitcher({ compact = false }: { compact?: boolean }) {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
+          aria-label={`My teams, currently showing ${label}`}
           className={
             compact
-              ? "h-9 px-2 gap-1 font-display font-bold text-base max-w-[60vw]"
+              ? "h-11 max-w-[45vw] gap-1.5 px-2"
               : "w-full justify-between rounded-xl h-10 px-3 font-semibold"
           }
         >
-          <span className="truncate">{label}</span>
+          {compact ? (
+            <span className="flex min-w-0 flex-col items-start leading-tight">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                My teams
+              </span>
+              <span className="w-full truncate font-display text-sm font-bold">
+                {label}
+              </span>
+            </span>
+          ) : (
+            <span className="truncate">{label}</span>
+          )}
           <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
