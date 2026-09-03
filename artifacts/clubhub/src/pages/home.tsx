@@ -348,7 +348,7 @@ function MemberDashboard({ me }: { me: any }) {
       ? feed
       : feed?.filter((p: any) => p.teamId === activeTeamId);
 
-  const nextEvent = events?.[0];
+  const nextEvent = events?.find((event) => !event.cancelledAt);
 
   return (
     <div className="grid lg:grid-cols-3 gap-8">

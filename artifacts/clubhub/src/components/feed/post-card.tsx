@@ -104,6 +104,11 @@ export function PostCard({ post, linkToTeam = true }: { post: any; linkToTeam?: 
         </div>
       </div>
 
+      {post.title && (
+        <h3 className="mb-1.5 font-display text-lg font-bold leading-snug text-foreground">
+          {post.title}
+        </h3>
+      )}
       <p
         className={
           "text-sm text-foreground/90 leading-relaxed whitespace-pre-line" +

@@ -99,10 +99,18 @@ export default function EventDetail() {
     try {
       await cancelEvent.mutateAsync({ eventId, data: { reason } });
       if (notify) {
+        const cancellationTitle =
+          event.type === "training"
+            ? "Training cancelled"
+            : event.type === "game"
+              ? "Game cancelled"
+              : event.type === "social"
+                ? "Social event cancelled"
+                : `${event.title} cancelled`;
         await createPost.mutateAsync({
           teamId: event.teamId,
           data: {
-            title: `Cancelled: ${event.title}`,
+            title: cancellationTitle,
             body: `${event.title} on ${format(new Date(event.startsAt), "EEEE d MMMM, h:mmaaa")} has been cancelled. Reason: ${reason}`,
           },
         });
