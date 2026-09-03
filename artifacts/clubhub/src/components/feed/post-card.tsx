@@ -120,7 +120,7 @@ export function PostCard({ post, linkToTeam = true }: { post: any; linkToTeam?: 
       {isLong && (
         <button
           type="button"
-          className="mt-1.5 text-sm font-medium text-primary hover:underline"
+          className="mt-1.5 text-sm font-bold text-primary hover:underline dark:text-brand-coral"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();

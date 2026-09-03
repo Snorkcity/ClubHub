@@ -115,6 +115,16 @@ function NotificationsCard({ me }: { me: any }) {
 
     try {
       if (enabled) {
+        if (pushSupport.isIos && !pushSupport.isStandalone) {
+          throw new Error(
+            "On iPhone, first open Nahreo in Safari, tap Share → Add to Home Screen, then open Nahreo from its Home Screen icon.",
+          );
+        }
+        if (!pushSupport.isSupported) {
+          throw new Error(
+            "Push notifications aren't supported in this browser. On iPhone, use the installed Nahreo Home Screen app.",
+          );
+        }
         if (!pushConfig?.enabled || !pushConfig.publicKey) {
           throw new Error("Push is not configured on the server.");
         }
@@ -126,7 +136,11 @@ function NotificationsCard({ me }: { me: any }) {
         }
 
         if (perm !== "granted") {
-          throw new Error("Notification permission was not granted.");
+          throw new Error(
+            perm === "denied"
+              ? "Notifications are blocked. Open iPhone Settings → Apps → Nahreo → Notifications and allow notifications, then try again."
+              : "Notification permission was not granted.",
+          );
         }
 
         const sub = await subscribeToPush(pushConfig.publicKey, basePath);
@@ -194,12 +208,7 @@ function NotificationsCard({ me }: { me: any }) {
             onCheckedChange={handleToggle}
             disabled={
               deviceSubscribed === null ||
-              isSubscribing ||
-              (!localEnabled &&
-                (!pushSupport.isSupported ||
-                  !pushConfig?.enabled ||
-                  showIosWarning ||
-                  pushSupport.permission === "denied"))
+              isSubscribing
             }
           />
         </div>
