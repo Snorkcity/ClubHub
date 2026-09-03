@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import { Save, UserCircle, Sun, Moon, MonitorSmartphone, Palette, Bell } from "lucide-react";
+import { Save, UserCircle, Sun, Moon, MonitorSmartphone, Palette, Bell, Camera, Images, Loader2 } from "lucide-react";
 import { useTheme, type ThemePref } from "@/lib/theme";
 import {
   useGetMe, useUpdateMe, getGetMeQueryKey,
   useGetClub, getGetClubQueryKey,
   useGetPushConfig, getGetPushConfigQueryKey,
-  useSavePushSubscription, useDeletePushSubscription
+  useSavePushSubscription, useDeletePushSubscription, useUploadMyAvatar
 } from "@workspace/api-client-react";
 import { queryClient } from "@/lib/queryClient";
 import {
@@ -24,6 +24,7 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { phonePlaceholder } from "@/lib/localisation";
+import { fileToAvatarDataUrl } from "@/lib/profile-photo";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -33,7 +34,7 @@ function PrivacySelect({ value, onChange }: { value: string; onChange: (v: strin
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="text-xs font-semibold text-muted-foreground bg-muted/50 border rounded-full px-2.5 py-1 focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
+      className="h-10 rounded-full border bg-muted/50 px-3 text-sm font-semibold text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
       aria-label="Who can see this"
     >
       <option value="everyone">Everyone</option>
@@ -66,7 +67,7 @@ function AppearanceCard() {
               type="button"
               onClick={() => setTheme(value)}
               aria-pressed={active}
-              className={`rounded-2xl border p-3 md:p-4 text-center transition-colors ${
+              className={`min-h-20 rounded-2xl border p-4 text-center transition-colors ${
                 active
                   ? "border-primary bg-primary/10 ring-2 ring-primary/30"
                   : "hover:bg-muted/50"
@@ -198,8 +199,8 @@ function NotificationsCard({ me }: { me: any }) {
       </p>
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between border rounded-2xl p-4">
-          <div>
+        <div className="flex min-h-20 items-center justify-between gap-4 border rounded-2xl p-5">
+          <div className="min-w-0">
             <h3 className="font-semibold">Push Notifications</h3>
             <p className="text-sm text-muted-foreground">Receive alerts on this device when you're away.</p>
           </div>
@@ -266,6 +267,7 @@ export default function Settings() {
   });
 
   const updateMe = useUpdateMe();
+  const uploadAvatar = useUploadMyAvatar();
   const { toast } = useToast();
 
   const [firstName, setFirstName] = useState("");
@@ -276,6 +278,9 @@ export default function Settings() {
   const [phonePrivacy, setPhonePrivacy] = useState("everyone");
   const [emailPrivacy, setEmailPrivacy] = useState("everyone");
   const [bioPrivacy, setBioPrivacy] = useState("everyone");
+  const [isProcessingAvatar, setIsProcessingAvatar] = useState(false);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const initialized = useRef(false);
 
   useEffect(() => {
@@ -295,13 +300,34 @@ export default function Settings() {
   if (isLoading) return <LoadingScreen message="Loading settings..." />;
   if (error || !me) return <ErrorState onRetry={() => refetch()} />;
 
+  const handleAvatarFile = async (file: File | undefined) => {
+    if (!file) return;
+    setIsProcessingAvatar(true);
+    try {
+      const imageData = await fileToAvatarDataUrl(file);
+      const person = await uploadAvatar.mutateAsync({ data: { imageData } });
+      setAvatarUrl(person.avatarUrl || "");
+      await queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+      toast({ title: "Profile photo updated" });
+    } catch (uploadError) {
+      toast({
+        title: "Could not update profile photo",
+        description: uploadError instanceof Error ? uploadError.message : "Please try another photo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingAvatar(false);
+      if (galleryInputRef.current) galleryInputRef.current.value = "";
+      if (cameraInputRef.current) cameraInputRef.current.value = "";
+    }
+  };
+
   const handleSave = () => {
     updateMe.mutate({
       data: {
         firstName,
         lastName,
         phone,
-        avatarUrl,
         bio,
         phonePrivacy: phonePrivacy as any,
         emailPrivacy: emailPrivacy as any,
@@ -326,7 +352,6 @@ export default function Settings() {
     firstName !== me.person.firstName || 
     lastName !== me.person.lastName || 
     phone !== (me.person.phone || "") ||
-    avatarUrl !== (me.person.avatarUrl || "") ||
     bio !== (me.person.bio || "") ||
     phonePrivacy !== (me.person.phonePrivacy || "everyone") ||
     emailPrivacy !== (me.person.emailPrivacy || "everyone") ||
@@ -340,7 +365,7 @@ export default function Settings() {
           <p className="text-muted-foreground mt-1">Manage your profile and account preferences.</p>
         </header>
 
-        <div className="space-y-8">
+        <div className="space-y-10">
           <AppearanceCard />
 
           <NotificationsCard me={me} />
@@ -351,41 +376,75 @@ export default function Settings() {
             </h2>
             
             <div className="flex flex-col md:flex-row gap-8 items-start mb-8">
-              <div className="flex flex-col items-center gap-3">
-                <Avatar className="h-24 w-24 border shadow-sm">
+              <div className="flex w-full flex-col items-center gap-4 md:w-auto">
+                <Avatar className="h-28 w-28 border shadow-sm">
                   <AvatarImage src={avatarUrl || undefined} />
                   <AvatarFallback className="text-2xl bg-primary/10 text-primary font-bold">
                     {firstName.charAt(0)}{lastName.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
-                <div className="text-xs text-muted-foreground text-center">
-                  No photo? Your initials<br/>are shown instead.
+                <input
+                  ref={galleryInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(event) => handleAvatarFile(event.target.files?.[0])}
+                />
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="user"
+                  className="hidden"
+                  onChange={(event) => handleAvatarFile(event.target.files?.[0])}
+                />
+                <div className="grid w-full grid-cols-2 gap-3 md:w-64">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-12 rounded-xl px-3"
+                    disabled={isProcessingAvatar || uploadAvatar.isPending}
+                    onClick={() => galleryInputRef.current?.click()}
+                  >
+                    {isProcessingAvatar ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Images className="mr-2 h-4 w-4" />}
+                    Gallery
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-12 rounded-xl px-3"
+                    disabled={isProcessingAvatar || uploadAvatar.isPending}
+                    onClick={() => cameraInputRef.current?.click()}
+                  >
+                    <Camera className="mr-2 h-4 w-4" />
+                    Take photo
+                  </Button>
                 </div>
               </div>
 
-              <div className="flex-1 w-full space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
+              <div className="flex-1 w-full space-y-6">
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="space-y-3">
                     <Label htmlFor="firstName">First Name</Label>
                     <Input 
                       id="firstName" 
                       value={firstName} 
                       onChange={(e) => setFirstName(e.target.value)} 
-                      className="rounded-xl h-11"
+                      className="rounded-xl h-12"
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label htmlFor="lastName">Last Name</Label>
                     <Input 
                       id="lastName" 
                       value={lastName} 
                       onChange={(e) => setLastName(e.target.value)} 
-                      className="rounded-xl h-11"
+                      className="rounded-xl h-12"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="email">Email Address</Label>
                     <PrivacySelect value={emailPrivacy} onChange={setEmailPrivacy} />
@@ -394,12 +453,12 @@ export default function Settings() {
                     id="email" 
                     value={me.person.email || ""} 
                     disabled 
-                    className="rounded-xl h-11 bg-muted/50 opacity-70"
+                    className="rounded-xl h-12 bg-muted/50 opacity-70"
                   />
                   <p className="text-[10px] text-muted-foreground">Email is managed by your authentication provider.</p>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="phone">Phone Number</Label>
                     <PrivacySelect value={phonePrivacy} onChange={setPhonePrivacy} />
@@ -410,11 +469,11 @@ export default function Settings() {
                     value={phone} 
                     onChange={(e) => setPhone(e.target.value)} 
                     placeholder={phonePlaceholder(club?.countryCode ?? "AU")}
-                    className="rounded-xl h-11"
+                    className="rounded-xl h-12"
                   />
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="bio">Bio</Label>
                     <PrivacySelect value={bioPrivacy} onChange={setBioPrivacy} />
@@ -425,29 +484,17 @@ export default function Settings() {
                     onChange={(e) => setBio(e.target.value)}
                     placeholder="Describe yourself — position, favourite team, anything you like."
                     rows={3}
-                    className="w-full rounded-xl border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="avatarUrl">Avatar URL</Label>
-                  <Input 
-                    id="avatarUrl" 
-                    type="url"
-                    value={avatarUrl} 
-                    onChange={(e) => setAvatarUrl(e.target.value)} 
-                    placeholder="https://example.com/image.jpg"
-                    className="rounded-xl h-11"
+                    className="min-h-28 w-full rounded-xl border bg-background px-3 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
               </div>
             </div>
 
             <div className="flex justify-end pt-4 border-t">
-              <Button 
+              <Button
                 onClick={handleSave} 
                 disabled={!hasChanges || updateMe.isPending}
-                className="rounded-xl font-bold px-8 h-11 shadow-sm"
+                className="h-12 w-full rounded-xl px-8 font-bold shadow-sm sm:w-auto"
               >
                 <Save className="h-4 w-4 mr-2" />
                 {updateMe.isPending ? "Saving..." : "Save Changes"}

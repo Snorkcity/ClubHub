@@ -19,6 +19,9 @@ export const usersTable = pgTable("users", {
   email: text("email"),
   phone: text("phone"),
   avatarUrl: text("avatar_url"),
+  avatarImage: text("avatar_image"),
+  avatarContentType: text("avatar_content_type"),
+  avatarUpdatedAt: timestamp("avatar_updated_at", { withTimezone: true }),
   bio: text("bio"),
   // Push is opt-in: browsers require an explicit user gesture before permission.
   pushNotificationsEnabled: boolean("push_notifications_enabled").notNull().default(false),

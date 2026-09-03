@@ -542,6 +542,11 @@ export interface ProfileUpdate {
   bioPrivacy?: ProfileUpdateBioPrivacy;
 }
 
+export interface AvatarImageInput {
+  /** A resized JPEG, PNG, or WebP base64 data URL */
+  imageData: string;
+}
+
 export type TeamInputCountryCode = typeof TeamInputCountryCode[keyof typeof TeamInputCountryCode];
 
 

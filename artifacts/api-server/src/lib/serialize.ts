@@ -1,4 +1,5 @@
 import type { User } from "@workspace/db";
+import { signedAvatarPath } from "./avatarToken";
 
 export function iso(d: Date | string | null | undefined): string | null {
   if (!d) return null;
@@ -37,7 +38,9 @@ export function toPerson(u: User, viewer?: Viewer, opts?: { full?: boolean }) {
     fullName: `${u.firstName} ${u.lastName}`,
     email: can(u.emailPrivacy) ? (u.email ?? null) : null,
     phone: can(u.phonePrivacy) ? (u.phone ?? null) : null,
-    avatarUrl: u.avatarUrl ?? null,
+    avatarUrl: u.avatarUpdatedAt
+      ? signedAvatarPath(u.id, u.avatarUpdatedAt)
+      : (u.avatarUrl ?? null),
     bio: can(u.bioPrivacy) ? (u.bio ?? null) : null,
     phonePrivacy: u.phonePrivacy,
     emailPrivacy: u.emailPrivacy,

@@ -71,6 +71,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/Person"
 
+  /me/avatar:
+    put:
+      operationId: uploadMyAvatar
+      tags: [me]
+      summary: Upload the current user's profile photo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvatarImageInput"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Person"
+
   /me/event-locations:
     get:
       operationId: listMyEventLocations
@@ -1658,6 +1677,14 @@ components:
         phonePrivacy: { type: string, enum: [everyone, admins, private] }
         emailPrivacy: { type: string, enum: [everyone, admins, private] }
         bioPrivacy: { type: string, enum: [everyone, admins, private] }
+
+    AvatarImageInput:
+      type: object
+      required: [imageData]
+      properties:
+        imageData:
+          type: string
+          description: A resized JPEG, PNG, or WebP base64 data URL
 
     TeamInput:
       type: object

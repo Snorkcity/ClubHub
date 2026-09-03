@@ -7,6 +7,7 @@
  */
 
 export * from './acceptTeamInvitation200';
+export * from './avatarImageInput';
 export * from './chat';
 export * from './chatDetail';
 export * from './chatInput';

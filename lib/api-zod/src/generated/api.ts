@@ -103,6 +103,31 @@ export const UpdateMeResponse = zod.object({
 
 
 /**
+ * @summary Upload the current user's profile photo
+ */
+export const UploadMyAvatarBody = zod.object({
+  "imageData": zod.string().describe('A resized JPEG, PNG, or WebP base64 data URL')
+})
+
+export const UploadMyAvatarResponse = zod.object({
+  "id": zod.number(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "fullName": zod.string(),
+  "email": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "bio": zod.string().nullish(),
+  "phonePrivacy": zod.enum(['everyone', 'admins', 'private']).optional(),
+  "emailPrivacy": zod.enum(['everyone', 'admins', 'private']).optional(),
+  "bioPrivacy": zod.enum(['everyone', 'admins', 'private']).optional(),
+  "dateOfBirth": zod.string().nullish(),
+  "isMinor": zod.boolean(),
+  "hasLogin": zod.boolean().optional()
+})
+
+
+/**
  * @summary Recently used event locations across teams the user staffs
  */
 export const ListMyEventLocationsResponseItem = zod.string()
