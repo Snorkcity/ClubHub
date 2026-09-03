@@ -102,7 +102,7 @@ export function TeamSwitcher({ compact = false }: { compact?: boolean }) {
               {isActive ? (
                 <Check className="h-4 w-4 text-primary" />
               ) : unread > 0 ? (
-                <span className="ml-2 min-w-5 h-5 px-1.5 rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold flex items-center justify-center">
+                <span className="ml-2 min-w-5 h-5 shrink-0 whitespace-nowrap px-1.5 rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold flex items-center justify-center">
                   {unread > 99 ? "99+" : unread}
                 </span>
               ) : null}

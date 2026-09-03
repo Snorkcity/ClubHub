@@ -12,6 +12,8 @@ import {
   getGetEventQueryKey,
   useListMyEventLocations,
   getListMyEventLocationsQueryKey,
+  useGetClub,
+  getGetClubQueryKey,
 } from "@workspace/api-client-react";
 import { format, parse } from "date-fns";
 
@@ -96,7 +98,7 @@ export function initialFromEvent(event: {
 }
 
 /** Free OpenStreetMap address search (Nominatim), debounced. */
-function useAddressSearch(query: string, enabled: boolean) {
+function useAddressSearch(query: string, enabled: boolean, countryCode: string) {
   const [results, setResults] = useState<string[]>([]);
   const [searching, setSearching] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -111,7 +113,7 @@ function useAddressSearch(query: string, enabled: boolean) {
     timer.current = setTimeout(async () => {
       try {
         const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=au&q=${encodeURIComponent(query.trim())}`,
+          `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=${countryCode.toLowerCase()}&q=${encodeURIComponent(query.trim())}`,
           { headers: { Accept: "application/json" } },
         );
         if (!res.ok) throw new Error("search failed");
@@ -126,7 +128,7 @@ function useAddressSearch(query: string, enabled: boolean) {
       }
     }, 450);
     return () => clearTimeout(timer.current);
-  }, [query, enabled]);
+  }, [query, enabled, countryCode]);
 
   return { results, searching };
 }
@@ -275,9 +277,13 @@ function EventForm({
   const { data: recentLocations } = useListMyEventLocations({
     query: { queryKey: getListMyEventLocationsQueryKey() },
   });
+  const { data: club } = useGetClub({
+    query: { queryKey: getGetClubQueryKey() },
+  });
   const { results: addressResults, searching } = useAddressSearch(
     location,
     locationFocused,
+    club?.countryCode ?? "AU",
   );
 
   const createEvent = useCreateEvent();

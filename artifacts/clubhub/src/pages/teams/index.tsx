@@ -3,7 +3,8 @@ import { Link } from "wouter";
 import { Users, Plus, Shield, ShieldCheck, ChevronRight } from "lucide-react";
 import { 
   useListTeams, useGetMe, useCreateTeam, 
-  getListTeamsQueryKey, getGetMeQueryKey 
+  getListTeamsQueryKey, getGetMeQueryKey,
+  useGetClub, getGetClubQueryKey,
 } from "@workspace/api-client-react";
 import { queryClient } from "@/lib/queryClient";
 
@@ -23,9 +24,18 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { COUNTRIES, usesColour } from "@/lib/localisation";
 
 export default function TeamsList() {
   const { data: me, isLoading: meLoading } = useGetMe({ query: { queryKey: getGetMeQueryKey() } });
+  const { data: club } = useGetClub({ query: { queryKey: getGetClubQueryKey() } });
   const { data: teams, isLoading: teamsLoading, error, refetch } = useListTeams({ 
     query: { queryKey: getListTeamsQueryKey() } 
   });
@@ -44,7 +54,12 @@ export default function TeamsList() {
             </p>
           </div>
           
-          {me.isClubAdmin && <CreateTeamDialog />}
+          {me.isClubAdmin && (
+            <CreateTeamDialog
+              firstTeam={teams.length === 0}
+              countryCode={club?.countryCode ?? "AU"}
+            />
+          )}
         </header>
 
         {teams.length === 0 ? (
@@ -52,7 +67,11 @@ export default function TeamsList() {
             title="No teams found" 
             message={me.isClubAdmin ? "Get started by creating your first team." : "You have not been assigned to any teams yet."}
             icon={Users}
-            action={me.isClubAdmin ? <CreateTeamDialog openDefault /> : undefined}
+            action={
+              me.isClubAdmin
+                ? <CreateTeamDialog openDefault firstTeam countryCode={club?.countryCode ?? "AU"} />
+                : undefined
+            }
           />
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -118,9 +137,18 @@ const teamFormSchema = z.object({
   ageGroup: z.string().min(1, "Age group is required."),
   gender: z.string().optional(),
   colorHex: z.string().regex(/^#([0-9a-f]{3}){1,2}$/i, "Must be a valid hex color code (e.g. #FF0000)").optional().or(z.literal("")),
+  countryCode: z.enum(["AU", "NZ", "GB", "US", "CA"]),
 });
 
-function CreateTeamDialog({ openDefault = false }: { openDefault?: boolean }) {
+function CreateTeamDialog({
+  openDefault = false,
+  firstTeam = false,
+  countryCode = "AU",
+}: {
+  openDefault?: boolean;
+  firstTeam?: boolean;
+  countryCode?: string;
+}) {
   const [open, setOpen] = useState(openDefault);
   const { toast } = useToast();
   
@@ -131,10 +159,12 @@ function CreateTeamDialog({ openDefault = false }: { openDefault?: boolean }) {
       ageGroup: "U12",
       gender: "",
       colorHex: "#16A34A",
+      countryCode: countryCode as "AU",
     },
   });
 
   const createTeam = useCreateTeam();
+  const selectedCountry = firstTeam ? form.watch("countryCode") : countryCode;
 
   function onSubmit(values: z.infer<typeof teamFormSchema>) {
     createTeam.mutate({
@@ -143,6 +173,7 @@ function CreateTeamDialog({ openDefault = false }: { openDefault?: boolean }) {
         ageGroup: values.ageGroup,
         gender: values.gender || undefined,
         colorHex: values.colorHex || undefined,
+        countryCode: firstTeam ? values.countryCode : undefined,
       }
     }, {
       onSuccess: () => {
@@ -178,6 +209,32 @@ function CreateTeamDialog({ openDefault = false }: { openDefault?: boolean }) {
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
+            {firstTeam && (
+              <FormField
+                control={form.control}
+                name="countryCode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Country</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue placeholder="Choose a country" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {COUNTRIES.map((country) => (
+                          <SelectItem key={country.code} value={country.code}>
+                            {country.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <FormField
               control={form.control}
               name="name"
@@ -226,7 +283,9 @@ function CreateTeamDialog({ openDefault = false }: { openDefault?: boolean }) {
               name="colorHex"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Team Color (Hex)</FormLabel>
+                  <FormLabel>
+                    Team {usesColour(selectedCountry) ? "Colour" : "Color"} (Hex)
+                  </FormLabel>
                   <div className="flex gap-3">
                     <div 
                       className="h-10 w-10 rounded-xl border shrink-0" 

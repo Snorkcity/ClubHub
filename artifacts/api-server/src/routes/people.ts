@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import {
   db,
+  clubsTable,
   usersTable,
   teamsTable,
   teamMembersTable,
@@ -15,6 +16,7 @@ import {
 import { requireAuth, type AuthedRequest } from "../lib/auth";
 import { canActFor } from "../lib/queries";
 import { toPerson } from "../lib/serialize";
+import { formatPhoneForCountry } from "../lib/phone";
 import { isTeamStaff } from "../lib/authz";
 
 const router: IRouter = Router();
@@ -167,6 +169,10 @@ router.post("/people", requireAuth, async (req, res) => {
   if (!isClubAdmin)
     return res.status(403).json({ error: "Only club admins can add people" });
   const body = CreatePersonBody.parse(req.body);
+  const [club] = await db
+    .select({ countryCode: clubsTable.countryCode })
+    .from(clubsTable)
+    .where(eq(clubsTable.id, clubId));
   const [person] = await db
     .insert(usersTable)
     .values({
@@ -174,7 +180,9 @@ router.post("/people", requireAuth, async (req, res) => {
       firstName: body.firstName,
       lastName: body.lastName,
       email: body.email ?? null,
-      phone: body.phone ?? null,
+      phone: body.phone
+        ? formatPhoneForCountry(body.phone, club?.countryCode ?? "AU")
+        : null,
       dateOfBirth: body.dateOfBirth ?? null,
     })
     .returning();

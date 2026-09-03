@@ -5,6 +5,7 @@
  * Nahreo API — multi-team sports club management
  * OpenAPI spec version: 0.1.0
  */
+import type { TeamInputCountryCode } from './teamInputCountryCode';
 
 export interface TeamInput {
   /** @minLength 1 */
@@ -14,4 +15,5 @@ export interface TeamInput {
   gender?: string;
   colorHex?: string;
   seasonId?: number;
+  countryCode?: TeamInputCountryCode;
 }

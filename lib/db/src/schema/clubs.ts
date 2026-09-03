@@ -7,6 +7,7 @@ export const clubsTable = pgTable("clubs", {
   name: text("name").notNull(),
   logoUrl: text("logo_url"),
   primaryColor: text("primary_color"),
+  countryCode: text("country_code").notNull().default("AU"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

@@ -3,6 +3,7 @@ import { Save, UserCircle, Sun, Moon, MonitorSmartphone, Palette, Bell } from "l
 import { useTheme, type ThemePref } from "@/lib/theme";
 import {
   useGetMe, useUpdateMe, getGetMeQueryKey,
+  useGetClub, getGetClubQueryKey,
   useGetPushConfig, getGetPushConfigQueryKey,
   useSavePushSubscription, useDeletePushSubscription
 } from "@workspace/api-client-react";
@@ -22,6 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { phonePlaceholder } from "@/lib/localisation";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -250,6 +252,9 @@ export default function Settings() {
   const { data: me, isLoading, error, refetch } = useGetMe({
     query: { queryKey: getGetMeQueryKey() }
   });
+  const { data: club } = useGetClub({
+    query: { queryKey: getGetClubQueryKey() },
+  });
 
   const updateMe = useUpdateMe();
   const { toast } = useToast();
@@ -395,7 +400,7 @@ export default function Settings() {
                     type="tel"
                     value={phone} 
                     onChange={(e) => setPhone(e.target.value)} 
-                    placeholder="0412 345 678"
+                    placeholder={phonePlaceholder(club?.countryCode ?? "AU")}
                     className="rounded-xl h-11"
                   />
                 </div>

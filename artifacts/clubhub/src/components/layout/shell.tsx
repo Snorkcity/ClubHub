@@ -325,16 +325,6 @@ function UserMenu({ me, clerkUser, onSignOut, avatarOnly = false, isStaff = fals
             <span>Profile & Settings</span>
           </Link>
         </DropdownMenuItem>
-        {isStaff && (
-          <>
-            <DropdownMenuItem asChild className="rounded-xl py-2 cursor-pointer">
-              <Link href="/people" className="flex items-center w-full">
-                <UserSquare2 className="mr-2 h-4 w-4 text-muted-foreground" />
-                <span>Team Members</span>
-              </Link>
-            </DropdownMenuItem>
-          </>
-        )}
         <DropdownMenuItem onClick={onSignOut} className="rounded-xl py-2 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10">
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>

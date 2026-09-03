@@ -118,10 +118,10 @@ function UnreadActivityBanner() {
             {t.unreadPosts > 0 && (
               <button
                 onClick={() => setActiveTeamId(t.teamId)}
-                className="flex items-center gap-1.5 bg-background border rounded-full pl-3 pr-2 py-1.5 text-sm font-semibold hover:border-primary transition-colors"
+                className="flex min-w-0 items-center gap-1.5 overflow-hidden bg-background border rounded-full pl-3 pr-2 py-1.5 text-sm font-semibold hover:border-primary transition-colors"
               >
-                {t.teamName}
-                <span className="bg-destructive text-white text-xs font-bold rounded-full px-1.5 py-0.5 leading-none">
+                <span className="truncate">{t.teamName}</span>
+                <span className="shrink-0 whitespace-nowrap bg-destructive text-white text-xs font-bold rounded-full px-1.5 py-0.5 leading-none">
                   {t.unreadPosts} {t.unreadPosts === 1 ? "post" : "posts"}
                 </span>
               </button>
@@ -129,10 +129,10 @@ function UnreadActivityBanner() {
             {t.unreadMessages > 0 && (
               <Link
                 href="/messages"
-                className="flex items-center gap-1.5 bg-background border rounded-full pl-3 pr-2 py-1.5 text-sm font-semibold hover:border-primary transition-colors"
+                className="flex min-w-0 items-center gap-1.5 overflow-hidden bg-background border rounded-full pl-3 pr-2 py-1.5 text-sm font-semibold hover:border-primary transition-colors"
               >
                 {t.unreadPosts > 0 ? <MessageSquare className="h-3.5 w-3.5" /> : t.teamName}
-                <span className="bg-destructive text-white text-xs font-bold rounded-full px-1.5 py-0.5 leading-none">
+                <span className="shrink-0 whitespace-nowrap bg-destructive text-white text-xs font-bold rounded-full px-1.5 py-0.5 leading-none">
                   {t.unreadMessages} {t.unreadMessages === 1 ? "message" : "messages"}
                 </span>
               </Link>
@@ -426,17 +426,17 @@ function MemberDashboard({ me }: { me: any }) {
           ) : (
             <div className="space-y-3">
               {teams.map((team) => (
-                <Link key={team.id} href={`/teams/${team.id}`} className="flex items-center justify-between p-3 rounded-2xl hover:bg-muted/50 transition-colors group">
-                  <div className="flex items-center gap-3">
+                <Link key={team.id} href={`/teams/${team.id}`} className="flex min-w-0 items-center justify-between p-3 rounded-2xl hover:bg-muted/50 transition-colors group">
+                  <div className="flex min-w-0 items-center gap-3">
                     <div 
-                      className="h-10 w-10 rounded-full flex items-center justify-center shrink-0 shadow-sm text-white font-bold"
+                      className="h-10 w-10 overflow-hidden rounded-full flex items-center justify-center shrink-0 shadow-sm text-white font-bold leading-none"
                       style={{ backgroundColor: team.colorHex || "hsl(var(--primary))" }}
                     >
                       {team.name.charAt(0)}
                     </div>
                     <div className="flex flex-col min-w-0">
                       <span className="font-semibold text-sm truncate">{team.name}</span>
-                      <span className="text-xs text-muted-foreground">{team.ageGroup}</span>
+                      <span className="truncate text-xs text-muted-foreground">{team.ageGroup}</span>
                     </div>
                   </div>
                   <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />

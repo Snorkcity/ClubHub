@@ -5,6 +5,7 @@
  * Nahreo API — multi-team sports club management
  * OpenAPI spec version: 0.1.0
  */
+import type { ClubCountryCode } from './clubCountryCode';
 
 export interface Club {
   id: number;
@@ -13,4 +14,5 @@ export interface Club {
   logoUrl?: string | null;
   /** @nullable */
   primaryColor?: string | null;
+  countryCode: ClubCountryCode;
 }

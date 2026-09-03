@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { and, desc, eq, inArray, isNotNull } from "drizzle-orm";
 import {
   db,
+  clubsTable,
   usersTable,
   teamsTable,
   teamMembersTable,
@@ -11,6 +12,7 @@ import {
 import { UpdateMeBody } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
 import { toPerson } from "../lib/serialize";
+import { formatPhoneForCountry } from "../lib/phone";
 
 const router: IRouter = Router();
 
@@ -50,9 +52,20 @@ router.get("/me", requireAuth, async (req, res) => {
 router.patch("/me", requireAuth, async (req, res) => {
   const { localUser } = req as AuthedRequest;
   const body = UpdateMeBody.parse(req.body);
+  const [club] = body.phone !== undefined
+    ? await db
+        .select({ countryCode: clubsTable.countryCode })
+        .from(clubsTable)
+        .where(eq(clubsTable.id, localUser.clubId))
+    : [];
   const [updated] = await db
     .update(usersTable)
-    .set(body)
+    .set({
+      ...body,
+      ...(body.phone !== undefined
+        ? { phone: formatPhoneForCountry(body.phone, club?.countryCode ?? "AU") }
+        : {}),
+    })
     .where(eq(usersTable.id, localUser.id))
     .returning();
   return res.json(toPerson(updated, undefined, { full: true }));

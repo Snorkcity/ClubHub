@@ -26,6 +26,7 @@ router.get("/club", requireAuth, async (req, res) => {
     name: club.name,
     logoUrl: club.logoUrl ?? null,
     primaryColor: club.primaryColor ?? null,
+    countryCode: club.countryCode,
   });
 });
 
@@ -91,6 +92,7 @@ router.get("/club/overview", requireAuth, async (req, res) => {
       name: club.name,
       logoUrl: club.logoUrl ?? null,
       primaryColor: club.primaryColor ?? null,
+      countryCode: club.countryCode,
     },
     teamCount: teams.length,
     playerCount,

@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { and, asc, eq, gte, inArray } from "drizzle-orm";
 import {
   db,
+  clubsTable,
   teamsTable,
   teamMembersTable,
   usersTable,
@@ -43,17 +44,33 @@ router.post("/teams", requireAuth, async (req, res) => {
   if (!isClubAdmin)
     return res.status(403).json({ error: "Only club admins can create teams" });
   const body = CreateTeamBody.parse(req.body);
-  const [team] = await db
-    .insert(teamsTable)
-    .values({
-      clubId,
-      name: body.name,
-      ageGroup: body.ageGroup,
-      gender: body.gender ?? null,
-      colorHex: body.colorHex ?? null,
-      seasonId: body.seasonId ?? null,
-    })
-    .returning();
+  const team = await db.transaction(async (tx) => {
+    if (body.countryCode) {
+      const existingTeams = await tx
+        .select({ id: teamsTable.id })
+        .from(teamsTable)
+        .where(eq(teamsTable.clubId, clubId))
+        .limit(1);
+      if (existingTeams.length === 0) {
+        await tx
+          .update(clubsTable)
+          .set({ countryCode: body.countryCode })
+          .where(eq(clubsTable.id, clubId));
+      }
+    }
+    const [created] = await tx
+      .insert(teamsTable)
+      .values({
+        clubId,
+        name: body.name,
+        ageGroup: body.ageGroup,
+        gender: body.gender ?? null,
+        colorHex: body.colorHex ?? null,
+        seasonId: body.seasonId ?? null,
+      })
+      .returning();
+    return created;
+  });
   const [built] = await buildTeams([team]);
   return res.status(201).json(built);
 });
