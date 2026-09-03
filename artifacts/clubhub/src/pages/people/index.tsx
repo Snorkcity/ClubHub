@@ -1,6 +1,5 @@
-import { useState } from "react";
 import { Link } from "wouter";
-import { Search, UserSquare2, Mail, Phone } from "lucide-react";
+import { UserSquare2, Mail, Phone } from "lucide-react";
 import {
   useGetMe,
   getGetMeQueryKey,
@@ -9,14 +8,12 @@ import {
 } from "@workspace/api-client-react";
 
 import { LoadingScreen, ErrorState, EmptyState } from "@/components/ui/states";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useActiveTeam } from "@/lib/active-team";
 import { InvitePersonDialog } from "@/components/people/invite-person-dialog";
 
 export default function PeopleList() {
-  const [search, setSearch] = useState("");
   const { activeTeamId } = useActiveTeam();
   const { data: me, isLoading: meLoading } = useGetMe({
     query: { queryKey: getGetMeQueryKey() },
@@ -33,7 +30,7 @@ export default function PeopleList() {
       : staffedTeamIds.values().next().value;
   const canInvite =
     !!teamId && (!!me?.isClubAdmin || staffedTeamIds.has(teamId));
-  const params = { teamId, search: search || undefined };
+  const params = { teamId };
 
   const { data: people, isLoading, isFetching, error, refetch } = useListPeople(params, {
     query: {
@@ -75,18 +72,6 @@ export default function PeopleList() {
           {canInvite && <InvitePersonDialog teamId={teamId} />}
         </header>
 
-        <div className="flex flex-col sm:flex-row gap-4 mb-6 shrink-0">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input 
-              placeholder="Search by name..." 
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 h-12 rounded-xl border-border/60 bg-card shadow-sm text-base"
-            />
-          </div>
-        </div>
-
         <div className="flex-1 overflow-y-auto overflow-x-hidden pb-8">
           {meLoading || isLoading || (isFetching && !people) ? (
             <LoadingScreen message="Loading team members..." />
@@ -94,8 +79,8 @@ export default function PeopleList() {
             <ErrorState onRetry={() => refetch()} />
           ) : people.length === 0 ? (
             <EmptyState 
-              title="No people found" 
-              message="Try adjusting your search or filters."
+              title="No team members yet"
+              message="Invite someone to start building this team."
               icon={UserSquare2}
             />
           ) : (
