@@ -1728,6 +1728,9 @@ components:
           minLength: 3
           pattern: '^[^@\s]+@[^@\s]+\.[^@\s]+$'
         role: { type: string, enum: [manager, coach, player] }
+        deliveryMethod:
+          type: string
+          enum: [email, link]
 
     TeamInvitationResult:
       type: object

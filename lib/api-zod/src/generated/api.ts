@@ -677,7 +677,8 @@ export const CreateTeamInvitationBody = zod.object({
   "firstName": zod.string().min(1),
   "lastName": zod.string().min(1),
   "email": zod.string().min(createTeamInvitationBodyEmailMin).regex(createTeamInvitationBodyEmailRegExp),
-  "role": zod.enum(['manager', 'coach', 'player'])
+  "role": zod.enum(['manager', 'coach', 'player']),
+  "deliveryMethod": zod.enum(['email', 'link']).optional()
 })
 
 export const CreateTeamInvitationResponse = zod.object({

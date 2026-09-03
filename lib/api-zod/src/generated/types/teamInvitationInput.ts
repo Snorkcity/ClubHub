@@ -5,6 +5,7 @@
  * Nahreo API — multi-team sports club management
  * OpenAPI spec version: 0.1.0
  */
+import type { TeamInvitationInputDeliveryMethod } from './teamInvitationInputDeliveryMethod';
 import type { TeamInvitationInputRole } from './teamInvitationInputRole';
 
 export interface TeamInvitationInput {
@@ -19,4 +20,5 @@ export interface TeamInvitationInput {
      */
   email: string;
   role: TeamInvitationInputRole;
+  deliveryMethod?: TeamInvitationInputDeliveryMethod;
 }

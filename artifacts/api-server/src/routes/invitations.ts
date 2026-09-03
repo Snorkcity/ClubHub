@@ -140,34 +140,36 @@ router.post("/team-invitations", requireAuth, async (req, res) => {
 
   const expiresAt = expiresAtDate.toISOString();
   const inviteLink = `${APP_URL}/join?token=${encodeURIComponent(token)}`;
-  const safeFirstName = escapeHtml(person.firstName);
-  const safeInviterName = escapeHtml(localUser.firstName);
-  const safeTeamName = escapeHtml(team.name);
-  const safeRole = escapeHtml(body.role);
   let emailSent = false;
   let warning: string | undefined;
-  try {
-    const apiKey = process.env.RESEND_API_KEY;
-    if (!apiKey) throw new Error("RESEND_API_KEY is not configured");
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: "Nahreo <invites@nahreo.com>",
-        to: [email],
-        subject: `${localUser.firstName} invited you to join ${team.name} on Nahreo`,
-        text: `Hi ${person.firstName},\n\n${localUser.firstName} invited you to join ${team.name} as a ${body.role} on Nahreo.\n\nAccept your invitation: ${inviteLink}\n\nThis secure link expires in 7 days.`,
-        html: `<div style="font-family:Inter,Arial,sans-serif;color:#101828;max-width:560px;margin:auto"><h1 style="color:#173F8A">You're invited to Nahreo</h1><p>Hi ${safeFirstName},</p><p>${safeInviterName} invited you to join <strong>${safeTeamName}</strong> as a ${safeRole}.</p><p style="margin:32px 0"><a href="${inviteLink}" style="background:#173F8A;color:white;padding:14px 22px;border-radius:12px;text-decoration:none;font-weight:700">Accept invitation</a></p><p style="color:#667085;font-size:14px">This secure link expires in 7 days.</p></div>`,
-      }),
-    });
-    if (!response.ok) throw new Error(`Resend returned ${response.status}`);
-    emailSent = true;
-  } catch (error) {
-    req.log.error({ err: error }, "Invitation created but email delivery failed");
-    warning = "The invitation was created, but the email could not be sent. Copy and share the secure link instead.";
+  if (body.deliveryMethod !== "link") {
+    const safeFirstName = escapeHtml(person.firstName);
+    const safeInviterName = escapeHtml(localUser.firstName);
+    const safeTeamName = escapeHtml(team.name);
+    const safeRole = escapeHtml(body.role);
+    try {
+      const apiKey = process.env.RESEND_API_KEY;
+      if (!apiKey) throw new Error("RESEND_API_KEY is not configured");
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "Nahreo <invites@nahreo.com>",
+          to: [email],
+          subject: `${localUser.firstName} invited you to join ${team.name} on Nahreo`,
+          text: `Hi ${person.firstName},\n\n${localUser.firstName} invited you to join ${team.name} as a ${body.role} on Nahreo.\n\nAccept your invitation: ${inviteLink}\n\nThis secure link expires in 7 days.`,
+          html: `<div style="font-family:Inter,Arial,sans-serif;color:#101828;max-width:560px;margin:auto"><h1 style="color:#173F8A">You're invited to Nahreo</h1><p>Hi ${safeFirstName},</p><p>${safeInviterName} invited you to join <strong>${safeTeamName}</strong> as a ${safeRole}.</p><p style="margin:32px 0"><a href="${inviteLink}" style="background:#173F8A;color:white;padding:14px 22px;border-radius:12px;text-decoration:none;font-weight:700">Accept invitation</a></p><p style="color:#667085;font-size:14px">This secure link expires in 7 days.</p></div>`,
+        }),
+      });
+      if (!response.ok) throw new Error(`Resend returned ${response.status}`);
+      emailSent = true;
+    } catch (error) {
+      req.log.error({ err: error }, "Invitation created but email delivery failed");
+      warning = "The invitation was created, but the email could not be sent. Copy and share the secure link instead.";
+    }
   }
 
   return res.status(201).json({ inviteLink, expiresAt, emailSent, warning });

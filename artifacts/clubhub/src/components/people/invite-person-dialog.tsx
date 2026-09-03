@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Copy, MailPlus } from "lucide-react";
+import { Check, Copy, Link2, Mail, MailPlus } from "lucide-react";
 import { useCreateTeamInvitation } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +27,7 @@ export function InvitePersonDialog({ teamId }: { teamId?: number }) {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"manager" | "coach" | "player">("player");
+  const [deliveryMethod, setDeliveryMethod] = useState<"email" | "link">("email");
   const [result, setResult] = useState<{
     inviteLink: string;
     emailSent: boolean;
@@ -41,6 +42,7 @@ export function InvitePersonDialog({ teamId }: { teamId?: number }) {
     setLastName("");
     setEmail("");
     setRole("player");
+    setDeliveryMethod("email");
     setResult(null);
     setCopied(false);
   }
@@ -49,7 +51,7 @@ export function InvitePersonDialog({ teamId }: { teamId?: number }) {
     event.preventDefault();
     if (!teamId) return;
     createInvite.mutate(
-      { data: { teamId, firstName, lastName, email, role } },
+      { data: { teamId, firstName, lastName, email, role, deliveryMethod } },
       {
         onSuccess: (data) => setResult(data),
         onError: (error: any) =>
@@ -100,7 +102,8 @@ export function InvitePersonDialog({ teamId }: { teamId?: number }) {
               <DialogDescription>
                 {result.emailSent
                   ? `We emailed ${email}. You can also share this secure link by text.`
-                  : result.warning}
+                  : result.warning ??
+                    "No email was sent. Copy this secure link and share it with the invited person."}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
@@ -157,6 +160,35 @@ export function InvitePersonDialog({ teamId }: { teamId?: number }) {
               </div>
             </div>
             <div className="space-y-2">
+              <Label>How would you like to send it?</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  type="button"
+                  variant={deliveryMethod === "email" ? "default" : "outline"}
+                  onClick={() => setDeliveryMethod("email")}
+                  className="h-auto justify-start gap-3 rounded-xl px-4 py-3 text-left"
+                >
+                  <Mail className="h-5 w-5 shrink-0" />
+                  <span>
+                    <span className="block font-semibold">Send by email</span>
+                    <span className="block text-xs font-normal opacity-80">Nahreo sends it</span>
+                  </span>
+                </Button>
+                <Button
+                  type="button"
+                  variant={deliveryMethod === "link" ? "default" : "outline"}
+                  onClick={() => setDeliveryMethod("link")}
+                  className="h-auto justify-start gap-3 rounded-xl px-4 py-3 text-left"
+                >
+                  <Link2 className="h-5 w-5 shrink-0" />
+                  <span>
+                    <span className="block font-semibold">Create link only</span>
+                    <span className="block text-xs font-normal opacity-80">You share it</span>
+                  </span>
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="invite-email">Email</Label>
               <Input
                 id="invite-email"
@@ -165,6 +197,12 @@ export function InvitePersonDialog({ teamId }: { teamId?: number }) {
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
+              {deliveryMethod === "link" && (
+                <p className="text-xs text-muted-foreground">
+                  Used to make sure only the intended person can claim this invitation.
+                  Nahreo won&apos;t email them.
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Team role</Label>
@@ -182,7 +220,13 @@ export function InvitePersonDialog({ teamId }: { teamId?: number }) {
               disabled={createInvite.isPending}
               className="w-full rounded-xl"
             >
-              {createInvite.isPending ? "Sending invitation…" : "Send invitation"}
+              {createInvite.isPending
+                ? deliveryMethod === "email"
+                  ? "Sending invitation…"
+                  : "Creating link…"
+                : deliveryMethod === "email"
+                  ? "Send invitation"
+                  : "Create invitation link"}
             </Button>
           </form>
         )}

@@ -106,6 +106,7 @@ export * from './teamInput';
 export * from './teamInputCountryCode';
 export * from './teamInvitationAcceptance';
 export * from './teamInvitationInput';
+export * from './teamInvitationInputDeliveryMethod';
 export * from './teamInvitationInputRole';
 export * from './teamInvitationPreview';
 export * from './teamInvitationPreviewRole';

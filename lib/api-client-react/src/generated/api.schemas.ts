@@ -632,6 +632,14 @@ export const TeamInvitationInputRole = {
   player: 'player',
 } as const;
 
+export type TeamInvitationInputDeliveryMethod = typeof TeamInvitationInputDeliveryMethod[keyof typeof TeamInvitationInputDeliveryMethod];
+
+
+export const TeamInvitationInputDeliveryMethod = {
+  email: 'email',
+  link: 'link',
+} as const;
+
 export interface TeamInvitationInput {
   teamId: number;
   /** @minLength 1 */
@@ -644,6 +652,7 @@ export interface TeamInvitationInput {
      */
   email: string;
   role: TeamInvitationInputRole;
+  deliveryMethod?: TeamInvitationInputDeliveryMethod;
 }
 
 export interface TeamInvitationResult {
