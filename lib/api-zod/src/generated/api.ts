@@ -1759,8 +1759,9 @@ export const GetCheckinStatusResponse = zod.object({
   "id": zod.number(),
   "personId": zod.number(),
   "sessionDate": zod.string(),
-  "kind": zod.enum(['rep', 'school', 'other']),
+  "kind": zod.enum(['rep', 'school', 'gym', 'athletics', 'other']),
   "label": zod.string().nullish(),
+  "surface": zod.string().nullish(),
   "rpe": zod.number(),
   "minutes": zod.number(),
   "load": zod.number()
@@ -1837,6 +1838,8 @@ export const SubmitRpeResponse = zod.object({
  */
 export const logExtraSessionBodyLabelMax = 120;
 
+export const logExtraSessionBodySurfaceMax = 60;
+
 export const logExtraSessionBodyRpeMin = 0;
 export const logExtraSessionBodyRpeMax = 10;
 
@@ -1846,8 +1849,9 @@ export const logExtraSessionBodyMinutesMax = 300;
 
 export const LogExtraSessionBody = zod.object({
   "sessionDate": zod.string(),
-  "kind": zod.enum(['rep', 'school', 'other']),
+  "kind": zod.enum(['rep', 'school', 'gym', 'athletics', 'other']),
   "label": zod.string().max(logExtraSessionBodyLabelMax).optional(),
+  "surface": zod.string().max(logExtraSessionBodySurfaceMax).optional(),
   "rpe": zod.number().min(logExtraSessionBodyRpeMin).max(logExtraSessionBodyRpeMax),
   "minutes": zod.number().min(1).max(logExtraSessionBodyMinutesMax),
   "onBehalfOfPersonId": zod.number().optional()
@@ -1857,8 +1861,9 @@ export const LogExtraSessionResponse = zod.object({
   "id": zod.number(),
   "personId": zod.number(),
   "sessionDate": zod.string(),
-  "kind": zod.enum(['rep', 'school', 'other']),
+  "kind": zod.enum(['rep', 'school', 'gym', 'athletics', 'other']),
   "label": zod.string().nullish(),
+  "surface": zod.string().nullish(),
   "rpe": zod.number(),
   "minutes": zod.number(),
   "load": zod.number()

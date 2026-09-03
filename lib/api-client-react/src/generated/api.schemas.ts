@@ -935,6 +935,8 @@ export type ExtraSessionKind = typeof ExtraSessionKind[keyof typeof ExtraSession
 export const ExtraSessionKind = {
   rep: 'rep',
   school: 'school',
+  gym: 'gym',
+  athletics: 'athletics',
   other: 'other',
 } as const;
 
@@ -944,6 +946,7 @@ export interface ExtraSession {
   sessionDate: string;
   kind: ExtraSessionKind;
   label?: string | null;
+  surface?: string | null;
   rpe: number;
   minutes: number;
   load: number;
@@ -955,6 +958,8 @@ export type ExtraSessionInputKind = typeof ExtraSessionInputKind[keyof typeof Ex
 export const ExtraSessionInputKind = {
   rep: 'rep',
   school: 'school',
+  gym: 'gym',
+  athletics: 'athletics',
   other: 'other',
 } as const;
 
@@ -963,6 +968,8 @@ export interface ExtraSessionInput {
   kind: ExtraSessionInputKind;
   /** @maxLength 120 */
   label?: string;
+  /** @maxLength 60 */
+  surface?: string;
   /**
      * @minimum 0
      * @maximum 10

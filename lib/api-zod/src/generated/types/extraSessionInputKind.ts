@@ -12,5 +12,7 @@ export type ExtraSessionInputKind = typeof ExtraSessionInputKind[keyof typeof Ex
 export const ExtraSessionInputKind = {
   rep: 'rep',
   school: 'school',
+  gym: 'gym',
+  athletics: 'athletics',
   other: 'other',
 } as const;

@@ -1939,8 +1939,9 @@ components:
         id: { type: integer }
         personId: { type: integer }
         sessionDate: { type: string }
-        kind: { type: string, enum: [rep, school, other] }
+        kind: { type: string, enum: [rep, school, gym, athletics, other] }
         label: { type: string, nullable: true }
+        surface: { type: string, nullable: true }
         rpe: { type: integer }
         minutes: { type: integer }
         load: { type: integer }
@@ -1950,8 +1951,9 @@ components:
       required: [sessionDate, kind, rpe, minutes]
       properties:
         sessionDate: { type: string }
-        kind: { type: string, enum: [rep, school, other] }
+        kind: { type: string, enum: [rep, school, gym, athletics, other] }
         label: { type: string, maxLength: 120 }
+        surface: { type: string, maxLength: 60 }
         rpe: { type: integer, minimum: 0, maximum: 10 }
         minutes: { type: integer, minimum: 1, maximum: 300 }
         onBehalfOfPersonId: { type: integer }

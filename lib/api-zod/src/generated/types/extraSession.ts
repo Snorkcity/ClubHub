@@ -13,6 +13,7 @@ export interface ExtraSession {
   sessionDate: string;
   kind: ExtraSessionKind;
   label?: string | null;
+  surface?: string | null;
   rpe: number;
   minutes: number;
   load: number;

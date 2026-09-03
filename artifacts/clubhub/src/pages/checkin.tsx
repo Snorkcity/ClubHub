@@ -223,6 +223,8 @@ function RpeCard({ subject, pending, date }: { subject: CheckinSubject; pending:
 const EXTRA_KINDS: { value: ExtraSessionInputKind; label: string }[] = [
   { value: "rep", label: "Rep / academy" },
   { value: "school", label: "School sport" },
+  { value: "gym", label: "Gym" },
+  { value: "athletics", label: "Athletics" },
   { value: "other", label: "Other" },
 ];
 
@@ -231,6 +233,7 @@ function ExtraSessions({ subject, date }: { subject: CheckinSubject; date: strin
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<ExtraSessionInputKind>("rep");
   const [label, setLabel] = useState("");
+  const [surface, setSurface] = useState("");
   const [minutes, setMinutes] = useState(60);
   const [rpe, setRpe] = useState<number | null>(null);
 
@@ -243,6 +246,7 @@ function ExtraSessions({ subject, date }: { subject: CheckinSubject; date: strin
         invalidate();
         setOpen(false);
         setLabel("");
+        setSurface("");
         setRpe(null);
         toast({ title: "Extra session logged", description: "It now counts toward the workload picture." });
       },
@@ -285,6 +289,7 @@ function ExtraSessions({ subject, date }: { subject: CheckinSubject; date: strin
               <span className="text-muted-foreground truncate">
                 {format(new Date(`${s.sessionDate}T12:00:00`), "EEE d MMM")} · {s.minutes} min · RPE {s.rpe}
                 {s.label ? ` · ${s.label}` : ""}
+                {s.surface ? ` · ${s.surface}` : ""}
               </span>
               <button
                 type="button"
@@ -317,14 +322,30 @@ function ExtraSessions({ subject, date }: { subject: CheckinSubject; date: strin
               </button>
             ))}
           </div>
-          <input
-            type="text"
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            maxLength={120}
-            placeholder="What was it? (optional)"
-            className="w-full h-11 rounded-xl border bg-background px-3 text-sm"
-          />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="space-y-1.5">
+              <span className="text-sm font-medium">What was it? <span className="font-normal text-muted-foreground">(optional)</span></span>
+              <input
+                type="text"
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                maxLength={120}
+                placeholder="e.g. Sprint training"
+                className="w-full h-11 rounded-xl border bg-background px-3 text-sm"
+              />
+            </label>
+            <label className="space-y-1.5">
+              <span className="text-sm font-medium">Surface? <span className="font-normal text-muted-foreground">(optional)</span></span>
+              <input
+                type="text"
+                value={surface}
+                onChange={(e) => setSurface(e.target.value)}
+                maxLength={60}
+                placeholder="e.g. Grass or synthetic"
+                className="w-full h-11 rounded-xl border bg-background px-3 text-sm"
+              />
+            </label>
+          </div>
           <div>
             <div className="flex items-baseline justify-between mb-1.5">
               <span className="text-sm font-medium">How long?</span>
@@ -384,6 +405,7 @@ function ExtraSessions({ subject, date }: { subject: CheckinSubject; date: strin
                     rpe: rpe!,
                     minutes,
                     ...(label.trim() ? { label: label.trim() } : {}),
+                    ...(surface.trim() ? { surface: surface.trim() } : {}),
                     ...(subject.isSelf ? {} : { onBehalfOfPersonId: subject.person.id }),
                   },
                 })

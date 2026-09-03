@@ -17,10 +17,12 @@ export const extraSessionsTable = pgTable("extra_sessions", {
     .references(() => usersTable.id),
   /** Local calendar day of the session (YYYY-MM-DD). */
   sessionDate: date("session_date", { mode: "string" }).notNull(),
-  /** rep | school | other */
+  /** rep | school | gym | athletics | other */
   kind: text("kind").notNull(),
   /** Optional free-text description, e.g. "NSW Metro squad training". */
   label: text("label"),
+  /** Optional playing/training surface, e.g. grass or synthetic. */
+  surface: text("surface"),
   /** Rating of Perceived Exertion, 0–10 (Foster sRPE scale). */
   rpe: integer("rpe").notNull(),
   minutes: integer("minutes").notNull(),

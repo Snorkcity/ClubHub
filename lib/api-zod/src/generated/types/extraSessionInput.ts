@@ -12,6 +12,8 @@ export interface ExtraSessionInput {
   kind: ExtraSessionInputKind;
   /** @maxLength 120 */
   label?: string;
+  /** @maxLength 60 */
+  surface?: string;
   /**
      * @minimum 0
      * @maximum 10
