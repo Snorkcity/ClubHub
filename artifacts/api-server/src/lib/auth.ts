@@ -4,7 +4,6 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import {
   db,
   usersTable,
-  clubsTable,
   clubMembersTable,
   type User,
 } from "@workspace/db";
@@ -15,12 +14,98 @@ export interface AuthedRequest extends Request {
   isClubAdmin: boolean;
 }
 
-/**
- * Requires an authenticated Clerk session and bridges it to a local user
- * record (JIT provisioning). The first authenticated user for a club with no
- * admin becomes the Club Admin so the product owner can manage everything on
- * first sign-in.
- */
+export interface ClerkIdentity {
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  emailVerified: boolean;
+}
+
+export async function loadClerkIdentity(
+  req: Request,
+  clerkUserId: string,
+): Promise<ClerkIdentity> {
+  const identity: ClerkIdentity = {
+    firstName: "",
+    lastName: "",
+    email: null,
+    emailVerified: false,
+  };
+  try {
+    const clerkUser = await clerkClient.users.getUser(clerkUserId);
+    identity.firstName = clerkUser.firstName ?? "";
+    identity.lastName = clerkUser.lastName ?? "";
+    const primary = clerkUser.emailAddresses.find(
+      (email) => email.id === clerkUser.primaryEmailAddressId,
+    );
+    if (primary) {
+      identity.email = primary.emailAddress;
+      identity.emailVerified = primary.verification?.status === "verified";
+    }
+  } catch (err) {
+    req.log.warn({ err }, "Could not load Clerk user profile");
+  }
+  return identity;
+}
+
+/** Resolve an existing login, including fail-closed verified-email claiming. */
+export async function findOrClaimUser(
+  req: Request,
+  clerkUserId: string,
+): Promise<{ user?: User; identity?: ClerkIdentity }> {
+  let user = (
+    await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.clerkUserId, clerkUserId))
+  )[0];
+  if (user) {
+    await db
+      .insert(clubMembersTable)
+      .values({ clubId: user.clubId, userId: user.id, role: "member" })
+      .onConflictDoNothing();
+    return { user };
+  }
+
+  const identity = await loadClerkIdentity(req, clerkUserId);
+  if (identity.email && identity.emailVerified) {
+    const candidates = await db
+      .select()
+      .from(usersTable)
+      .where(
+        and(
+          sql`lower(${usersTable.email}) = ${identity.email.toLowerCase()}`,
+          isNull(usersTable.clerkUserId),
+        ),
+      );
+    if (candidates.length === 1) {
+      user = await db.transaction(async (tx) => {
+        const [claimed] = await tx
+          .update(usersTable)
+          .set({ clerkUserId })
+          .where(eq(usersTable.id, candidates[0].id))
+          .returning();
+        await tx
+          .insert(clubMembersTable)
+          .values({
+            clubId: claimed.clubId,
+            userId: claimed.id,
+            role: "member",
+          })
+          .onConflictDoNothing();
+        return claimed;
+      });
+    } else if (candidates.length > 1) {
+      req.log.warn(
+        { clerkUserId },
+        "Ambiguous verified email match on sign-in; account not linked",
+      );
+    }
+  }
+  return { user, identity };
+}
+
+/** Requires an authenticated Clerk session already linked to a club. */
 export const requireAuth: RequestHandler = async (req, res, next) => {
   try {
     const auth = getAuth(req);
@@ -30,119 +115,33 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
       return;
     }
 
-    let club = (await db.select().from(clubsTable).limit(1))[0];
-    if (!club) {
-      club = (
-        await db.insert(clubsTable).values({ name: "My Club" }).returning()
-      )[0];
-    }
-
-    let user = (
-      await db
-        .select()
-        .from(usersTable)
-        .where(eq(usersTable.clerkUserId, clerkUserId))
-    )[0];
-
+    const { user } = await findOrClaimUser(req, clerkUserId);
     if (!user) {
-      // Pull identity from Clerk's backend so we can trust the email and,
-      // critically, its verification status (the session token may omit email
-      // entirely). This call only runs once per user — on first sign-in.
-      let firstName = "New";
-      let lastName = "Member";
-      let email: string | null = null;
-      let emailVerified = false;
-      try {
-        const clerkUser = await clerkClient.users.getUser(clerkUserId);
-        firstName = clerkUser.firstName || firstName;
-        lastName = clerkUser.lastName || lastName;
-        const primary = clerkUser.emailAddresses.find(
-          (e) => e.id === clerkUser.primaryEmailAddressId,
-        );
-        if (primary) {
-          email = primary.emailAddress;
-          emailVerified = primary.verification?.status === "verified";
-        }
-      } catch (err) {
-        req.log.warn({ err }, "Could not load Clerk user profile");
-      }
-
-      // Claim a pre-created (login-less) person by email so admins can seed
-      // people and have them attach to their real login on first sign-in.
-      // Guarded: only a *verified* email may claim, and we fail closed on any
-      // ambiguity (0 or >1 matches) rather than binding the wrong identity.
-      if (email && emailVerified) {
-        const candidates = await db
-          .select()
-          .from(usersTable)
-          .where(
-            and(
-              sql`lower(${usersTable.email}) = ${email.toLowerCase()}`,
-              isNull(usersTable.clerkUserId),
-              eq(usersTable.clubId, club.id),
-            ),
-          );
-        if (candidates.length === 1) {
-          user = (
-            await db
-              .update(usersTable)
-              .set({ clerkUserId })
-              .where(eq(usersTable.id, candidates[0].id))
-              .returning()
-          )[0];
-        } else if (candidates.length > 1) {
-          req.log.warn(
-            { email },
-            "Ambiguous email match on sign-in; creating a new account instead of auto-linking",
-          );
-        }
-      }
-
-      if (!user) {
-        user = (
-          await db
-            .insert(usersTable)
-            .values({ clubId: club.id, clerkUserId, firstName, lastName, email })
-            .returning()
-        )[0];
-      }
+      res.status(409).json({
+        error: "Complete first-time setup before using the app",
+        code: "ONBOARDING_REQUIRED",
+      });
+      return;
     }
 
-    const admins = await db
-      .select()
-      .from(clubMembersTable)
-      .where(
-        and(
-          eq(clubMembersTable.clubId, club.id),
-          eq(clubMembersTable.role, "admin"),
-        ),
-      );
-
-    let membership = (
+    const membership = (
       await db
         .select()
         .from(clubMembersTable)
         .where(
           and(
-            eq(clubMembersTable.clubId, club.id),
+            eq(clubMembersTable.clubId, user.clubId),
             eq(clubMembersTable.userId, user.id),
           ),
         )
     )[0];
 
-    if (!membership) {
-      const role = admins.length === 0 ? "admin" : "member";
-      membership = (
-        await db
-          .insert(clubMembersTable)
-          .values({ clubId: club.id, userId: user.id, role })
-          .returning()
-      )[0];
-    }
+    if (!membership)
+      throw new Error("Authenticated user club membership reconciliation failed");
 
     const authed = req as AuthedRequest;
     authed.localUser = user;
-    authed.clubId = club.id;
+    authed.clubId = user.clubId;
     authed.isClubAdmin = membership.role === "admin";
     next();
   } catch (err) {

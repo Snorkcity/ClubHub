@@ -53,6 +53,9 @@ import type {
   NotFoundResponse,
   NotificationList,
   NotificationPreferencesUpdate,
+  OnboardingInput,
+  OnboardingResult,
+  OnboardingStatus,
   Person,
   PersonDetail,
   PersonInput,
@@ -492,6 +495,154 @@ export function useListMyEventLocations<TData = Awaited<ReturnType<typeof listMy
 
 
 
+
+export const getGetOnboardingStatusUrl = () => {
+
+
+
+
+  return `/api/onboarding/status`
+}
+
+/**
+ * @summary Check whether the signed-in identity needs first-time club setup
+ */
+export const getOnboardingStatus = async ( options?: RequestInit): Promise<OnboardingStatus> => {
+
+  return customFetch<OnboardingStatus>(getGetOnboardingStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetOnboardingStatusQueryKey = () => {
+    return [
+    `/api/onboarding/status`
+    ] as const;
+    }
+
+
+export const getGetOnboardingStatusQueryOptions = <TData = Awaited<ReturnType<typeof getOnboardingStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOnboardingStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetOnboardingStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOnboardingStatus>>> = ({ signal }) => getOnboardingStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOnboardingStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetOnboardingStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getOnboardingStatus>>>
+export type GetOnboardingStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Check whether the signed-in identity needs first-time club setup
+ */
+
+export function useGetOnboardingStatus<TData = Awaited<ReturnType<typeof getOnboardingStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOnboardingStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetOnboardingStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCompleteOnboardingUrl = () => {
+
+
+
+
+  return `/api/onboarding`
+}
+
+/**
+ * @summary Create a new club, its first team, and the signed-in administrator
+ */
+export const completeOnboarding = async (onboardingInput: OnboardingInput, options?: RequestInit): Promise<OnboardingResult> => {
+
+  return customFetch<OnboardingResult>(getCompleteOnboardingUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(onboardingInput)
+  }
+);}
+
+
+
+
+
+export const getCompleteOnboardingMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeOnboarding>>, TError,{data: BodyType<OnboardingInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeOnboarding>>, TError,{data: BodyType<OnboardingInput>}, TContext> => {
+
+const mutationKey = ['completeOnboarding'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeOnboarding>>, {data: BodyType<OnboardingInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  completeOnboarding(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteOnboardingMutationResult = NonNullable<Awaited<ReturnType<typeof completeOnboarding>>>
+    export type CompleteOnboardingMutationBody = BodyType<OnboardingInput>
+    export type CompleteOnboardingMutationError = ErrorType<void>
+
+    /**
+ * @summary Create a new club, its first team, and the signed-in administrator
+ */
+export const useCompleteOnboarding = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeOnboarding>>, TError,{data: BodyType<OnboardingInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof completeOnboarding>>,
+        TError,
+        {data: BodyType<OnboardingInput>},
+        TContext
+      > => {
+      return useMutation(getCompleteOnboardingMutationOptions(options));
+    }
 
 export const getListNotificationsUrl = (params?: ListNotificationsParams,) => {
   const normalizedParams = new URLSearchParams();

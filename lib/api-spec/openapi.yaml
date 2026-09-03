@@ -104,6 +104,40 @@ paths:
                 type: array
                 items: { type: string }
 
+  /onboarding/status:
+    get:
+      operationId: getOnboardingStatus
+      tags: [me]
+      summary: Check whether the signed-in identity needs first-time club setup
+      responses:
+        "200":
+          description: Onboarding status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardingStatus"
+
+  /onboarding:
+    post:
+      operationId: completeOnboarding
+      tags: [me]
+      summary: Create a new club, its first team, and the signed-in administrator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OnboardingInput"
+      responses:
+        "201":
+          description: Onboarding completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardingResult"
+        "409":
+          description: This identity already belongs to a club
+
   /notifications:
     get:
       operationId: listNotifications
@@ -1476,6 +1510,33 @@ components:
         guardianOf:
           type: array
           items: { $ref: "#/components/schemas/Person" }
+
+    OnboardingStatus:
+      type: object
+      required: [needsOnboarding]
+      properties:
+        needsOnboarding: { type: boolean }
+
+    OnboardingInput:
+      type: object
+      required: [firstName, lastName, clubName, countryCode, teamName, ageGroup]
+      properties:
+        firstName: { type: string, minLength: 1, maxLength: 100 }
+        lastName: { type: string, minLength: 1, maxLength: 100 }
+        clubName: { type: string, minLength: 1, maxLength: 160 }
+        countryCode:
+          type: string
+          enum: [AU, NZ, GB, US, CA]
+        teamName: { type: string, minLength: 1, maxLength: 160 }
+        ageGroup: { type: string, minLength: 1, maxLength: 80 }
+        gender: { type: string, maxLength: 80 }
+
+    OnboardingResult:
+      type: object
+      required: [clubId, teamId]
+      properties:
+        clubId: { type: integer }
+        teamId: { type: integer }
 
     PersonDetail:
       type: object

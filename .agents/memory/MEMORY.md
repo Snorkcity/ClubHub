@@ -1,10 +1,10 @@
 - [Railway is production](railway-prod.md) — Replit=dev, Railway=prod; push to GitHub auto-deploys; keep packageManager pin and VITE_API_URL base-URL logic intact.
 - [Lifelong identity model](lifelong-identity.md) — every player is one permanent account; guardians are linked (never child sub-profiles). Central architectural pillar for ClubHub.
 - [Repo build quirks](repo-build-quirks.md) — no tsx binary; run standalone TS via esbuild bundle; rebuild db declarations after schema changes so @workspace/db exports resolve.
-- [Account claiming by email](account-claiming.md) — first-login can claim a pre-created person by VERIFIED email, single-match only (fail closed); identity read from Clerk backend, not session claims.
+- [Account claiming by email](account-claiming.md) — claim by verified email only when globally unique; unmatched users must explicitly create a new club, never join an existing one by default.
 - [Player Monitoring design](player-monitoring-design.md) — agreed RPE/wellness module decisions: capture first, live baseline-relative dashboard, on-demand reports, 16+ opt-in cycle tracking.
 - [UX direction](ux-direction.md) — mobile-first above all (phone is primary device); Heja is the familiarity baseline for the club's 15 teams — match habits, don't copy.
-- [Product name](product-name.md) — Squadly is the public name; retain legacy technical identifiers until each has a redirect-safe migration plan.
+- [Product name](product-name.md) — Nahreo is the public name; retain legacy technical identifiers until each has a redirect-safe migration plan.
 - [API smoke testing](api-smoke-testing.md) — shared proxy 404s curl POSTs; hit api-server on its own PORT with a minted Clerk session JWT.
 - [Team switcher & unreads](team-switcher-unreads.md) — active team is localStorage-only; unread = content since team_reads.last_seen_at (14-day fallback); mark-seen after 2s view, never on switch.
 - [Client clock skew breaks auth](clock-skew-auth.md) — instant 401s with valid cookies can mean the user device clock is slow; dev server has 30-min skew tolerance.

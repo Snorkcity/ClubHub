@@ -340,6 +340,57 @@ export interface CurrentUser {
   guardianOf: Person[];
 }
 
+export interface OnboardingStatus {
+  needsOnboarding: boolean;
+}
+
+export type OnboardingInputCountryCode = typeof OnboardingInputCountryCode[keyof typeof OnboardingInputCountryCode];
+
+
+export const OnboardingInputCountryCode = {
+  AU: 'AU',
+  NZ: 'NZ',
+  GB: 'GB',
+  US: 'US',
+  CA: 'CA',
+} as const;
+
+export interface OnboardingInput {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  firstName: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  lastName: string;
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  clubName: string;
+  countryCode: OnboardingInputCountryCode;
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  teamName: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  ageGroup: string;
+  /** @maxLength 80 */
+  gender?: string;
+}
+
+export interface OnboardingResult {
+  clubId: number;
+  teamId: number;
+}
+
 export interface PersonDetail {
   person: Person;
   memberships: TeamMembership[];

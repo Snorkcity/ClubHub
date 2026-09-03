@@ -30,6 +30,9 @@ import Settings from "@/pages/settings";
 import Notifications from "@/pages/notifications";
 import JoinTeam from "@/pages/join";
 import Shell from "@/components/layout/shell";
+import GetStarted from "@/pages/get-started";
+import { useGetOnboardingStatus } from "@workspace/api-client-react";
+import { Loader2 } from "lucide-react";
 
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
@@ -169,15 +172,51 @@ function HomeRedirect() {
   );
 }
 
+function ProtectedRouteInner({ component: Component }: { component: any }) {
+  const { data: status, isLoading, isError, refetch } =
+    useGetOnboardingStatus();
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-gray-50 dark:bg-zinc-950">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-gray-50 px-6 text-center dark:bg-zinc-950">
+        <p className="font-semibold">We couldn&apos;t check your account.</p>
+        <button
+          type="button"
+          className="rounded-xl bg-primary px-5 py-3 font-semibold text-white"
+          onClick={() => refetch()}
+        >
+          Try again
+        </button>
+      </div>
+    );
+  }
+
+  if (status?.needsOnboarding) {
+    return <Redirect to="/get-started" />;
+  }
+
+  return (
+    <Shell>
+      <Component />
+    </Shell>
+  );
+}
+
 function ProtectedRoute({ component: Component, ...rest }: any) {
   return (
     <Route {...rest}>
       {() => (
         <>
           <Show when="signed-in">
-            <Shell>
-              <Component />
-            </Shell>
+            <ProtectedRouteInner component={Component} />
           </Show>
           <Show when="signed-out">
             <Redirect to="/sign-in" />
@@ -186,6 +225,40 @@ function ProtectedRoute({ component: Component, ...rest }: any) {
       )}
     </Route>
   );
+}
+
+function GetStartedRoute() {
+  const { data: status, isLoading, isError, refetch } =
+    useGetOnboardingStatus();
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-gray-50 dark:bg-zinc-950">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-gray-50 px-6 text-center dark:bg-zinc-950">
+        <p className="font-semibold">We couldn&apos;t start setup.</p>
+        <button
+          type="button"
+          className="rounded-xl bg-primary px-5 py-3 font-semibold text-white"
+          onClick={() => refetch()}
+        >
+          Try again
+        </button>
+      </div>
+    );
+  }
+
+  if (status && !status.needsOnboarding) {
+    return <Redirect to="/home" />;
+  }
+
+  return <GetStarted />;
 }
 
 function ClerkProviderWithRoutes() {
@@ -223,8 +296,21 @@ function ClerkProviderWithRoutes() {
           <Route path="/" component={HomeRedirect} />
           <Route path="/sign-in/*?" component={SignInPage} />
           <Route path="/sign-up/*?" component={SignUpPage} />
-           <Route path="/join" component={JoinTeam} />
-          
+          <Route path="/join" component={JoinTeam} />
+
+          <Route path="/get-started">
+            {() => (
+              <>
+                <Show when="signed-in">
+                  <GetStartedRoute />
+                </Show>
+                <Show when="signed-out">
+                  <Redirect to="/sign-in" />
+                </Show>
+              </>
+            )}
+          </Route>
+
           <ProtectedRoute path="/home" component={Home} />
           <ProtectedRoute path="/teams" component={TeamsList} />
           <ProtectedRoute path="/teams/:teamId" component={TeamDetail} />

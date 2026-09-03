@@ -12,10 +12,12 @@ import monitoringRouter from "./monitoring";
 import timekeepingRouter from "./timekeeping";
 import notificationsRouter from "./notifications";
 import invitationsRouter from "./invitations";
+import onboardingRouter from "./onboarding";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(onboardingRouter);
 router.use(meRouter);
 router.use(clubRouter);
 router.use(seasonsRouter);

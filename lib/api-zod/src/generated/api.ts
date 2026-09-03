@@ -135,6 +135,47 @@ export const ListMyEventLocationsResponse = zod.array(ListMyEventLocationsRespon
 
 
 /**
+ * @summary Check whether the signed-in identity needs first-time club setup
+ */
+export const GetOnboardingStatusResponse = zod.object({
+  "needsOnboarding": zod.boolean()
+})
+
+
+/**
+ * @summary Create a new club, its first team, and the signed-in administrator
+ */
+export const completeOnboardingBodyFirstNameMax = 100;
+
+export const completeOnboardingBodyLastNameMax = 100;
+
+export const completeOnboardingBodyClubNameMax = 160;
+
+export const completeOnboardingBodyTeamNameMax = 160;
+
+export const completeOnboardingBodyAgeGroupMax = 80;
+
+export const completeOnboardingBodyGenderMax = 80;
+
+
+
+export const CompleteOnboardingBody = zod.object({
+  "firstName": zod.string().min(1).max(completeOnboardingBodyFirstNameMax),
+  "lastName": zod.string().min(1).max(completeOnboardingBodyLastNameMax),
+  "clubName": zod.string().min(1).max(completeOnboardingBodyClubNameMax),
+  "countryCode": zod.enum(['AU', 'NZ', 'GB', 'US', 'CA']),
+  "teamName": zod.string().min(1).max(completeOnboardingBodyTeamNameMax),
+  "ageGroup": zod.string().min(1).max(completeOnboardingBodyAgeGroupMax),
+  "gender": zod.string().max(completeOnboardingBodyGenderMax).optional()
+})
+
+export const CompleteOnboardingResponse = zod.object({
+  "clubId": zod.number(),
+  "teamId": zod.number()
+})
+
+
+/**
  * @summary List the current user's notifications
  */
 

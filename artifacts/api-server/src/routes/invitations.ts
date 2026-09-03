@@ -4,6 +4,7 @@ import { and, eq, gt, isNull, sql } from "drizzle-orm";
 import {
   chatMembersTable,
   chatsTable,
+  clubMembersTable,
   db,
   teamMembersTable,
   teamsTable,
@@ -113,6 +114,11 @@ router.post("/team-invitations", requireAuth, async (req, res) => {
         email,
       })
       .returning();
+    await tx.insert(clubMembersTable).values({
+      clubId,
+      userId: created.id,
+      role: "member",
+    });
     await tx.insert(teamMembersTable).values({
       teamId: team.id,
       userId: created.id,
