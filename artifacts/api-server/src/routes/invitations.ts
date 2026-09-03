@@ -15,6 +15,7 @@ import {
   CreateTeamInvitationBody,
 } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
+import { isTeamStaff } from "../lib/authz";
 
 const router: IRouter = Router();
 const INVITE_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
@@ -74,9 +75,11 @@ router.get("/team-invitations/preview", async (req, res) => {
 
 router.post("/team-invitations", requireAuth, async (req, res) => {
   const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
-  if (!isClubAdmin)
-    return res.status(403).json({ error: "Only club admins can invite new people" });
   const body = CreateTeamInvitationBody.parse(req.body);
+  if (!(await isTeamStaff(localUser.id, body.teamId, clubId, isClubAdmin)))
+    return res.status(403).json({
+      error: "Only this team's admins and coaches can invite new people",
+    });
   const email = body.email.trim().toLowerCase();
   const [team] = await db
     .select()

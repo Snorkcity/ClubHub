@@ -31,6 +31,8 @@ export default function PeopleList() {
     : activeTeamId && staffedTeamIds.has(activeTeamId)
       ? activeTeamId
       : staffedTeamIds.values().next().value;
+  const canInvite =
+    !!teamId && (!!me?.isClubAdmin || staffedTeamIds.has(teamId));
   const params = { teamId, search: search || undefined };
 
   const { data: people, isLoading, isFetching, error, refetch } = useListPeople(params, {
@@ -70,7 +72,7 @@ export default function PeopleList() {
             <h1 className="text-3xl font-display font-bold tracking-tight">Team Members</h1>
             <p className="text-muted-foreground mt-1">Coaches, players, and parents connected to this team.</p>
           </div>
-          {me?.isClubAdmin && <InvitePersonDialog teamId={teamId} />}
+          {canInvite && <InvitePersonDialog teamId={teamId} />}
         </header>
 
         <div className="flex flex-col sm:flex-row gap-4 mb-6 shrink-0">
