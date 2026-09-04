@@ -70,7 +70,10 @@ export default function DevelopmentReport() {
             </div>
           </div>
 
-          <div className="p-6 md:p-10 space-y-12">
+          <div className="p-6 md:p-10 space-y-10">
+            <div className="bg-primary/5 text-foreground/90 border border-primary/10 rounded-2xl p-5 md:p-6 leading-relaxed shadow-sm text-sm md:text-base">
+              <p>This report is designed to give you a clear, constructive view of {report.player.firstName}'s progress over the last period. Our goal is to highlight what they're doing well and identify specific areas to focus on, helping them continue to grow in a positive and supportive environment.</p>
+            </div>
             
             {/* Written Feedback */}
             <div className="grid md:grid-cols-2 gap-6">
@@ -117,8 +120,25 @@ export default function DevelopmentReport() {
               </div>
             </div>
 
+            {/* Coaching Team */}
+            <div className="bg-muted/20 border p-5 md:p-6 rounded-2xl flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+              <div>
+                <h3 className="font-display font-bold text-lg mb-1 text-foreground">Reporting Coaching Team</h3>
+                <p className="text-muted-foreground text-sm font-medium">
+                  {report.coachingTeam.map(c => c.fullName).join(", ")}
+                </p>
+              </div>
+            </div>
+
+            <div className="text-center space-y-2 mt-8 py-8 border-t border-b">
+              <p className="font-medium text-foreground text-lg">Thank you for your continued support.</p>
+              <p className="text-muted-foreground text-sm max-w-2xl mx-auto">
+                If you have any questions about this assessment or how to support {report.player.firstName} at home, please feel free to reach out to the coaching staff.
+              </p>
+            </div>
+
             {/* Disclosure/Footer */}
-            <div className="pt-6 border-t mt-12 flex items-start gap-3 text-muted-foreground">
+            <div className="flex items-start gap-3 text-muted-foreground">
               <Info className="h-5 w-5 shrink-0 mt-0.5" />
               <p className="text-xs leading-relaxed max-w-3xl">
                 {report.disclosure}

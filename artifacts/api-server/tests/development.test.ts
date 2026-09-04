@@ -61,6 +61,13 @@ const assessment = (internalNotes: string) => ({
   focus: "Keep developing first touch.",
   internalNotes,
 });
+const draft = (suffix: string) => ({
+  categories: [
+    "technical", "tactical", "physical", "coachabilityMindset", "effortConsistency", "teamworkCommunication", "attendanceReliability",
+  ].map((key) => ({ key, narrative: `${key} ${suffix}` })),
+  strength: `Family strength ${suffix}`,
+  focus: `Family focus ${suffix}`,
+});
 
 beforeAll(async () => {
   if (!process.env.DATABASE_URL?.includes("clubhub_test")) throw new Error("Disposable test database required");
@@ -94,6 +101,7 @@ beforeAll(async () => {
       title: "Mid-season development",
       reportingPeriod: "January to June",
       assessorIds: [selected],
+      internalRecipientId: technicalDirector,
     }).expect(201);
   ids.cycle = created.body.id;
 });
@@ -122,6 +130,9 @@ afterAll(async () => {
 
 describe("player development permissions and lifecycle", () => {
   it("denies team staff who were not selected", async () => {
+    await request(app).get(`/api/development-cycles/${ids.cycle}/internal-summary`).set(as("selected")).expect(409);
+    const active = await request(app).get(`/api/development-cycles/${ids.cycle}`).set(as("selected")).expect(200);
+    expect(active.body.players.every((player: { reportDraft: unknown }) => player.reportDraft === null)).toBe(true);
     await request(app).get(`/api/development-cycles/${ids.cycle}`).set(as("unselected")).expect(403);
     await request(app).put(`/api/development-cycles/${ids.cycle}/players/${playerA}/assessment`)
       .set(as("unselected")).send(assessment("must never save")).expect(403);
@@ -133,10 +144,14 @@ describe("player development permissions and lifecycle", () => {
     const candidateIds = candidates.body.map((candidate: { id: number }) => candidate.id);
     expect(candidateIds).toContain(technicalDirector);
     expect(candidateIds).toContain(selected);
-    expect(candidateIds).toContain(guardian);
+    expect(candidateIds).not.toContain(guardian);
+    expect(candidateIds).not.toContain(playerA);
     expect(candidates.body.every((candidate: Record<string, unknown>) => !("email" in candidate) && !("phone" in candidate))).toBe(true);
     await request(app).get(`/api/teams/${ids.team}/development-recipient-candidates`)
       .set(as("guardian")).expect(403);
+    await request(app).post(`/api/teams/${ids.team}/development-cycles`).set(as("selected")).send({
+      title: "Invalid recipient", reportingPeriod: "Test", assessorIds: [selected], internalRecipientId: guardian,
+    }).expect(400);
   });
 
   it("allows selected assessor saves and rejects incomplete submission", async () => {
@@ -157,11 +172,58 @@ describe("player development permissions and lifecycle", () => {
     expect([200, 409]).toContain(submit.status);
     if (submit.status === 409)
       await request(app).post(`/api/development-cycles/${ids.cycle}/submit`).set(as("selected")).expect(200);
+    const detail = await request(app).get(`/api/development-cycles/${ids.cycle}`).set(as("selected")).expect(200);
+    expect(detail.body).toMatchObject({ reviewedReports: 0, totalReports: 2 });
+    expect(detail.body.players.every((player: { reportDraft: { reviewedAt: unknown } | null }) =>
+      player.reportDraft !== null && player.reportDraft.reviewedAt === null,
+    )).toBe(true);
+    await db.update(developmentCyclesTable).set({ internalRecipientId: guardian }).where(eq(developmentCyclesTable.id, ids.cycle));
+    await request(app).get(`/api/development-cycles/${ids.cycle}`).set(as("guardian")).expect(403);
+    await request(app).get(`/api/development-cycles/${ids.cycle}/internal-summary`).set(as("guardian")).expect(403);
+    await db.update(developmentCyclesTable).set({ internalRecipientId: technicalDirector }).where(eq(developmentCyclesTable.id, ids.cycle));
+    expect(detail.body.players[0].reportDraft.categories.find((x: { score: number }) => x.score === 3).narrative)
+      .toMatch(/meets the expected team standard/i);
     await request(app).put(`/api/development-cycles/${ids.cycle}/players/${playerA}/assessment`)
       .set(as("selected")).send(assessment("changed")).expect(409);
   });
 
   it("releases a guardian-safe report only to managing guardians", async () => {
+    await request(app).put(`/api/development-cycles/${ids.cycle}/players/${playerA}/report-draft`)
+      .set(as("unselected")).send(draft("blocked")).expect(403);
+    await request(app).put(`/api/development-cycles/${ids.cycle}/players/${playerA}/report-draft`)
+      .set(as("technicalDirector")).send(draft("blocked")).expect(403);
+    const reviewed = await request(app).put(`/api/development-cycles/${ids.cycle}/players/${playerA}/report-draft`)
+      .set(as("selected")).send(draft("edited")).expect(200);
+    expect(reviewed.body.categories[0].narrative).toContain("edited");
+    await request(app).get(`/api/development-cycles/${ids.cycle}/internal-summary`)
+      .set(as("technicalDirector")).expect(200);
+    const currentCycle = (await db.select().from(developmentCyclesTable).where(eq(developmentCyclesTable.id, ids.cycle)))[0];
+    const [older] = await db.insert(developmentCyclesTable).values({
+      clubId, teamId: ids.team, createdById: selected, title: "Older baseline", reportingPeriod: "Older",
+      status: "submitted", submittedAt: new Date(currentCycle.submittedAt!.getTime() - 86_400_000),
+    }).returning();
+    const [newer] = await db.insert(developmentCyclesTable).values({
+      clubId, teamId: ids.team, createdById: selected, title: "Newer cycle", reportingPeriod: "Newer",
+      status: "submitted", submittedAt: new Date(currentCycle.submittedAt!.getTime() + 86_400_000),
+    }).returning();
+    const fixture = (cycleId: number, score: number) => db.insert(developmentAssessmentsTable).values({
+      cycleId, playerId: playerA, technical: score, tactical: score, physical: score,
+      coachabilityMindset: score, effortConsistency: score, teamworkCommunication: score,
+      attendanceReliability: score, strength: "Fixture", focus: "Fixture", updatedById: selected,
+    });
+    await fixture(older.id, 1);
+    await fixture(newer.id, 5);
+    const baseline = await request(app).get(`/api/development-cycles/${ids.cycle}/internal-summary`)
+      .set(as("selected")).expect(200);
+    const playerBaseline = baseline.body.players.find((player: { player: { id: number } }) => player.player.id === playerA);
+    expect(playerBaseline.previousAverage).toBe(1);
+    expect(playerBaseline.averageChange).toBeCloseTo((26 / 7) - 1);
+    await db.delete(developmentAssessmentsTable).where(inArray(developmentAssessmentsTable.cycleId, [older.id, newer.id]));
+    await db.delete(developmentCyclesTable).where(inArray(developmentCyclesTable.id, [older.id, newer.id]));
+    await request(app).post(`/api/development-cycles/${ids.cycle}/release`)
+      .set(as("selected")).expect(409);
+    await request(app).put(`/api/development-cycles/${ids.cycle}/players/${playerB}/report-draft`)
+      .set(as("selected")).send(draft("second")).expect(200);
     const releases = await Promise.all([
       request(app).post(`/api/development-cycles/${ids.cycle}/release`).set(as("selected")),
       request(app).post(`/api/development-cycles/${ids.cycle}/release`).set(as("selected")),
@@ -181,11 +243,13 @@ describe("player development permissions and lifecycle", () => {
     const report = await request(app).get(`/api/development-reports/${ids.report}`)
       .set(as("guardian")).expect(200);
     expect(report.body.categories).toHaveLength(7);
-    expect(report.body.categories.find((x: { score: number }) => x.score === 3).narrative)
-      .toMatch(/meets the expected team standard/i);
     expect(JSON.stringify(report.body)).not.toContain("staff-only context");
+    expect(JSON.stringify(report.body)).toContain("technical edited");
     expect(report.body).not.toHaveProperty("internalNotes");
     expect(report.body).not.toHaveProperty("updatedBy");
     expect(report.body).not.toHaveProperty("assessmentId");
+    expect(report.body).not.toHaveProperty("previousAverage");
+    expect(report.body).not.toHaveProperty("teamCategoryAverages");
+    expect(report.body).not.toHaveProperty("internalNotes");
   });
 });

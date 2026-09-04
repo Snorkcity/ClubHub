@@ -8,15 +8,11 @@
 import type { DevelopmentFamilyCategory } from './developmentFamilyCategory';
 import type { DevelopmentPerson } from './developmentPerson';
 
-export interface DevelopmentFamilyReport {
-  id: number;
-  cycleId: number;
+export interface DevelopmentReportDraft {
   player: DevelopmentPerson;
-  coachingTeam: DevelopmentPerson[];
-  reportingPeriod: string;
   categories: DevelopmentFamilyCategory[];
   strength: string;
   focus: string;
-  disclosure: string;
-  releasedAt: string;
+  /** @nullable */
+  reviewedAt: string | null;
 }

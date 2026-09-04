@@ -167,6 +167,7 @@ export interface DevelopmentCycleCapabilities {
   canView: boolean;
   canEdit: boolean;
   canSubmit: boolean;
+  canReviewReports: boolean;
   canRelease: boolean;
 }
 
@@ -190,6 +191,8 @@ export interface DevelopmentCycleSummary {
   internalRecipient?: DevelopmentPerson | null;
   completedPlayers: number;
   totalPlayers: number;
+  reviewedReports: number;
+  totalReports: number;
   capabilities: DevelopmentCycleCapabilities;
   /** @nullable */
   submittedAt?: string | null;
@@ -197,18 +200,6 @@ export interface DevelopmentCycleSummary {
   releasedAt?: string | null;
   createdAt: string;
 }
-
-export interface DevelopmentCyclePlayer {
-  person: DevelopmentPerson;
-  complete: boolean;
-  assessment?: DevelopmentAssessment | null;
-}
-
-export type DevelopmentCycleDetail = DevelopmentCycleSummary & {
-  assessorChoices: DevelopmentPerson[];
-  players: DevelopmentCyclePlayer[];
-  rubric: DevelopmentRubricCategory[];
-};
 
 export interface DevelopmentFamilyCategory {
   key: string;
@@ -221,10 +212,60 @@ export interface DevelopmentFamilyCategory {
   narrative: string;
 }
 
+export interface DevelopmentReportDraft {
+  player: DevelopmentPerson;
+  categories: DevelopmentFamilyCategory[];
+  strength: string;
+  focus: string;
+  /** @nullable */
+  reviewedAt: string | null;
+}
+
+export interface DevelopmentCyclePlayer {
+  person: DevelopmentPerson;
+  complete: boolean;
+  assessment?: DevelopmentAssessment | null;
+  reportDraft: DevelopmentReportDraft | null;
+}
+
+export type DevelopmentCycleDetail = DevelopmentCycleSummary & {
+  assessorChoices: DevelopmentPerson[];
+  players: DevelopmentCyclePlayer[];
+  rubric: DevelopmentRubricCategory[];
+};
+
+export type DevelopmentReportDraftInputCategoriesItem = {
+  key: string;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  narrative: string;
+};
+
+export interface DevelopmentReportDraftInput {
+  /**
+     * @minItems 7
+     * @maxItems 7
+     */
+  categories: DevelopmentReportDraftInputCategoriesItem[];
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  strength: string;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  focus: string;
+}
+
 export interface DevelopmentFamilyReport {
   id: number;
   cycleId: number;
   player: DevelopmentPerson;
+  coachingTeam: DevelopmentPerson[];
   reportingPeriod: string;
   categories: DevelopmentFamilyCategory[];
   strength: string;
@@ -237,6 +278,32 @@ export interface DevelopmentReleaseResult {
   released: boolean;
   reportCount: number;
   emailFailures: number;
+}
+
+export type DevelopmentInternalPlayerCategoryChanges = {[key: string]: number | null};
+
+export interface DevelopmentInternalPlayer {
+  player: DevelopmentPerson;
+  categories: DevelopmentFamilyCategory[];
+  currentAverage: number;
+  /** @nullable */
+  previousAverage: number | null;
+  /** @nullable */
+  averageChange: number | null;
+  categoryChanges: DevelopmentInternalPlayerCategoryChanges;
+  strength: string;
+  focus: string;
+  /** @nullable */
+  internalNotes: string | null;
+}
+
+export type DevelopmentInternalSummaryTeamCategoryAverages = {[key: string]: number};
+
+export interface DevelopmentInternalSummary {
+  cycleId: number;
+  teamId: number;
+  teamCategoryAverages: DevelopmentInternalSummaryTeamCategoryAverages;
+  players: DevelopmentInternalPlayer[];
 }
 
 export type PersonPhonePrivacy = typeof PersonPhonePrivacy[keyof typeof PersonPhonePrivacy];

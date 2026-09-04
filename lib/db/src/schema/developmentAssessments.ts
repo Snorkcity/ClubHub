@@ -1,9 +1,10 @@
-import { check, index, integer, pgTable, serial, text, timestamp, unique } from "drizzle-orm/pg-core";
+import { check, index, integer, jsonb, pgTable, serial, text, timestamp, unique } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { developmentCyclesTable } from "./developmentCycles";
 import { usersTable } from "./users";
+import type { DevelopmentCategorySnapshot } from "./developmentReports";
 
 export const developmentAssessmentsTable = pgTable(
   "development_assessments",
@@ -21,6 +22,11 @@ export const developmentAssessmentsTable = pgTable(
     strength: text("strength").notNull(),
     focus: text("focus").notNull(),
     internalNotes: text("internal_notes"),
+    familyDraftCategories: jsonb("family_draft_categories").$type<DevelopmentCategorySnapshot[]>(),
+    familyStrength: text("family_strength"),
+    familyFocus: text("family_focus"),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    reviewedById: integer("reviewed_by_id").references(() => usersTable.id, { onDelete: "set null" }),
     updatedById: integer("updated_by_id").notNull().references(() => usersTable.id),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

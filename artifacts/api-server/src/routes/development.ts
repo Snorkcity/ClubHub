@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, lt } from "drizzle-orm";
 import {
   db,
+  clubMembersTable,
   developmentAssessmentsTable,
   developmentCycleAssessorsTable,
   developmentCyclesTable,
@@ -58,13 +59,31 @@ async function cycleContext(cycleId: number, clubId: number) {
 function access(cycle: DevelopmentCycle, assessorIds: number[], userId: number, isAdmin: boolean) {
   const administer = isAdmin || cycle.createdById === userId;
   const selected = assessorIds.includes(userId);
-  const recipient = cycle.internalRecipientId === userId && cycle.status !== "active";
   return {
-    canView: administer || selected || recipient,
+    canView: administer || selected,
     canEdit: cycle.status === "active" && (administer || selected),
     canSubmit: cycle.status === "active" && (administer || selected),
+    canReviewReports: cycle.status === "submitted" && (administer || selected),
     canRelease: (cycle.status === "submitted" || cycle.status === "released") && administer,
   };
+}
+
+/** Internal recipients must remain privileged club staff, even for legacy rows. */
+async function isEligibleInternalRecipient(userId: number, clubId: number) {
+  const [admin] = await db.select({ id: clubMembersTable.id }).from(clubMembersTable)
+    .where(and(eq(clubMembersTable.clubId, clubId), eq(clubMembersTable.userId, userId), eq(clubMembersTable.role, "admin")));
+  if (admin) return true;
+  const [staff] = await db.select({ id: teamMembersTable.id }).from(teamMembersTable)
+    .innerJoin(teamsTable, eq(teamMembersTable.teamId, teamsTable.id))
+    .innerJoin(usersTable, eq(teamMembersTable.userId, usersTable.id))
+    .where(and(eq(teamMembersTable.userId, userId), eq(teamsTable.clubId, clubId), eq(usersTable.clubId, clubId), inArray(teamMembersTable.role, ["coach", "manager"])));
+  return !!staff;
+}
+
+async function canViewCycle(cycle: DevelopmentCycle, assessorIds: number[], userId: number, isAdmin: boolean) {
+  if (access(cycle, assessorIds, userId, isAdmin).canView) return true;
+  return cycle.status !== "active" && cycle.internalRecipientId === userId &&
+    isEligibleInternalRecipient(userId, cycle.clubId);
 }
 
 function isSerializationFailure(error: unknown) {
@@ -84,7 +103,7 @@ async function serializable<T>(work: () => Promise<T>): Promise<T> {
   throw lastError;
 }
 
-async function buildDetail(cycle: DevelopmentCycle, assessorIds: number[], actorId: number, isAdmin: boolean) {
+async function buildDetail(cycle: DevelopmentCycle, assessorIds: number[], actorId: number, isAdmin: boolean, recipientRead = false) {
   const rosterRows = await db.select({ user: usersTable }).from(teamMembersTable)
     .innerJoin(usersTable, eq(teamMembersTable.userId, usersTable.id))
     .where(and(eq(teamMembersTable.teamId, cycle.teamId), eq(teamMembersTable.role, "player")));
@@ -103,6 +122,7 @@ async function buildDetail(cycle: DevelopmentCycle, assessorIds: number[], actor
   }
   const assessmentByPlayer = new Map(assessments.map((a) => [a.playerId, a]));
   const caps = access(cycle, assessorIds, actorId, isAdmin);
+  if (recipientRead) caps.canView = true;
   const toAssessment = (a: DevelopmentAssessment) => ({
     id: a.id,
     technical: a.technical,
@@ -130,6 +150,8 @@ async function buildDetail(cycle: DevelopmentCycle, assessorIds: number[], actor
     internalRecipient: cycle.internalRecipientId ? person(byId.get(cycle.internalRecipientId)!) : null,
     completedPlayers: assessments.filter((a) => rosterRows.some((r) => r.user.id === a.playerId)).length,
     totalPlayers: rosterRows.length,
+    reviewedReports: assessments.filter((a) => a.reviewedAt && a.familyDraftCategories && a.familyStrength && a.familyFocus).length,
+    totalReports: rosterRows.length,
     capabilities: caps,
     submittedAt: cycle.submittedAt?.toISOString() ?? null,
     releasedAt: cycle.releasedAt?.toISOString() ?? null,
@@ -137,7 +159,25 @@ async function buildDetail(cycle: DevelopmentCycle, assessorIds: number[], actor
     assessorChoices: staffRows.map((r) => person(r.user)),
     players: rosterRows.map(({ user }) => {
       const assessment = assessmentByPlayer.get(user.id);
-      return { person: person(user), complete: !!assessment, assessment: assessment ? toAssessment(assessment) : null };
+      const reportDraft =
+        cycle.status !== "active" &&
+        assessment?.familyDraftCategories &&
+        assessment.familyStrength &&
+        assessment.familyFocus
+          ? {
+              player: person(user),
+              categories: assessment.familyDraftCategories,
+              strength: assessment.familyStrength,
+              focus: assessment.familyFocus,
+              reviewedAt: assessment.reviewedAt?.toISOString() ?? null,
+            }
+          : null;
+      return {
+        person: person(user),
+        complete: !!assessment,
+        assessment: assessment ? toAssessment(assessment) : null,
+        reportDraft,
+      };
     }),
     rubric: DEVELOPMENT_RUBRIC,
   };
@@ -153,8 +193,9 @@ router.get("/teams/:teamId/development-cycles", requireAuth, async (req, res): P
   const visible = [];
   for (const cycle of cycles) {
     const context = await cycleContext(cycle.id, clubId);
-    if (!context || !access(cycle, context.assessorIds, localUser.id, isClubAdmin).canView) continue;
-    const detail = await buildDetail(cycle, context.assessorIds, localUser.id, isClubAdmin);
+    if (!context || !(await canViewCycle(cycle, context.assessorIds, localUser.id, isClubAdmin))) continue;
+    const recipientRead = !access(cycle, context.assessorIds, localUser.id, isClubAdmin).canView;
+    const detail = await buildDetail(cycle, context.assessorIds, localUser.id, isClubAdmin, recipientRead);
     const { assessorChoices: _choices, players: _players, rubric: _rubric, ...summary } = detail;
     visible.push(summary);
   }
@@ -178,9 +219,9 @@ router.post("/teams/:teamId/development-cycles", requireAuth, async (req, res): 
     res.status(400).json({ error: "Every assessor must be a coach or manager on this team" }); return;
   }
   if (parsed.data.internalRecipientId) {
-    const [recipient] = await db.select({ id: usersTable.id }).from(usersTable)
-      .where(and(eq(usersTable.id, parsed.data.internalRecipientId), eq(usersTable.clubId, clubId)));
-    if (!recipient) { res.status(400).json({ error: "Internal recipient must belong to this club" }); return; }
+    if (!(await isEligibleInternalRecipient(parsed.data.internalRecipientId, clubId))) {
+      res.status(400).json({ error: "Internal recipient must be a current club admin, coach, or manager" }); return;
+    }
   }
   const cycle = await db.transaction(async (tx) => {
     const [created] = await tx.insert(developmentCyclesTable).values({
@@ -200,9 +241,22 @@ router.get("/teams/:teamId/development-recipient-candidates", requireAuth, async
   if (!(await isTeamStaff(localUser.id, teamId, clubId, isClubAdmin))) {
     res.status(403).json({ error: "Only team staff or club admins can view recipient candidates" }); return;
   }
-  const candidates = await db.select().from(usersTable)
-    .where(eq(usersTable.clubId, clubId))
-    .orderBy(usersTable.lastName, usersTable.firstName);
+  const admins = await db.select({ userId: clubMembersTable.userId }).from(clubMembersTable)
+    .where(and(eq(clubMembersTable.clubId, clubId), eq(clubMembersTable.role, "admin")));
+  const staff = await db.select({ userId: teamMembersTable.userId }).from(teamMembersTable)
+    .innerJoin(teamsTable, eq(teamMembersTable.teamId, teamsTable.id))
+    .innerJoin(usersTable, eq(teamMembersTable.userId, usersTable.id))
+    .where(and(
+      eq(teamsTable.clubId, clubId),
+      eq(usersTable.clubId, clubId),
+      inArray(teamMembersTable.role, ["coach", "manager"]),
+    ));
+  const candidateIds = [...new Set([...admins.map((row) => row.userId), ...staff.map((row) => row.userId)])];
+  const candidates = candidateIds.length
+    ? await db.select().from(usersTable)
+      .where(and(eq(usersTable.clubId, clubId), inArray(usersTable.id, candidateIds)))
+      .orderBy(usersTable.lastName, usersTable.firstName)
+    : [];
   res.json(candidates.map(person));
 });
 
@@ -210,10 +264,11 @@ router.get("/development-cycles/:cycleId", requireAuth, async (req, res): Promis
   const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
   const context = await cycleContext(Number(req.params.cycleId), clubId);
   if (!context) { res.status(404).json({ error: "Development cycle not found" }); return; }
-  if (!access(context.cycle, context.assessorIds, localUser.id, isClubAdmin).canView) {
+  if (!(await canViewCycle(context.cycle, context.assessorIds, localUser.id, isClubAdmin))) {
     res.status(403).json({ error: "You do not have access to this development cycle" }); return;
   }
-  res.json(await buildDetail(context.cycle, context.assessorIds, localUser.id, isClubAdmin));
+  const recipientRead = !access(context.cycle, context.assessorIds, localUser.id, isClubAdmin).canView;
+  res.json(await buildDetail(context.cycle, context.assessorIds, localUser.id, isClubAdmin, recipientRead));
 });
 
 router.put("/development-cycles/:cycleId/players/:playerId/assessment", requireAuth, async (req, res): Promise<void> => {
@@ -256,6 +311,48 @@ router.put("/development-cycles/:cycleId/players/:playerId/assessment", requireA
   });
 });
 
+router.put("/development-cycles/:cycleId/players/:playerId/report-draft", requireAuth, async (req, res): Promise<void> => {
+  const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
+  const cycleId = Number(req.params.cycleId);
+  const playerId = Number(req.params.playerId);
+  const body = req.body as { categories?: { key?: string; narrative?: string }[]; strength?: unknown; focus?: unknown };
+  const requiredKeys = DEVELOPMENT_RUBRIC.map((r) => r.key);
+  if (!Array.isArray(body.categories) || body.categories.length !== requiredKeys.length ||
+      new Set(body.categories.map((c) => c.key)).size !== requiredKeys.length ||
+      !requiredKeys.every((key) => body.categories!.some((c) => c.key === key && typeof c.narrative === "string" && c.narrative.trim().length > 0 && c.narrative.length <= 1000)) ||
+      typeof body.strength !== "string" || !body.strength.trim() || body.strength.length > 2000 ||
+      typeof body.focus !== "string" || !body.focus.trim() || body.focus.length > 2000) {
+    res.status(400).json({ error: "Provide one narrative for each canonical category plus family strength and focus" }); return;
+  }
+  const familyStrength = body.strength.trim();
+  const familyFocus = body.focus.trim();
+  const result = await db.transaction(async (tx) => {
+    const [row] = await tx.select({ cycle: developmentCyclesTable }).from(developmentCyclesTable)
+      .innerJoin(teamsTable, eq(developmentCyclesTable.teamId, teamsTable.id))
+      .where(and(eq(developmentCyclesTable.id, cycleId), eq(developmentCyclesTable.clubId, clubId), eq(teamsTable.clubId, clubId))).for("update");
+    if (!row) return { kind: "missing" as const };
+    const assessors = await tx.select({ userId: developmentCycleAssessorsTable.userId }).from(developmentCycleAssessorsTable).where(eq(developmentCycleAssessorsTable.cycleId, cycleId));
+    if (!access(row.cycle, assessors.map((a) => a.userId), localUser.id, isClubAdmin).canReviewReports)
+      return { kind: row.cycle.status === "submitted" ? "forbidden" as const : "locked" as const };
+    const [assessment] = await tx.select().from(developmentAssessmentsTable)
+      .where(and(eq(developmentAssessmentsTable.cycleId, cycleId), eq(developmentAssessmentsTable.playerId, playerId))).for("update");
+    const [player] = await tx.select().from(usersTable).where(and(eq(usersTable.id, playerId), eq(usersTable.clubId, clubId)));
+    if (!assessment || !player || !assessment.familyDraftCategories) return { kind: "missingAssessment" as const };
+    const narratives = new Map(body.categories!.map((c) => [c.key!, c.narrative!.trim()]));
+    const categories = assessment.familyDraftCategories.map((category) => ({ ...category, narrative: narratives.get(category.key)! }));
+    const [saved] = await tx.update(developmentAssessmentsTable).set({
+      familyDraftCategories: categories, familyStrength, familyFocus,
+      reviewedAt: new Date(), reviewedById: localUser.id,
+    }).where(eq(developmentAssessmentsTable.id, assessment.id)).returning();
+    return { kind: "saved" as const, saved, player };
+  });
+  if (result.kind === "missing") { res.status(404).json({ error: "Development cycle not found" }); return; }
+  if (result.kind === "forbidden") { res.status(403).json({ error: "You are not a selected assessor" }); return; }
+  if (result.kind === "locked") { res.status(409).json({ error: "Family drafts can only be reviewed after submission and before release" }); return; }
+  if (result.kind === "missingAssessment") { res.status(404).json({ error: "Assessment draft not found" }); return; }
+  res.json({ player: person(result.player!), categories: result.saved!.familyDraftCategories, strength: result.saved!.familyStrength, focus: result.saved!.familyFocus, reviewedAt: result.saved!.reviewedAt!.toISOString() });
+});
+
 router.post("/development-cycles/:cycleId/submit", requireAuth, async (req, res): Promise<void> => {
   const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
   const cycleId = Number(req.params.cycleId);
@@ -279,11 +376,23 @@ router.post("/development-cycles/:cycleId/submit", requireAuth, async (req, res)
       // assessment completeness check one atomic submission decision.
       const players = await tx.select({ userId: teamMembersTable.userId }).from(teamMembersTable)
         .where(and(eq(teamMembersTable.teamId, row.cycle.teamId), eq(teamMembersTable.role, "player"))).for("update");
-      const assessments = await tx.select({ playerId: developmentAssessmentsTable.playerId }).from(developmentAssessmentsTable)
+      const assessments = await tx.select().from(developmentAssessmentsTable)
         .where(eq(developmentAssessmentsTable.cycleId, cycleId)).for("update");
       const completed = new Set(assessments.map((a) => a.playerId));
       const missing = players.filter((p) => !completed.has(p.userId)).length;
       if (missing) return { kind: "incomplete" as const, missing };
+      // Submission creates an unreviewed, family-safe draft from the shared
+      // assessment. Review is explicitly required before release.
+      for (const assessment of assessments) {
+        const ratings = Object.fromEntries(DEVELOPMENT_RUBRIC.map((r) => [r.key, assessment[r.key]])) as Record<RatingKey, number>;
+        await tx.update(developmentAssessmentsTable).set({
+          familyDraftCategories: familyCategories(ratings),
+          familyStrength: assessment.strength,
+          familyFocus: assessment.focus,
+          reviewedAt: null,
+          reviewedById: null,
+        }).where(eq(developmentAssessmentsTable.id, assessment.id));
+      }
       const [submitted] = await tx.update(developmentCyclesTable)
         .set({ status: "submitted", submittedAt: new Date(), updatedAt: new Date() })
         .where(and(eq(developmentCyclesTable.id, cycleId), eq(developmentCyclesTable.status, "active"))).returning();
@@ -302,11 +411,15 @@ router.post("/development-cycles/:cycleId/submit", requireAuth, async (req, res)
   res.json(await buildDetail(outcome.cycle, outcome.assessorIds, localUser.id, isClubAdmin));
 });
 
-function reportJson(report: DevelopmentReport) {
+async function reportJson(report: DevelopmentReport) {
+  const coaches = await db.select({ user: usersTable }).from(developmentCycleAssessorsTable)
+    .innerJoin(usersTable, eq(developmentCycleAssessorsTable.userId, usersTable.id))
+    .where(eq(developmentCycleAssessorsTable.cycleId, report.cycleId));
   return {
     id: report.id,
     cycleId: report.cycleId,
     player: { id: report.playerId, firstName: report.playerFirstName, lastName: report.playerFullName.slice(report.playerFirstName.length).trim(), fullName: report.playerFullName },
+    coachingTeam: coaches.map((row) => person(row.user)),
     reportingPeriod: report.reportingPeriod,
     categories: report.categories,
     strength: report.strength,
@@ -320,7 +433,9 @@ async function canReadReport(report: DevelopmentReport, userId: number, clubId: 
   const context = await cycleContext(report.cycleId, clubId);
   if (!context) return false;
   if (isAdmin || report.playerId === userId || context.cycle.createdById === userId ||
-      context.cycle.internalRecipientId === userId || context.assessorIds.includes(userId)) return true;
+      context.assessorIds.includes(userId)) return true;
+  if (context.cycle.internalRecipientId === userId &&
+      await isEligibleInternalRecipient(userId, clubId)) return true;
   const [guardian] = await db.select({ id: guardianshipsTable.id }).from(guardianshipsTable)
     .where(and(eq(guardianshipsTable.guardianId, userId), eq(guardianshipsTable.playerId, report.playerId), eq(guardianshipsTable.canManage, true)));
   return !!guardian;
@@ -334,6 +449,7 @@ router.post("/development-cycles/:cycleId/release", requireAuth, async (req, res
     | { kind: "missing" }
     | { kind: "forbidden" }
     | { kind: "notSubmitted" }
+    | { kind: "incompleteReviews"; remaining: number }
     | { kind: "alreadyReleased"; reportCount: number }
     | { kind: "claimed"; reports: DevelopmentReport[]; cycle: DevelopmentCycle };
   outcome = await db.transaction(async (tx) => {
@@ -352,24 +468,27 @@ router.post("/development-cycles/:cycleId/release", requireAuth, async (req, res
       return { kind: "alreadyReleased" as const, reportCount: existing.length };
     }
     if (locked.cycle.status !== "submitted") return { kind: "notSubmitted" as const };
-    // Claim release before creating snapshots. The locked row means only this
-    // transaction can be the claimant and therefore the only delivery sender.
+    const assessments = await tx.select({ assessment: developmentAssessmentsTable, player: usersTable })
+      .from(developmentAssessmentsTable).innerJoin(usersTable, eq(developmentAssessmentsTable.playerId, usersTable.id))
+      .where(and(eq(developmentAssessmentsTable.cycleId, cycleId), eq(usersTable.clubId, clubId)));
+    const remaining = assessments.filter(({ assessment }) =>
+      !assessment.reviewedAt || !assessment.familyDraftCategories || !assessment.familyStrength || !assessment.familyFocus,
+    ).length;
+    if (remaining) return { kind: "incompleteReviews" as const, remaining };
+    // Claim release only after every review passes. The locked row means only
+    // this transaction can be the claimant and therefore the delivery sender.
     const [claimed] = await tx.update(developmentCyclesTable)
       .set({ status: "released", releasedAt, updatedAt: releasedAt })
       .where(and(eq(developmentCyclesTable.id, cycleId), eq(developmentCyclesTable.status, "submitted")))
       .returning();
     if (!claimed) return { kind: "alreadyReleased" as const, reportCount: 0 };
-    const assessments = await tx.select({ assessment: developmentAssessmentsTable, player: usersTable })
-      .from(developmentAssessmentsTable).innerJoin(usersTable, eq(developmentAssessmentsTable.playerId, usersTable.id))
-      .where(and(eq(developmentAssessmentsTable.cycleId, cycleId), eq(usersTable.clubId, clubId)));
     const created = [];
     for (const { assessment, player: playerRow } of assessments) {
-      const ratings = Object.fromEntries(DEVELOPMENT_RUBRIC.map((r) => [r.key, assessment[r.key]])) as Record<RatingKey, number>;
       const [report] = await tx.insert(developmentReportsTable).values({
         cycleId, assessmentId: assessment.id, playerId: playerRow.id,
         playerFirstName: playerRow.firstName, playerFullName: `${playerRow.firstName} ${playerRow.lastName}`,
-        reportingPeriod: claimed.reportingPeriod, categories: familyCategories(ratings),
-        strength: assessment.strength, focus: assessment.focus, disclosure: DEVELOPMENT_DISCLOSURE, releasedAt,
+        reportingPeriod: claimed.reportingPeriod, categories: assessment.familyDraftCategories!,
+        strength: assessment.familyStrength!, focus: assessment.familyFocus!, disclosure: DEVELOPMENT_DISCLOSURE, releasedAt,
       }).returning();
       created.push(report);
     }
@@ -378,6 +497,7 @@ router.post("/development-cycles/:cycleId/release", requireAuth, async (req, res
   if (outcome.kind === "missing") { res.status(404).json({ error: "Development cycle not found" }); return; }
   if (outcome.kind === "forbidden") { res.status(403).json({ error: "Only the cycle creator or a club admin can release submitted reports" }); return; }
   if (outcome.kind === "notSubmitted") { res.status(409).json({ error: "Cycle must be submitted before reports are released" }); return; }
+  if (outcome.kind === "incompleteReviews") { res.status(409).json({ error: `All family report drafts must be reviewed before release (${outcome.remaining} remaining)` }); return; }
   if (outcome.kind === "alreadyReleased") { res.json({ released: true, reportCount: outcome.reportCount, emailFailures: 0 }); return; }
   const { reports, cycle } = outcome;
 
@@ -449,6 +569,65 @@ router.post("/development-cycles/:cycleId/release", requireAuth, async (req, res
   res.json({ released: true, reportCount: reports.length, emailFailures });
 });
 
+router.get("/development-cycles/:cycleId/internal-summary", requireAuth, async (req, res): Promise<void> => {
+  const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
+  const context = await cycleContext(Number(req.params.cycleId), clubId);
+  if (!context) { res.status(404).json({ error: "Development cycle not found" }); return; }
+  if (context.cycle.status === "active") { res.status(409).json({ error: "Internal summaries are available after submission" }); return; }
+  if (!(await canViewCycle(context.cycle, context.assessorIds, localUser.id, isClubAdmin))) {
+    res.status(403).json({ error: "You do not have access to this internal summary" }); return;
+  }
+  const current = await db.select({ assessment: developmentAssessmentsTable, player: usersTable })
+    .from(developmentAssessmentsTable).innerJoin(usersTable, eq(developmentAssessmentsTable.playerId, usersTable.id))
+    .where(and(eq(developmentAssessmentsTable.cycleId, context.cycle.id), eq(usersTable.clubId, clubId)));
+  const priorCycles = context.cycle.submittedAt
+    ? await db.select().from(developmentCyclesTable)
+      .where(and(
+        eq(developmentCyclesTable.clubId, clubId),
+        eq(developmentCyclesTable.teamId, context.cycle.teamId),
+        inArray(developmentCyclesTable.status, ["submitted", "released"]),
+        lt(developmentCyclesTable.submittedAt, context.cycle.submittedAt),
+      ))
+      .orderBy(desc(developmentCyclesTable.submittedAt), desc(developmentCyclesTable.id))
+      .limit(1)
+    : [];
+  const previous = priorCycles[0];
+  const previousAssessments = previous
+    ? await db.select().from(developmentAssessmentsTable).where(eq(developmentAssessmentsTable.cycleId, previous.id))
+    : [];
+  const previousByPlayer = new Map(previousAssessments.map((assessment) => [assessment.playerId, assessment]));
+  const avg = (assessment: DevelopmentAssessment) =>
+    DEVELOPMENT_RUBRIC.reduce((sum, category) => sum + assessment[category.key], 0) / DEVELOPMENT_RUBRIC.length;
+  const teamCategoryAverages = Object.fromEntries(DEVELOPMENT_RUBRIC.map((category) => [
+    category.key,
+    current.length ? current.reduce((sum, row) => sum + row.assessment[category.key], 0) / current.length : 0,
+  ]));
+  res.json({
+    cycleId: context.cycle.id,
+    teamId: context.cycle.teamId,
+    teamCategoryAverages,
+    players: current.map(({ assessment, player: playerRow }) => {
+      const prior = previousByPlayer.get(assessment.playerId);
+      const currentAverage = avg(assessment);
+      const previousAverage = prior ? avg(prior) : null;
+      const ratings = Object.fromEntries(DEVELOPMENT_RUBRIC.map((category) => [category.key, assessment[category.key]])) as Record<RatingKey, number>;
+      return {
+        player: person(playerRow),
+        categories: familyCategories(ratings),
+        currentAverage,
+        previousAverage,
+        averageChange: previousAverage === null ? null : currentAverage - previousAverage,
+        categoryChanges: Object.fromEntries(DEVELOPMENT_RUBRIC.map((category) => [
+          category.key, prior ? assessment[category.key] - prior[category.key] : null,
+        ])),
+        strength: assessment.familyStrength ?? assessment.strength,
+        focus: assessment.familyFocus ?? assessment.focus,
+        internalNotes: assessment.internalNotes,
+      };
+    }),
+  });
+});
+
 router.get("/players/:playerId/development-reports", requireAuth, async (req, res): Promise<void> => {
   const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
   const playerId = Number(req.params.playerId);
@@ -457,7 +636,7 @@ router.get("/players/:playerId/development-reports", requireAuth, async (req, re
     .where(and(eq(developmentReportsTable.playerId, playerId), eq(developmentCyclesTable.clubId, clubId)))
     .orderBy(desc(developmentReportsTable.releasedAt));
   const allowed = [];
-  for (const { report } of reports) if (await canReadReport(report, localUser.id, clubId, isClubAdmin)) allowed.push(reportJson(report));
+  for (const { report } of reports) if (await canReadReport(report, localUser.id, clubId, isClubAdmin)) allowed.push(await reportJson(report));
   if (!allowed.length && playerId !== localUser.id) {
     const [target] = await db.select({ id: usersTable.id }).from(usersTable).where(and(eq(usersTable.id, playerId), eq(usersTable.clubId, clubId)));
     if (!target) { res.status(404).json({ error: "Player not found" }); return; }
@@ -477,7 +656,7 @@ router.get("/development-reports/:reportId", requireAuth, async (req, res): Prom
   if (!(await canReadReport(row.report, localUser.id, clubId, isClubAdmin))) {
     res.status(403).json({ error: "You cannot view this development report" }); return;
   }
-  res.json(reportJson(row.report));
+  res.json(await reportJson(row.report));
 });
 
 export default router;

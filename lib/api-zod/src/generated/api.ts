@@ -2226,10 +2226,13 @@ export const ListDevelopmentCyclesResponseItem = zod.object({
 }),zod.null()]).optional(),
   "completedPlayers": zod.number(),
   "totalPlayers": zod.number(),
+  "reviewedReports": zod.number(),
+  "totalReports": zod.number(),
   "capabilities": zod.object({
   "canView": zod.boolean(),
   "canEdit": zod.boolean(),
   "canSubmit": zod.boolean(),
+  "canReviewReports": zod.boolean(),
   "canRelease": zod.boolean()
 }),
   "submittedAt": zod.string().nullish(),
@@ -2276,6 +2279,8 @@ export const createDevelopmentCycleResponseTwoPlayersItemAssessmentOneOneTwoFocu
 
 export const createDevelopmentCycleResponseTwoPlayersItemAssessmentOneOneTwoInternalNotesMax = 5000;
 
+export const createDevelopmentCycleResponseTwoPlayersItemReportDraftOneCategoriesItemScoreMax = 5;
+
 
 
 export const CreateDevelopmentCycleResponse = zod.object({
@@ -2304,10 +2309,13 @@ export const CreateDevelopmentCycleResponse = zod.object({
 }),zod.null()]).optional(),
   "completedPlayers": zod.number(),
   "totalPlayers": zod.number(),
+  "reviewedReports": zod.number(),
+  "totalReports": zod.number(),
   "capabilities": zod.object({
   "canView": zod.boolean(),
   "canEdit": zod.boolean(),
   "canSubmit": zod.boolean(),
+  "canReviewReports": zod.boolean(),
   "canRelease": zod.boolean()
 }),
   "submittedAt": zod.string().nullish(),
@@ -2355,7 +2363,24 @@ export const CreateDevelopmentCycleResponse = zod.object({
   "fullName": zod.string()
 }),
   "updatedAt": zod.string()
-})),zod.null()]).optional()
+})),zod.null()]).optional(),
+  "reportDraft": zod.union([zod.object({
+  "player": zod.object({
+  "id": zod.number(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "fullName": zod.string()
+}),
+  "categories": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "score": zod.number().min(1).max(createDevelopmentCycleResponseTwoPlayersItemReportDraftOneCategoriesItemScoreMax),
+  "narrative": zod.string()
+})),
+  "strength": zod.string(),
+  "focus": zod.string(),
+  "reviewedAt": zod.string().nullable()
+}),zod.null()])
 })),
   "rubric": zod.array(zod.object({
   "key": zod.string(),
@@ -2400,6 +2425,8 @@ export const getDevelopmentCycleResponseTwoPlayersItemAssessmentOneOneTwoFocusMa
 
 export const getDevelopmentCycleResponseTwoPlayersItemAssessmentOneOneTwoInternalNotesMax = 5000;
 
+export const getDevelopmentCycleResponseTwoPlayersItemReportDraftOneCategoriesItemScoreMax = 5;
+
 
 
 export const GetDevelopmentCycleResponse = zod.object({
@@ -2428,10 +2455,13 @@ export const GetDevelopmentCycleResponse = zod.object({
 }),zod.null()]).optional(),
   "completedPlayers": zod.number(),
   "totalPlayers": zod.number(),
+  "reviewedReports": zod.number(),
+  "totalReports": zod.number(),
   "capabilities": zod.object({
   "canView": zod.boolean(),
   "canEdit": zod.boolean(),
   "canSubmit": zod.boolean(),
+  "canReviewReports": zod.boolean(),
   "canRelease": zod.boolean()
 }),
   "submittedAt": zod.string().nullish(),
@@ -2479,7 +2509,24 @@ export const GetDevelopmentCycleResponse = zod.object({
   "fullName": zod.string()
 }),
   "updatedAt": zod.string()
-})),zod.null()]).optional()
+})),zod.null()]).optional(),
+  "reportDraft": zod.union([zod.object({
+  "player": zod.object({
+  "id": zod.number(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "fullName": zod.string()
+}),
+  "categories": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "score": zod.number().min(1).max(getDevelopmentCycleResponseTwoPlayersItemReportDraftOneCategoriesItemScoreMax),
+  "narrative": zod.string()
+})),
+  "strength": zod.string(),
+  "focus": zod.string(),
+  "reviewedAt": zod.string().nullable()
+}),zod.null()])
 })),
   "rubric": zod.array(zod.object({
   "key": zod.string(),
@@ -2581,6 +2628,52 @@ export const SaveDevelopmentAssessmentResponse = zod.object({
 
 
 /**
+ * @summary Review the family-safe wording for one submitted assessment
+ */
+export const saveDevelopmentReportDraftBodyCategoriesItemNarrativeMax = 1000;
+
+export const saveDevelopmentReportDraftBodyCategoriesMin = 7;
+export const saveDevelopmentReportDraftBodyCategoriesMax = 7;
+
+export const saveDevelopmentReportDraftBodyStrengthMax = 2000;
+
+export const saveDevelopmentReportDraftBodyFocusMax = 2000;
+
+
+
+export const SaveDevelopmentReportDraftBody = zod.object({
+  "categories": zod.array(zod.object({
+  "key": zod.string(),
+  "narrative": zod.string().min(1).max(saveDevelopmentReportDraftBodyCategoriesItemNarrativeMax)
+})).min(saveDevelopmentReportDraftBodyCategoriesMin).max(saveDevelopmentReportDraftBodyCategoriesMax),
+  "strength": zod.string().min(1).max(saveDevelopmentReportDraftBodyStrengthMax),
+  "focus": zod.string().min(1).max(saveDevelopmentReportDraftBodyFocusMax)
+})
+
+export const saveDevelopmentReportDraftResponseCategoriesItemScoreMax = 5;
+
+
+
+export const SaveDevelopmentReportDraftResponse = zod.object({
+  "player": zod.object({
+  "id": zod.number(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "fullName": zod.string()
+}),
+  "categories": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "score": zod.number().min(1).max(saveDevelopmentReportDraftResponseCategoriesItemScoreMax),
+  "narrative": zod.string()
+})),
+  "strength": zod.string(),
+  "focus": zod.string(),
+  "reviewedAt": zod.string().nullable()
+})
+
+
+/**
  * @summary Submit and lock a complete cycle
  */
 export const submitDevelopmentCycleResponseTwoPlayersItemAssessmentOneOneOneTechnicalMax = 5;
@@ -2602,6 +2695,8 @@ export const submitDevelopmentCycleResponseTwoPlayersItemAssessmentOneOneTwoStre
 export const submitDevelopmentCycleResponseTwoPlayersItemAssessmentOneOneTwoFocusMax = 2000;
 
 export const submitDevelopmentCycleResponseTwoPlayersItemAssessmentOneOneTwoInternalNotesMax = 5000;
+
+export const submitDevelopmentCycleResponseTwoPlayersItemReportDraftOneCategoriesItemScoreMax = 5;
 
 
 
@@ -2631,10 +2726,13 @@ export const SubmitDevelopmentCycleResponse = zod.object({
 }),zod.null()]).optional(),
   "completedPlayers": zod.number(),
   "totalPlayers": zod.number(),
+  "reviewedReports": zod.number(),
+  "totalReports": zod.number(),
   "capabilities": zod.object({
   "canView": zod.boolean(),
   "canEdit": zod.boolean(),
   "canSubmit": zod.boolean(),
+  "canReviewReports": zod.boolean(),
   "canRelease": zod.boolean()
 }),
   "submittedAt": zod.string().nullish(),
@@ -2682,7 +2780,24 @@ export const SubmitDevelopmentCycleResponse = zod.object({
   "fullName": zod.string()
 }),
   "updatedAt": zod.string()
-})),zod.null()]).optional()
+})),zod.null()]).optional(),
+  "reportDraft": zod.union([zod.object({
+  "player": zod.object({
+  "id": zod.number(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "fullName": zod.string()
+}),
+  "categories": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "score": zod.number().min(1).max(submitDevelopmentCycleResponseTwoPlayersItemReportDraftOneCategoriesItemScoreMax),
+  "narrative": zod.string()
+})),
+  "strength": zod.string(),
+  "focus": zod.string(),
+  "reviewedAt": zod.string().nullable()
+}),zod.null()])
 })),
   "rubric": zod.array(zod.object({
   "key": zod.string(),
@@ -2703,6 +2818,41 @@ export const ReleaseDevelopmentReportsResponse = zod.object({
 
 
 /**
+ * @summary Restricted submitted-cycle team summary and prior-cycle changes
+ */
+export const getDevelopmentInternalSummaryResponsePlayersItemCategoriesItemScoreMax = 5;
+
+
+
+export const GetDevelopmentInternalSummaryResponse = zod.object({
+  "cycleId": zod.number(),
+  "teamId": zod.number(),
+  "teamCategoryAverages": zod.record(zod.string(), zod.number()),
+  "players": zod.array(zod.object({
+  "player": zod.object({
+  "id": zod.number(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "fullName": zod.string()
+}),
+  "categories": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "score": zod.number().min(1).max(getDevelopmentInternalSummaryResponsePlayersItemCategoriesItemScoreMax),
+  "narrative": zod.string()
+})),
+  "currentAverage": zod.number(),
+  "previousAverage": zod.number().nullable(),
+  "averageChange": zod.number().nullable(),
+  "categoryChanges": zod.record(zod.string(), zod.number().nullable()),
+  "strength": zod.string(),
+  "focus": zod.string(),
+  "internalNotes": zod.string().nullable()
+}))
+})
+
+
+/**
  * @summary List released family reports for a player
  */
 export const listPlayerDevelopmentReportsResponseCategoriesItemScoreMax = 5;
@@ -2718,6 +2868,12 @@ export const ListPlayerDevelopmentReportsResponseItem = zod.object({
   "lastName": zod.string(),
   "fullName": zod.string()
 }),
+  "coachingTeam": zod.array(zod.object({
+  "id": zod.number(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "fullName": zod.string()
+})),
   "reportingPeriod": zod.string(),
   "categories": zod.array(zod.object({
   "key": zod.string(),
@@ -2749,6 +2905,12 @@ export const GetDevelopmentReportResponse = zod.object({
   "lastName": zod.string(),
   "fullName": zod.string()
 }),
+  "coachingTeam": zod.array(zod.object({
+  "id": zod.number(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "fullName": zod.string()
+})),
   "reportingPeriod": zod.string(),
   "categories": zod.array(zod.object({
   "key": zod.string(),

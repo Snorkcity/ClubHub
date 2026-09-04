@@ -7,9 +7,11 @@
  */
 import type { DevelopmentAssessment } from './developmentAssessment';
 import type { DevelopmentPerson } from './developmentPerson';
+import type { DevelopmentReportDraft } from './developmentReportDraft';
 
 export interface DevelopmentCyclePlayer {
   person: DevelopmentPerson;
   complete: boolean;
   assessment?: DevelopmentAssessment | null;
+  reportDraft: DevelopmentReportDraft | null;
 }

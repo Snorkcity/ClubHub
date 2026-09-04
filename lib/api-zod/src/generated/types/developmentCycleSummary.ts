@@ -20,6 +20,8 @@ export interface DevelopmentCycleSummary {
   internalRecipient?: DevelopmentPerson | null;
   completedPlayers: number;
   totalPlayers: number;
+  reviewedReports: number;
+  totalReports: number;
   capabilities: DevelopmentCycleCapabilities;
   /** @nullable */
   submittedAt?: string | null;

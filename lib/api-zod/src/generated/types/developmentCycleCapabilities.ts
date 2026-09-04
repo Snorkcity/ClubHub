@@ -10,5 +10,6 @@ export interface DevelopmentCycleCapabilities {
   canView: boolean;
   canEdit: boolean;
   canSubmit: boolean;
+  canReviewReports: boolean;
   canRelease: boolean;
 }

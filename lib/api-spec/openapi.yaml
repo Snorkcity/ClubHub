@@ -1333,6 +1333,26 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/DevelopmentAssessment" }
 
+  /development-cycles/{cycleId}/players/{playerId}/report-draft:
+    put:
+      operationId: saveDevelopmentReportDraft
+      tags: [development]
+      summary: Review the family-safe wording for one submitted assessment
+      parameters:
+        - $ref: "#/components/parameters/CycleId"
+        - $ref: "#/components/parameters/PlayerId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DevelopmentReportDraftInput" }
+      responses:
+        "200":
+          description: Reviewed family draft
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DevelopmentReportDraft" }
+
   /development-cycles/{cycleId}/submit:
     post:
       operationId: submitDevelopmentCycle
@@ -1360,6 +1380,20 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/DevelopmentReleaseResult" }
+
+  /development-cycles/{cycleId}/internal-summary:
+    get:
+      operationId: getDevelopmentInternalSummary
+      tags: [development]
+      summary: Restricted submitted-cycle team summary and prior-cycle changes
+      parameters:
+        - $ref: "#/components/parameters/CycleId"
+      responses:
+        "200":
+          description: Restricted internal summary
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DevelopmentInternalSummary" }
 
   /players/{playerId}/development-reports:
     get:
@@ -1593,16 +1627,17 @@ components:
 
     DevelopmentCycleCapabilities:
       type: object
-      required: [canView, canEdit, canSubmit, canRelease]
+      required: [canView, canEdit, canSubmit, canReviewReports, canRelease]
       properties:
         canView: { type: boolean }
         canEdit: { type: boolean }
         canSubmit: { type: boolean }
+        canReviewReports: { type: boolean }
         canRelease: { type: boolean }
 
     DevelopmentCycleSummary:
       type: object
-      required: [id, teamId, title, reportingPeriod, status, createdBy, assessors, completedPlayers, totalPlayers, capabilities, createdAt]
+      required: [id, teamId, title, reportingPeriod, status, createdBy, assessors, completedPlayers, totalPlayers, reviewedReports, totalReports, capabilities, createdAt]
       properties:
         id: { type: integer }
         teamId: { type: integer }
@@ -1616,6 +1651,8 @@ components:
         internalRecipient: { anyOf: [{ $ref: "#/components/schemas/DevelopmentPerson" }, { type: "null" }] }
         completedPlayers: { type: integer }
         totalPlayers: { type: integer }
+        reviewedReports: { type: integer }
+        totalReports: { type: integer }
         capabilities: { $ref: "#/components/schemas/DevelopmentCycleCapabilities" }
         submittedAt: { type: ["string", "null"] }
         releasedAt: { type: ["string", "null"] }
@@ -1623,13 +1660,17 @@ components:
 
     DevelopmentCyclePlayer:
       type: object
-      required: [person, complete]
+      required: [person, complete, reportDraft]
       properties:
         person: { $ref: "#/components/schemas/DevelopmentPerson" }
         complete: { type: boolean }
         assessment:
           anyOf:
             - $ref: "#/components/schemas/DevelopmentAssessment"
+            - type: "null"
+        reportDraft:
+          anyOf:
+            - $ref: "#/components/schemas/DevelopmentReportDraft"
             - type: "null"
 
     DevelopmentCycleDetail:
@@ -1657,13 +1698,45 @@ components:
         score: { type: integer, minimum: 1, maximum: 5 }
         narrative: { type: string }
 
+    DevelopmentReportDraftInput:
+      type: object
+      required: [categories, strength, focus]
+      properties:
+        categories:
+          type: array
+          minItems: 7
+          maxItems: 7
+          items:
+            type: object
+            required: [key, narrative]
+            properties:
+              key: { type: string }
+              narrative: { type: string, minLength: 1, maxLength: 1000 }
+        strength: { type: string, minLength: 1, maxLength: 2000 }
+        focus: { type: string, minLength: 1, maxLength: 2000 }
+
+    DevelopmentReportDraft:
+      type: object
+      required: [player, categories, strength, focus, reviewedAt]
+      properties:
+        player: { $ref: "#/components/schemas/DevelopmentPerson" }
+        categories:
+          type: array
+          items: { $ref: "#/components/schemas/DevelopmentFamilyCategory" }
+        strength: { type: string }
+        focus: { type: string }
+        reviewedAt: { type: ["string", "null"] }
+
     DevelopmentFamilyReport:
       type: object
-      required: [id, cycleId, player, reportingPeriod, categories, strength, focus, disclosure, releasedAt]
+      required: [id, cycleId, player, coachingTeam, reportingPeriod, categories, strength, focus, disclosure, releasedAt]
       properties:
         id: { type: integer }
         cycleId: { type: integer }
         player: { $ref: "#/components/schemas/DevelopmentPerson" }
+        coachingTeam:
+          type: array
+          items: { $ref: "#/components/schemas/DevelopmentPerson" }
         reportingPeriod: { type: string }
         categories:
           type: array
@@ -1680,6 +1753,33 @@ components:
         released: { type: boolean }
         reportCount: { type: integer }
         emailFailures: { type: integer }
+
+    DevelopmentInternalPlayer:
+      type: object
+      required: [player, categories, currentAverage, previousAverage, averageChange, categoryChanges, strength, focus, internalNotes]
+      properties:
+        player: { $ref: "#/components/schemas/DevelopmentPerson" }
+        categories:
+          type: array
+          items: { $ref: "#/components/schemas/DevelopmentFamilyCategory" }
+        currentAverage: { type: number }
+        previousAverage: { type: ["number", "null"] }
+        averageChange: { type: ["number", "null"] }
+        categoryChanges: { type: object, additionalProperties: { type: ["integer", "null"] } }
+        strength: { type: string }
+        focus: { type: string }
+        internalNotes: { type: ["string", "null"] }
+
+    DevelopmentInternalSummary:
+      type: object
+      required: [cycleId, teamId, teamCategoryAverages, players]
+      properties:
+        cycleId: { type: integer }
+        teamId: { type: integer }
+        teamCategoryAverages: { type: object, additionalProperties: { type: number } }
+        players:
+          type: array
+          items: { $ref: "#/components/schemas/DevelopmentInternalPlayer" }
 
     Person:
       type: object

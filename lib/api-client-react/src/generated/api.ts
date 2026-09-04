@@ -40,8 +40,11 @@ import type {
   DevelopmentCycleInput,
   DevelopmentCycleSummary,
   DevelopmentFamilyReport,
+  DevelopmentInternalSummary,
   DevelopmentPerson,
   DevelopmentReleaseResult,
+  DevelopmentReportDraft,
+  DevelopmentReportDraftInput,
   Event,
   EventCancelInput,
   EventDetail,
@@ -5934,6 +5937,80 @@ export const useSaveDevelopmentAssessment = <TError = ErrorType<unknown>,
       return useMutation(getSaveDevelopmentAssessmentMutationOptions(options));
     }
 
+export const getSaveDevelopmentReportDraftUrl = (cycleId: number,
+    playerId: number,) => {
+
+
+
+
+  return `/api/development-cycles/${cycleId}/players/${playerId}/report-draft`
+}
+
+/**
+ * @summary Review the family-safe wording for one submitted assessment
+ */
+export const saveDevelopmentReportDraft = async (cycleId: number,
+    playerId: number,
+    developmentReportDraftInput: DevelopmentReportDraftInput, options?: RequestInit): Promise<DevelopmentReportDraft> => {
+
+  return customFetch<DevelopmentReportDraft>(getSaveDevelopmentReportDraftUrl(cycleId,playerId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(developmentReportDraftInput)
+  }
+);}
+
+
+
+
+
+export const getSaveDevelopmentReportDraftMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveDevelopmentReportDraft>>, TError,{cycleId: number;playerId: number;data: BodyType<DevelopmentReportDraftInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveDevelopmentReportDraft>>, TError,{cycleId: number;playerId: number;data: BodyType<DevelopmentReportDraftInput>}, TContext> => {
+
+const mutationKey = ['saveDevelopmentReportDraft'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveDevelopmentReportDraft>>, {cycleId: number;playerId: number;data: BodyType<DevelopmentReportDraftInput>}> = (props) => {
+          const {cycleId,playerId,data} = props ?? {};
+
+          return  saveDevelopmentReportDraft(cycleId,playerId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveDevelopmentReportDraftMutationResult = NonNullable<Awaited<ReturnType<typeof saveDevelopmentReportDraft>>>
+    export type SaveDevelopmentReportDraftMutationBody = BodyType<DevelopmentReportDraftInput>
+    export type SaveDevelopmentReportDraftMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Review the family-safe wording for one submitted assessment
+ */
+export const useSaveDevelopmentReportDraft = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveDevelopmentReportDraft>>, TError,{cycleId: number;playerId: number;data: BodyType<DevelopmentReportDraftInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveDevelopmentReportDraft>>,
+        TError,
+        {cycleId: number;playerId: number;data: BodyType<DevelopmentReportDraftInput>},
+        TContext
+      > => {
+      return useMutation(getSaveDevelopmentReportDraftMutationOptions(options));
+    }
+
 export const getSubmitDevelopmentCycleUrl = (cycleId: number,) => {
 
 
@@ -6075,6 +6152,83 @@ export const useReleaseDevelopmentReports = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getReleaseDevelopmentReportsMutationOptions(options));
     }
+
+export const getGetDevelopmentInternalSummaryUrl = (cycleId: number,) => {
+
+
+
+
+  return `/api/development-cycles/${cycleId}/internal-summary`
+}
+
+/**
+ * @summary Restricted submitted-cycle team summary and prior-cycle changes
+ */
+export const getDevelopmentInternalSummary = async (cycleId: number, options?: RequestInit): Promise<DevelopmentInternalSummary> => {
+
+  return customFetch<DevelopmentInternalSummary>(getGetDevelopmentInternalSummaryUrl(cycleId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDevelopmentInternalSummaryQueryKey = (cycleId: number,) => {
+    return [
+    `/api/development-cycles/${cycleId}/internal-summary`
+    ] as const;
+    }
+
+
+export const getGetDevelopmentInternalSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getDevelopmentInternalSummary>>, TError = ErrorType<unknown>>(cycleId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevelopmentInternalSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDevelopmentInternalSummaryQueryKey(cycleId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDevelopmentInternalSummary>>> = ({ signal }) => getDevelopmentInternalSummary(cycleId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: cycleId !== null && cycleId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDevelopmentInternalSummary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDevelopmentInternalSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getDevelopmentInternalSummary>>>
+export type GetDevelopmentInternalSummaryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Restricted submitted-cycle team summary and prior-cycle changes
+ */
+
+export function useGetDevelopmentInternalSummary<TData = Awaited<ReturnType<typeof getDevelopmentInternalSummary>>, TError = ErrorType<unknown>>(
+ cycleId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevelopmentInternalSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDevelopmentInternalSummaryQueryOptions(cycleId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListPlayerDevelopmentReportsUrl = (playerId: number,) => {
 

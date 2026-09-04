@@ -6,17 +6,20 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { DevelopmentFamilyCategory } from './developmentFamilyCategory';
+import type { DevelopmentInternalPlayerCategoryChanges } from './developmentInternalPlayerCategoryChanges';
 import type { DevelopmentPerson } from './developmentPerson';
 
-export interface DevelopmentFamilyReport {
-  id: number;
-  cycleId: number;
+export interface DevelopmentInternalPlayer {
   player: DevelopmentPerson;
-  coachingTeam: DevelopmentPerson[];
-  reportingPeriod: string;
   categories: DevelopmentFamilyCategory[];
+  currentAverage: number;
+  /** @nullable */
+  previousAverage: number | null;
+  /** @nullable */
+  averageChange: number | null;
+  categoryChanges: DevelopmentInternalPlayerCategoryChanges;
   strength: string;
   focus: string;
-  disclosure: string;
-  releasedAt: string;
+  /** @nullable */
+  internalNotes: string | null;
 }
