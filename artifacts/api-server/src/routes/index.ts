@@ -13,6 +13,7 @@ import timekeepingRouter from "./timekeeping";
 import notificationsRouter from "./notifications";
 import invitationsRouter from "./invitations";
 import onboardingRouter from "./onboarding";
+import developmentRouter from "./development";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(monitoringRouter);
 router.use(timekeepingRouter);
 router.use(notificationsRouter);
 router.use(invitationsRouter);
+router.use(developmentRouter);
 
 export default router;

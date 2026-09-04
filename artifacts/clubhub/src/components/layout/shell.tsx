@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { useClerk, useUser } from "@clerk/react";
 import { 
   Home, Users, CalendarDays, MessageSquare, Settings, 
-  LogOut, ChevronDown, UserSquare2, ClipboardCheck, Activity, Bell
+  LogOut, ChevronDown, UserSquare2, ClipboardCheck, Activity, Bell, TrendingUp
 } from "lucide-react";
 import {
   useGetMe, useGetClub, useListNotifications,
@@ -82,7 +82,10 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     { label: "Messages", href: "/messages", icon: MessageSquare },
     ...(isStaff ? [{ label: "Team Members", href: "/people", icon: UserSquare2 }] : []),
     ...(isStaff && staffTeamId != null
-      ? [{ label: "Monitoring", href: `/teams/${staffTeamId}/monitoring`, icon: Activity }]
+      ? [
+          { label: "Monitoring", href: `/teams/${staffTeamId}/monitoring`, icon: Activity },
+          { label: "Development", href: `/teams/${staffTeamId}/development`, icon: TrendingUp }
+        ]
       : []),
   ];
 
@@ -91,8 +94,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   // Parents: Home/Schedule/Messages. Staff: Home/Schedule/Messages/Monitoring.
   const tabItems = navItems.filter((i) =>
     isStaff
-      ? i.label !== "Check-in" && i.label !== "Team Members"
-      : i.label !== "Monitoring" && i.label !== "Team Members",
+      ? i.label !== "Check-in" && i.label !== "Team Members" && i.label !== "Development"
+      : i.label !== "Monitoring" && i.label !== "Team Members" && i.label !== "Development",
   );
 
   return (
@@ -158,7 +161,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               </span>
             )}
           </Link>
-          <UserMenu me={me} clerkUser={clerkUser} onSignOut={() => signOut({ redirectUrl: "/" })} isStaff={isStaff} notificationsUnread={notificationsUnread} />
+          <UserMenu me={me} clerkUser={clerkUser} onSignOut={() => signOut({ redirectUrl: "/" })} isStaff={isStaff} notificationsUnread={notificationsUnread} staffTeamId={staffTeamId} />
         </div>
       </aside>
 
@@ -171,7 +174,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           </Link>
           <TeamSwitcher compact />
         </div>
-        
+
         <div className="flex items-center gap-1 shrink-0">
           <Link href="/notifications" className="relative p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors">
             <Bell className="h-6 w-6" />
@@ -186,6 +189,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             avatarOnly
             isStaff={isStaff}
             notificationsUnread={notificationsUnread}
+            staffTeamId={staffTeamId}
           />
         </div>
       </header>
@@ -239,7 +243,7 @@ function roleLabel(me: any) {
   return "Member";
 }
 
-function UserMenu({ me, clerkUser, onSignOut, avatarOnly = false, isStaff = false, notificationsUnread = 0 }: { me: any, clerkUser: any, onSignOut: () => void, avatarOnly?: boolean, isStaff?: boolean, notificationsUnread?: number }) {
+function UserMenu({ me, clerkUser, onSignOut, avatarOnly = false, isStaff = false, notificationsUnread = 0, staffTeamId = null }: { me: any, clerkUser: any, onSignOut: () => void, avatarOnly?: boolean, isStaff?: boolean, notificationsUnread?: number, staffTeamId?: number | null }) {
   const avatarUrl = me?.person?.avatarUrl || clerkUser?.imageUrl;
   const name = me?.person?.fullName || clerkUser?.fullName || "Loading...";
 
@@ -285,7 +289,7 @@ function UserMenu({ me, clerkUser, onSignOut, avatarOnly = false, isStaff = fals
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        
+
         {me?.guardianOf?.length > 0 && (
           <>
             <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -305,7 +309,7 @@ function UserMenu({ me, clerkUser, onSignOut, avatarOnly = false, isStaff = fals
             <DropdownMenuSeparator />
           </>
         )}
-        
+
         <DropdownMenuItem asChild className="rounded-xl py-2 cursor-pointer md:hidden">
           <Link href="/notifications" className="flex items-center w-full justify-between">
             <div className="flex items-center">
@@ -319,6 +323,16 @@ function UserMenu({ me, clerkUser, onSignOut, avatarOnly = false, isStaff = fals
             )}
           </Link>
         </DropdownMenuItem>
+
+        {isStaff && staffTeamId != null && (
+          <DropdownMenuItem asChild className="rounded-xl py-2 cursor-pointer md:hidden">
+            <Link href={`/teams/${staffTeamId}/development`} className="flex items-center w-full">
+              <TrendingUp className="mr-2 h-4 w-4 text-muted-foreground" />
+              <span>Player Development</span>
+            </Link>
+          </DropdownMenuItem>
+        )}
+
         <DropdownMenuItem asChild className="rounded-xl py-2 cursor-pointer">
           <Link href="/settings" className="flex items-center w-full">
             <Settings className="mr-2 h-4 w-4 text-muted-foreground" />

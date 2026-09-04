@@ -29,6 +29,9 @@ import PersonDetail from "@/pages/people/detail";
 import Settings from "@/pages/settings";
 import Notifications from "@/pages/notifications";
 import JoinTeam from "@/pages/join";
+import TeamDevelopment from "@/pages/teams/development";
+import DevelopmentCycle from "@/pages/development/cycle";
+import DevelopmentReport from "@/pages/development/report";
 import Shell from "@/components/layout/shell";
 import GetStarted from "@/pages/get-started";
 import { useGetOnboardingStatus } from "@workspace/api-client-react";
@@ -315,7 +318,10 @@ function ClerkProviderWithRoutes() {
           <ProtectedRoute path="/teams" component={TeamsList} />
           <ProtectedRoute path="/teams/:teamId" component={TeamDetail} />
           <ProtectedRoute path="/teams/:teamId/monitoring" component={TeamMonitoring} />
+          <ProtectedRoute path="/teams/:teamId/development" component={TeamDevelopment} />
           <ProtectedRoute path="/teams/:teamId/minutes" component={TeamMinutes} />
+          <ProtectedRoute path="/development/cycles/:cycleId" component={DevelopmentCycle} />
+          <ProtectedRoute path="/development/reports/:reportId" component={DevelopmentReport} />
           <ProtectedRoute path="/checkin" component={Checkin} />
           <ProtectedRoute path="/events/:eventId" component={EventDetail} />
           <ProtectedRoute path="/events/:eventId/timekeeping" component={EventTimekeeping} />

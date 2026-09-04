@@ -77,7 +77,7 @@ async function deliverPush(userIds: number[], payload: { title: string; body: st
 }
 
 export async function createNotification(input: {
-  clubId: number; actorId: number; kind: "event" | "post"; title: string; body: string;
+  clubId: number; actorId: number; kind: "event" | "post" | "development"; title: string; body: string;
   deepLink: string; recipientIds: number[];
 }) {
   const recipientIds = [...new Set(input.recipientIds)].filter((id) => id !== input.actorId);

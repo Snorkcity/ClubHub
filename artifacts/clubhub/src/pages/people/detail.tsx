@@ -1,6 +1,6 @@
 import { useParams, Link } from "wouter";
 import { Mail, Phone, ShieldCheck, Users, ArrowLeft, CalendarDays } from "lucide-react";
-import { useGetPerson, getGetPersonQueryKey, useGetMe } from "@workspace/api-client-react";
+import { useGetPerson, getGetPersonQueryKey, useGetMe, useListPlayerDevelopmentReports, getListPlayerDevelopmentReportsQueryKey } from "@workspace/api-client-react";
 import { format } from "date-fns";
 
 import { LoadingScreen, ErrorState } from "@/components/ui/states";
@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { LinkGuardianDialog, RemoveGuardianButton } from "@/components/admin/family-admin";
+import { TrendingUp } from "lucide-react";
 
 export default function PersonDetail() {
   const params = useParams();
@@ -17,6 +18,13 @@ export default function PersonDetail() {
     query: { enabled: !!personId, queryKey: getGetPersonQueryKey(personId) }
   });
   const { data: me } = useGetMe();
+
+  const { data: reports, isLoading: isLoadingReports } = useListPlayerDevelopmentReports(personId, {
+    query: {
+      enabled: !!personId,
+      queryKey: getListPlayerDevelopmentReportsQueryKey(personId)
+    }
+  });
 
   if (isLoading) return <LoadingScreen message="Loading profile..." />;
   if (error || !data) return <ErrorState onRetry={() => refetch()} />;
@@ -46,7 +54,7 @@ export default function PersonDetail() {
                 {person.firstName?.charAt(0)}{person.lastName?.charAt(0)}
               </AvatarFallback>
             </Avatar>
-            
+
             <div className="flex-1 min-w-0 w-full pt-2">
               <div className="flex items-center gap-3 mb-2">
                 <h1 className="text-3xl md:text-4xl font-display font-bold tracking-tight truncate">
@@ -102,6 +110,34 @@ export default function PersonDetail() {
                 </div>
               )}
             </div>
+
+            {/* Player Development Reports */}
+            {reports && reports.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-display font-bold flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-primary" /> Development Reports
+                </h2>
+                <div className="grid gap-3">
+                  {reports.map((report) => (
+                    <Link key={report.id} href={`/development/reports/${report.id}`}>
+                      <Card className="p-4 rounded-2xl flex flex-col hover:shadow-md transition-shadow group border-transparent hover:border-border cursor-pointer">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <span className="font-bold text-lg group-hover:text-primary transition-colors block leading-tight mb-1">
+                              {report.reportingPeriod} Review
+                            </span>
+                            <span className="text-sm font-semibold text-muted-foreground">
+                              Released {format(new Date(report.releasedAt), "MMM d, yyyy")}
+                            </span>
+                          </div>
+                          <TrendingUp className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors opacity-50" />
+                        </div>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-8">

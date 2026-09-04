@@ -26,6 +26,8 @@ tags:
     description: Game-time (player minutes) tracking
   - name: chats
     description: Messaging
+  - name: development
+    description: Player development assessment cycles and family reports
 
 paths:
   /healthz:
@@ -1247,6 +1249,149 @@ paths:
               schema:
                 $ref: "#/components/schemas/SeasonMinutes"
 
+  /teams/{teamId}/development-cycles:
+    get:
+      operationId: listDevelopmentCycles
+      tags: [development]
+      summary: List development cycles visible to the current user
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      responses:
+        "200":
+          description: Visible cycles
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/DevelopmentCycleSummary" }
+    post:
+      operationId: createDevelopmentCycle
+      tags: [development]
+      summary: Create a cycle and select its exact assessors
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DevelopmentCycleInput" }
+      responses:
+        "201":
+          description: Created cycle
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DevelopmentCycleDetail" }
+
+  /teams/{teamId}/development-recipient-candidates:
+    get:
+      operationId: listDevelopmentRecipientCandidates
+      tags: [development]
+      summary: List eligible internal development report recipients
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      responses:
+        "200":
+          description: Club administrators and club coaching staff
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/DevelopmentPerson" }
+
+  /development-cycles/{cycleId}:
+    get:
+      operationId: getDevelopmentCycle
+      tags: [development]
+      summary: Get a cycle, roster completion, rubric, and permitted internal detail
+      parameters:
+        - $ref: "#/components/parameters/CycleId"
+      responses:
+        "200":
+          description: Cycle detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DevelopmentCycleDetail" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /development-cycles/{cycleId}/players/{playerId}/assessment:
+    put:
+      operationId: saveDevelopmentAssessment
+      tags: [development]
+      summary: Save the shared assessment for one current player
+      parameters:
+        - $ref: "#/components/parameters/CycleId"
+        - $ref: "#/components/parameters/PlayerId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DevelopmentAssessmentInput" }
+      responses:
+        "200":
+          description: Saved assessment
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DevelopmentAssessment" }
+
+  /development-cycles/{cycleId}/submit:
+    post:
+      operationId: submitDevelopmentCycle
+      tags: [development]
+      summary: Submit and lock a complete cycle
+      parameters:
+        - $ref: "#/components/parameters/CycleId"
+      responses:
+        "200":
+          description: Submitted cycle
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DevelopmentCycleDetail" }
+
+  /development-cycles/{cycleId}/release:
+    post:
+      operationId: releaseDevelopmentReports
+      tags: [development]
+      summary: Create immutable family reports and notify authorised recipients
+      parameters:
+        - $ref: "#/components/parameters/CycleId"
+      responses:
+        "200":
+          description: Released reports
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DevelopmentReleaseResult" }
+
+  /players/{playerId}/development-reports:
+    get:
+      operationId: listPlayerDevelopmentReports
+      tags: [development]
+      summary: List released family reports for a player
+      parameters:
+        - $ref: "#/components/parameters/PlayerId"
+      responses:
+        "200":
+          description: Released reports
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/DevelopmentFamilyReport" }
+
+  /development-reports/{reportId}:
+    get:
+      operationId: getDevelopmentReport
+      tags: [development]
+      summary: Get one released family-safe report
+      parameters:
+        - $ref: "#/components/parameters/ReportId"
+      responses:
+        "200":
+          description: Family report
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DevelopmentFamilyReport" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
 components:
   parameters:
     TeamId:
@@ -1255,6 +1400,21 @@ components:
       required: true
       schema:
         type: integer
+    CycleId:
+      name: cycleId
+      in: path
+      required: true
+      schema: { type: integer }
+    PlayerId:
+      name: playerId
+      in: path
+      required: true
+      schema: { type: integer }
+    ReportId:
+      name: reportId
+      in: path
+      required: true
+      schema: { type: integer }
     MemberId:
       name: memberId
       in: path
@@ -1367,6 +1527,159 @@ components:
       required: [pushNotificationsEnabled]
       properties:
         pushNotificationsEnabled: { type: boolean }
+
+    DevelopmentPerson:
+      type: object
+      required: [id, firstName, lastName, fullName]
+      properties:
+        id: { type: integer }
+        firstName: { type: string }
+        lastName: { type: string }
+        fullName: { type: string }
+
+    DevelopmentCycleInput:
+      type: object
+      required: [title, reportingPeriod, assessorIds]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 120 }
+        reportingPeriod: { type: string, minLength: 1, maxLength: 120 }
+        assessorIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { type: integer }
+        internalRecipientId: { type: ["integer", "null"] }
+
+    DevelopmentRatings:
+      type: object
+      required: [technical, tactical, physical, coachabilityMindset, effortConsistency, teamworkCommunication, attendanceReliability]
+      properties:
+        technical: { type: integer, minimum: 1, maximum: 5 }
+        tactical: { type: integer, minimum: 1, maximum: 5 }
+        physical: { type: integer, minimum: 1, maximum: 5 }
+        coachabilityMindset: { type: integer, minimum: 1, maximum: 5 }
+        effortConsistency: { type: integer, minimum: 1, maximum: 5 }
+        teamworkCommunication: { type: integer, minimum: 1, maximum: 5 }
+        attendanceReliability: { type: integer, minimum: 1, maximum: 5 }
+
+    DevelopmentAssessmentInput:
+      allOf:
+        - $ref: "#/components/schemas/DevelopmentRatings"
+        - type: object
+          required: [strength, focus]
+          properties:
+            strength: { type: string, minLength: 1, maxLength: 2000 }
+            focus: { type: string, minLength: 1, maxLength: 2000 }
+            internalNotes: { type: ["string", "null"], maxLength: 5000 }
+
+    DevelopmentAssessment:
+      allOf:
+        - $ref: "#/components/schemas/DevelopmentAssessmentInput"
+        - type: object
+          required: [id, player, updatedBy, updatedAt]
+          properties:
+            id: { type: integer }
+            player: { $ref: "#/components/schemas/DevelopmentPerson" }
+            updatedBy: { $ref: "#/components/schemas/DevelopmentPerson" }
+            updatedAt: { type: string }
+
+    DevelopmentRubricCategory:
+      type: object
+      required: [key, label, description]
+      properties:
+        key: { type: string }
+        label: { type: string }
+        description: { type: string }
+
+    DevelopmentCycleCapabilities:
+      type: object
+      required: [canView, canEdit, canSubmit, canRelease]
+      properties:
+        canView: { type: boolean }
+        canEdit: { type: boolean }
+        canSubmit: { type: boolean }
+        canRelease: { type: boolean }
+
+    DevelopmentCycleSummary:
+      type: object
+      required: [id, teamId, title, reportingPeriod, status, createdBy, assessors, completedPlayers, totalPlayers, capabilities, createdAt]
+      properties:
+        id: { type: integer }
+        teamId: { type: integer }
+        title: { type: string }
+        reportingPeriod: { type: string }
+        status: { type: string, enum: [active, submitted, released] }
+        createdBy: { $ref: "#/components/schemas/DevelopmentPerson" }
+        assessors:
+          type: array
+          items: { $ref: "#/components/schemas/DevelopmentPerson" }
+        internalRecipient: { anyOf: [{ $ref: "#/components/schemas/DevelopmentPerson" }, { type: "null" }] }
+        completedPlayers: { type: integer }
+        totalPlayers: { type: integer }
+        capabilities: { $ref: "#/components/schemas/DevelopmentCycleCapabilities" }
+        submittedAt: { type: ["string", "null"] }
+        releasedAt: { type: ["string", "null"] }
+        createdAt: { type: string }
+
+    DevelopmentCyclePlayer:
+      type: object
+      required: [person, complete]
+      properties:
+        person: { $ref: "#/components/schemas/DevelopmentPerson" }
+        complete: { type: boolean }
+        assessment:
+          anyOf:
+            - $ref: "#/components/schemas/DevelopmentAssessment"
+            - type: "null"
+
+    DevelopmentCycleDetail:
+      allOf:
+        - $ref: "#/components/schemas/DevelopmentCycleSummary"
+        - type: object
+          required: [assessorChoices, players, rubric]
+          properties:
+            assessorChoices:
+              type: array
+              items: { $ref: "#/components/schemas/DevelopmentPerson" }
+            players:
+              type: array
+              items: { $ref: "#/components/schemas/DevelopmentCyclePlayer" }
+            rubric:
+              type: array
+              items: { $ref: "#/components/schemas/DevelopmentRubricCategory" }
+
+    DevelopmentFamilyCategory:
+      type: object
+      required: [key, label, score, narrative]
+      properties:
+        key: { type: string }
+        label: { type: string }
+        score: { type: integer, minimum: 1, maximum: 5 }
+        narrative: { type: string }
+
+    DevelopmentFamilyReport:
+      type: object
+      required: [id, cycleId, player, reportingPeriod, categories, strength, focus, disclosure, releasedAt]
+      properties:
+        id: { type: integer }
+        cycleId: { type: integer }
+        player: { $ref: "#/components/schemas/DevelopmentPerson" }
+        reportingPeriod: { type: string }
+        categories:
+          type: array
+          items: { $ref: "#/components/schemas/DevelopmentFamilyCategory" }
+        strength: { type: string }
+        focus: { type: string }
+        disclosure: { type: string }
+        releasedAt: { type: string }
+
+    DevelopmentReleaseResult:
+      type: object
+      required: [released, reportCount, emailFailures]
+      properties:
+        released: { type: boolean }
+        reportCount: { type: integer }
+        emailFailures: { type: integer }
 
     Person:
       type: object

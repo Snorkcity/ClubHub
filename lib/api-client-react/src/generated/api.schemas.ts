@@ -70,6 +70,175 @@ export interface NotificationPreferencesUpdate {
   pushNotificationsEnabled: boolean;
 }
 
+export interface DevelopmentPerson {
+  id: number;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+}
+
+export interface DevelopmentCycleInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  title: string;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  reportingPeriod: string;
+  /** @minItems 1 */
+  assessorIds: number[];
+  /** @nullable */
+  internalRecipientId?: number | null;
+}
+
+export interface DevelopmentRatings {
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  technical: number;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  tactical: number;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  physical: number;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  coachabilityMindset: number;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  effortConsistency: number;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  teamworkCommunication: number;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  attendanceReliability: number;
+}
+
+export type DevelopmentAssessmentInput = DevelopmentRatings & ({
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  strength: string;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  focus: string;
+  /**
+     * @maxLength 5000
+     * @nullable
+     */
+  internalNotes?: string | null;
+});
+
+export type DevelopmentAssessment = DevelopmentAssessmentInput & {
+  id: number;
+  player: DevelopmentPerson;
+  updatedBy: DevelopmentPerson;
+  updatedAt: string;
+};
+
+export interface DevelopmentRubricCategory {
+  key: string;
+  label: string;
+  description: string;
+}
+
+export interface DevelopmentCycleCapabilities {
+  canView: boolean;
+  canEdit: boolean;
+  canSubmit: boolean;
+  canRelease: boolean;
+}
+
+export type DevelopmentCycleSummaryStatus = typeof DevelopmentCycleSummaryStatus[keyof typeof DevelopmentCycleSummaryStatus];
+
+
+export const DevelopmentCycleSummaryStatus = {
+  active: 'active',
+  submitted: 'submitted',
+  released: 'released',
+} as const;
+
+export interface DevelopmentCycleSummary {
+  id: number;
+  teamId: number;
+  title: string;
+  reportingPeriod: string;
+  status: DevelopmentCycleSummaryStatus;
+  createdBy: DevelopmentPerson;
+  assessors: DevelopmentPerson[];
+  internalRecipient?: DevelopmentPerson | null;
+  completedPlayers: number;
+  totalPlayers: number;
+  capabilities: DevelopmentCycleCapabilities;
+  /** @nullable */
+  submittedAt?: string | null;
+  /** @nullable */
+  releasedAt?: string | null;
+  createdAt: string;
+}
+
+export interface DevelopmentCyclePlayer {
+  person: DevelopmentPerson;
+  complete: boolean;
+  assessment?: DevelopmentAssessment | null;
+}
+
+export type DevelopmentCycleDetail = DevelopmentCycleSummary & {
+  assessorChoices: DevelopmentPerson[];
+  players: DevelopmentCyclePlayer[];
+  rubric: DevelopmentRubricCategory[];
+};
+
+export interface DevelopmentFamilyCategory {
+  key: string;
+  label: string;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  score: number;
+  narrative: string;
+}
+
+export interface DevelopmentFamilyReport {
+  id: number;
+  cycleId: number;
+  player: DevelopmentPerson;
+  reportingPeriod: string;
+  categories: DevelopmentFamilyCategory[];
+  strength: string;
+  focus: string;
+  disclosure: string;
+  releasedAt: string;
+}
+
+export interface DevelopmentReleaseResult {
+  released: boolean;
+  reportCount: number;
+  emailFailures: number;
+}
+
 export type PersonPhonePrivacy = typeof PersonPhonePrivacy[keyof typeof PersonPhonePrivacy];
 
 

@@ -3,6 +3,7 @@
 - [Repo build quirks](repo-build-quirks.md) — no tsx binary; run standalone TS via esbuild bundle; rebuild db declarations after schema changes so @workspace/db exports resolve.
 - [Account claiming by email](account-claiming.md) — claim by verified email only when globally unique; unmatched users must explicitly create a new club, never join an existing one by default.
 - [Player Monitoring design](player-monitoring-design.md) — agreed RPE/wellness module decisions: capture first, live baseline-relative dashboard, on-demand reports, 16+ opt-in cycle tracking.
+- [Player Development reporting](player-development-reporting.md) — seven coach-rated categories, cycle-specific assessors, common team-level rubric, editable family narratives and restricted reports.
 - [UX direction](ux-direction.md) — mobile-first above all (phone is primary device); Heja is the familiarity baseline for the club's 15 teams — match habits, don't copy.
 - [Product name](product-name.md) — Nahreo is the public name; retain legacy technical identifiers until each has a redirect-safe migration plan.
 - [API smoke testing](api-smoke-testing.md) — shared proxy 404s curl POSTs; hit api-server on its own PORT with a minted Clerk session JWT.
