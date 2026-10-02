@@ -1,4 +1,630 @@
-    $ref: "#/components/schemas/Guardianship"
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: Nahreo API — multi-team sports club management
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: me
+    description: Current user identity and access
+  - name: club
+    description: Club-level data and overview
+  - name: teams
+    description: Teams, seasons, and rosters
+  - name: people
+    description: People, memberships, and family links
+  - name: feed
+    description: Team posts and comments
+  - name: events
+    description: Scheduling and availability
+  - name: timekeeping
+    description: Game-time (player minutes) tracking
+  - name: chats
+    description: Messaging
+  - name: development
+    description: Player development assessment cycles and family reports
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /me:
+    get:
+      operationId: getMe
+      tags: [me]
+      summary: Current signed-in user with roles, memberships and family links
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUser"
+    patch:
+      operationId: updateMe
+      tags: [me]
+      summary: Update the current user's own profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdate"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Person"
+
+  /me/avatar:
+    put:
+      operationId: uploadMyAvatar
+      tags: [me]
+      summary: Upload the current user's profile photo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvatarImageInput"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Person"
+
+  /me/event-locations:
+    get:
+      operationId: listMyEventLocations
+      tags: [me]
+      summary: Recently used event locations across teams the user staffs
+      responses:
+        "200":
+          description: Distinct locations, most recent first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: string }
+
+  /onboarding/status:
+    get:
+      operationId: getOnboardingStatus
+      tags: [me]
+      summary: Check whether the signed-in identity needs first-time club setup
+      responses:
+        "200":
+          description: Onboarding status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardingStatus"
+
+  /onboarding:
+    post:
+      operationId: completeOnboarding
+      tags: [me]
+      summary: Create a new club, its first team, and the signed-in administrator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OnboardingInput"
+      responses:
+        "201":
+          description: Onboarding completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardingResult"
+        "409":
+          description: This identity already belongs to a club
+
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [me]
+      summary: List the current user's notifications
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          description: Return items older than this recipient cursor
+          schema: { type: integer, minimum: 1 }
+        - name: limit
+          in: query
+          required: false
+          description: Page size (default 50, maximum 100)
+          schema: { type: integer, minimum: 1, maximum: 100 }
+      responses:
+        "200":
+          description: Notifications and unread count
+          content: { application/json: { schema: { $ref: "#/components/schemas/NotificationList" } } }
+  /notifications/read-all:
+    post:
+      operationId: readAllNotifications
+      tags: [me]
+      summary: Mark all notifications as read
+      responses: { "204": { description: Read } }
+  /notifications/{notificationId}/read:
+    post:
+      operationId: readNotification
+      tags: [me]
+      summary: Mark one notification as read
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses: { "204": { description: Read }, "404": { $ref: "#/components/responses/NotFound" } }
+  /notifications/push-config:
+    get:
+      operationId: getPushConfig
+      tags: [me]
+      summary: Get public web push configuration
+      responses:
+        "200":
+          description: Push configuration
+          content: { application/json: { schema: { $ref: "#/components/schemas/PushConfig" } } }
+  /notifications/subscriptions:
+    post:
+      operationId: savePushSubscription
+      tags: [me]
+      summary: Save a browser web-push subscription
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/PushSubscriptionInput" } } }
+      responses: { "204": { description: Saved } }
+    delete:
+      operationId: deletePushSubscription
+      tags: [me]
+      summary: Remove a browser web-push subscription
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/PushSubscriptionDelete" } } }
+      responses: { "204": { description: Removed } }
+  /notifications/preferences:
+    patch:
+      operationId: updateNotificationPreferences
+      tags: [me]
+      summary: Update push notification preference
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/NotificationPreferencesUpdate" } } }
+      responses: { "204": { description: Updated } }
+
+  /club:
+    get:
+      operationId: getClub
+      tags: [club]
+      summary: Get the current club
+      responses:
+        "200":
+          description: Club
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Club"
+
+  /club/overview:
+    get:
+      operationId: getClubOverview
+      tags: [club]
+      summary: Club-wide dashboard overview (admin)
+      responses:
+        "200":
+          description: Overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubOverview"
+
+  /club/storage:
+    get:
+      operationId: getClubStorage
+      tags: [club]
+      summary: Get image and database storage health (club admin only)
+      responses:
+        "200":
+          description: Storage health
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubStorage"
+        "403":
+          description: Club admin access required
+
+  /seasons:
+    get:
+      operationId: listSeasons
+      tags: [teams]
+      summary: List seasons
+      responses:
+        "200":
+          description: Seasons
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Season"
+
+  /teams:
+    get:
+      operationId: listTeams
+      tags: [teams]
+      summary: List teams visible to the current user
+      responses:
+        "200":
+          description: Teams
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Team"
+    post:
+      operationId: createTeam
+      tags: [teams]
+      summary: Create a team
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+
+  /teams/{teamId}:
+    get:
+      operationId: getTeam
+      tags: [teams]
+      summary: Get a team
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      responses:
+        "200":
+          description: Team
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateTeam
+      tags: [teams]
+      summary: Update a team
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /teams/{teamId}/banner:
+    put:
+      operationId: setTeamBanner
+      tags: [teams]
+      summary: Set the team photo banner (staff only)
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamBannerInput"
+      responses:
+        "200":
+          description: Updated team
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteTeamBanner
+      tags: [teams]
+      summary: Remove the team photo banner (staff only)
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      responses:
+        "204":
+          description: Removed
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /teams/{teamId}/summary:
+    get:
+      operationId: getTeamSummary
+      tags: [teams]
+      summary: Team dashboard summary (next event, availability, recent activity)
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      responses:
+        "200":
+          description: Team summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamSummary"
+
+  /teams/{teamId}/members:
+    get:
+      operationId: listTeamMembers
+      tags: [teams]
+      summary: List members of a team
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      responses:
+        "200":
+          description: Members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeamMember"
+    post:
+      operationId: addTeamMember
+      tags: [teams]
+      summary: Add a person to a team with a role
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamMemberInput"
+      responses:
+        "201":
+          description: Added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamMember"
+
+  /team-members/{memberId}:
+    patch:
+      operationId: updateTeamMember
+      tags: [teams]
+      summary: Update a team membership (role, number, position)
+      parameters:
+        - $ref: "#/components/parameters/MemberId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamMemberUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamMember"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: removeTeamMember
+      tags: [teams]
+      summary: Remove a person from a team
+      parameters:
+        - $ref: "#/components/parameters/MemberId"
+      responses:
+        "204":
+          description: Removed
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /people:
+    get:
+      operationId: listPeople
+      tags: [people]
+      summary: List visible team members
+      parameters:
+        - name: teamId
+          in: query
+          required: false
+          description: Restrict to members of this team plus guardians of its players
+          schema:
+            type: integer
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: role
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [manager, coach, player, parent]
+      responses:
+        "200":
+          description: People
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeamMemberPerson"
+    post:
+      operationId: createPerson
+      tags: [people]
+      summary: Create a person (player, parent, coach or manager)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PersonInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Person"
+
+  /team-invitations:
+    post:
+      operationId: createTeamInvitation
+      tags: [people]
+      summary: Invite a new person to a team
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamInvitationInput"
+      responses:
+        "201":
+          description: Invitation created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamInvitationResult"
+
+  /team-invitations/preview:
+    get:
+      operationId: previewTeamInvitation
+      tags: [people]
+      summary: Preview a team invitation
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Invitation details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamInvitationPreview"
+
+  /team-invitations/accept:
+    post:
+      operationId: acceptTeamInvitation
+      tags: [people]
+      summary: Confirm the signed-in invited account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamInvitationAcceptance"
+      responses:
+        "200":
+          description: Invitation accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accepted, teamId]
+                properties:
+                  accepted: { type: boolean }
+                  teamId: { type: integer }
+
+  /people/{personId}:
+    get:
+      operationId: getPerson
+      tags: [people]
+      summary: Get a person's full profile with memberships and family links
+      parameters:
+        - $ref: "#/components/parameters/PersonId"
+      responses:
+        "200":
+          description: Person detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PersonDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updatePerson
+      tags: [people]
+      summary: Update a person's profile
+      parameters:
+        - $ref: "#/components/parameters/PersonId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PersonUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Person"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /guardianships:
+    post:
+      operationId: createGuardianship
+      tags: [people]
+      summary: Link a guardian to a player's lifelong account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GuardianshipInput"
+      responses:
+        "201":
+          description: Linked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Guardianship"
 
   /guardianships/{guardianshipId}:
     delete:
