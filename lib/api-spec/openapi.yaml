@@ -1,3 +1,1006 @@
+    $ref: "#/components/schemas/Guardianship"
+
+  /guardianships/{guardianshipId}:
+    delete:
+      operationId: removeGuardianship
+      tags: [people]
+      summary: Remove a family link
+      parameters:
+        - $ref: "#/components/parameters/GuardianshipId"
+      responses:
+        "204":
+          description: Removed
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /unreads:
+    get:
+      operationId: listTeamUnreads
+      tags: [feed]
+      summary: Unread post/message counts per team for the current user
+      responses:
+        "200":
+          description: Unread counts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeamUnread"
+
+  /teams/{teamId}/seen:
+    post:
+      operationId: markTeamSeen
+      tags: [feed]
+      summary: Mark a team's content as seen up to now
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      responses:
+        "204":
+          description: Marked seen
+
+  /feed:
+    get:
+      operationId: getFeed
+      tags: [feed]
+      summary: Aggregated recent posts across the user's teams
+      responses:
+        "200":
+          description: Feed
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+
+  /posts/club:
+    post:
+      operationId: createClubPost
+      tags: [feed]
+      summary: Post an announcement to every team's feed (club admins only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClubPostInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [created]
+                properties:
+                  created: { type: integer }
+
+  /teams/{teamId}/posts:
+    get:
+      operationId: listTeamPosts
+      tags: [feed]
+      summary: List posts for a team
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      responses:
+        "200":
+          description: Posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+    post:
+      operationId: createPost
+      tags: [feed]
+      summary: Post to a team
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+
+  /posts/{postId}:
+    get:
+      operationId: getPost
+      tags: [feed]
+      summary: Get a post with its comments
+      parameters:
+        - $ref: "#/components/parameters/PostId"
+      responses:
+        "200":
+          description: Post detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updatePost
+      tags: [feed]
+      summary: Edit or pin a post
+      parameters:
+        - $ref: "#/components/parameters/PostId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deletePost
+      tags: [feed]
+      summary: Delete a post
+      parameters:
+        - $ref: "#/components/parameters/PostId"
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /posts/{postId}/comments:
+    post:
+      operationId: addComment
+      tags: [feed]
+      summary: Comment on a post
+      parameters:
+        - $ref: "#/components/parameters/PostId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+
+  /events/upcoming:
+    get:
+      operationId: listUpcomingEvents
+      tags: [events]
+      summary: Upcoming events across the user's teams
+      responses:
+        "200":
+          description: Upcoming events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+
+  /teams/{teamId}/events:
+    get:
+      operationId: listTeamEvents
+      tags: [events]
+      summary: List events for a team
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      responses:
+        "200":
+          description: Events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+    post:
+      operationId: createEvent
+      tags: [events]
+      summary: Schedule a training, game or event
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+
+  /events/{eventId}:
+    get:
+      operationId: getEvent
+      tags: [events]
+      summary: Get an event with availability detail
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      responses:
+        "200":
+          description: Event detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateEvent
+      tags: [events]
+      summary: Update an event
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteEvent
+      tags: [events]
+      summary: Delete an event
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /events/{eventId}/cancel:
+    post:
+      operationId: cancelEvent
+      tags: [events]
+      summary: Cancel an event with a reason (staff only)
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventCancelInput"
+      responses:
+        "200":
+          description: Cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /events/{eventId}/rsvp:
+    put:
+      operationId: setRsvp
+      tags: [events]
+      summary: Set availability for an event (self or on behalf of a linked player)
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RsvpInput"
+      responses:
+        "200":
+          description: RSVP saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rsvp"
+
+  /chats:
+    get:
+      operationId: listChats
+      tags: [chats]
+      summary: List chats for the current user
+      responses:
+        "200":
+          description: Chats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Chat"
+    post:
+      operationId: createChat
+      tags: [chats]
+      summary: Start a new chat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Chat"
+
+  /chats/{chatId}:
+    get:
+      operationId: getChat
+      tags: [chats]
+      summary: Get a chat with its members
+      parameters:
+        - $ref: "#/components/parameters/ChatId"
+      responses:
+        "200":
+          description: Chat detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /chats/{chatId}/messages:
+    get:
+      operationId: listMessages
+      tags: [chats]
+      summary: List messages in a chat
+      parameters:
+        - $ref: "#/components/parameters/ChatId"
+      responses:
+        "200":
+          description: Messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+    post:
+      operationId: sendMessage
+      tags: [chats]
+      summary: Send a message
+      parameters:
+        - $ref: "#/components/parameters/ChatId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageInput"
+      responses:
+        "201":
+          description: Sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+
+  /chats/{chatId}/read:
+    post:
+      operationId: markChatRead
+      tags: [chats]
+      summary: Mark a chat as read up to now (read receipts)
+      parameters:
+        - $ref: "#/components/parameters/ChatId"
+      responses:
+        "204":
+          description: Marked read
+
+  /monitoring/checkin:
+    get:
+      operationId: getCheckinStatus
+      tags: [monitoring]
+      summary: Wellness/RPE check-in status for the current user and their linked players
+      parameters:
+        - name: date
+          in: query
+          required: true
+          description: The local calendar date to check in for (YYYY-MM-DD)
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Check-in subjects
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckinStatus"
+
+  /wellness:
+    put:
+      operationId: submitWellness
+      tags: [monitoring]
+      summary: Submit the daily wellness check (self or on behalf of a linked player)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WellnessInput"
+      responses:
+        "200":
+          description: Wellness entry saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WellnessEntry"
+
+  /events/{eventId}/rpe:
+    put:
+      operationId: submitRpe
+      tags: [monitoring]
+      summary: Submit post-session RPE for an event (self or on behalf of a linked player)
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RpeInput"
+      responses:
+        "200":
+          description: RPE entry saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RpeEntry"
+
+  /extra-sessions:
+    post:
+      operationId: logExtraSession
+      tags: [monitoring]
+      summary: Log a session outside the club calendar (rep, school, other)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExtraSessionInput"
+      responses:
+        "200":
+          description: Extra session saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtraSession"
+
+  /extra-sessions/{extraSessionId}:
+    delete:
+      operationId: deleteExtraSession
+      tags: [monitoring]
+      summary: Delete an extra session you logged
+      parameters:
+        - name: extraSessionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /teams/{teamId}/monitoring:
+    get:
+      operationId: getTeamMonitoring
+      tags: [monitoring]
+      summary: Live player-monitoring dashboard for a team (staff only)
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+        - name: window
+          in: query
+          required: false
+          description: Window in days (1, 7, 14 or 28); defaults to 7
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Team monitoring snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamMonitoring"
+
+  /events/{eventId}/timekeeping:
+    get:
+      operationId: getTimekeeping
+      tags: [timekeeping]
+      summary: Live game-time tracking state for a game (staff only)
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      responses:
+        "200":
+          description: Timekeeping state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimekeepingState"
+
+  /events/{eventId}/timekeeping/periods/start:
+    post:
+      operationId: startPeriod
+      tags: [timekeeping]
+      summary: Start the next period (half) of the game clock (staff only)
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartPeriodInput"
+      responses:
+        "200":
+          description: Updated timekeeping state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimekeepingState"
+
+  /events/{eventId}/timekeeping/periods/end:
+    post:
+      operationId: endPeriod
+      tags: [timekeeping]
+      summary: End the running period (half) of the game clock (staff only)
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      responses:
+        "200":
+          description: Updated timekeeping state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimekeepingState"
+
+  /events/{eventId}/timekeeping/players/{userId}/toggle:
+    post:
+      operationId: togglePlayerOnPitch
+      tags: [timekeeping]
+      summary: Toggle a player ON/OFF the pitch (staff only)
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated timekeeping state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimekeepingState"
+
+  /teams/{teamId}/timekeeping/season:
+    get:
+      operationId: getSeasonMinutes
+      tags: [timekeeping]
+      summary: Season game-minutes totals per player (staff only)
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      responses:
+        "200":
+          description: Season minutes summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SeasonMinutes"
+
+  /teams/{teamId}/development-cycles:
+    get:
+      operationId: listDevelopmentCycles
+      tags: [development]
+      summary: List development cycles visible to the current user
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      responses:
+        "200":
+          description: Visible cycles
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/DevelopmentCycleSummary" }
+    post:
+      operationId: createDevelopmentCycle
+      tags: [development]
+      summary: Create a cycle and select its exact assessors
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DevelopmentCycleInput" }
+      responses:
+        "201":
+          description: Created cycle
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DevelopmentCycleDetail" }
+
+  /teams/{teamId}/development-recipient-candidates:
+    get:
+      operationId: listDevelopmentRecipientCandidates
+      tags: [development]
+      summary: List eligible internal development report recipients
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      responses:
+        "200":
+          description: Club administrators and club coaching staff
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/DevelopmentPerson" }
+
+  /development-cycles/{cycleId}:
+    get:
+      operationId: getDevelopmentCycle
+      tags: [development]
+      summary: Get a cycle, roster completion, rubric, and permitted internal detail
+      parameters:
+        - $ref: "#/components/parameters/CycleId"
+      responses:
+        "200":
+          description: Cycle detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DevelopmentCycleDetail" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /development-cycles/{cycleId}/players/{playerId}/assessment:
+    put:
+      operationId: saveDevelopmentAssessment
+      tags: [development]
+      summary: Save the shared assessment for one current player
+      parameters:
+        - $ref: "#/components/parameters/CycleId"
+        - $ref: "#/components/parameters/PlayerId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DevelopmentAssessmentInput" }
+      responses:
+        "200":
+          description: Saved assessment
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DevelopmentAssessment" }
+
+  /development-cycles/{cycleId}/players/{playerId}/report-draft:
+    put:
+      operationId: saveDevelopmentReportDraft
+      tags: [development]
+      summary: Review the family-safe wording for one submitted assessment
+      parameters:
+        - $ref: "#/components/parameters/CycleId"
+        - $ref: "#/components/parameters/PlayerId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DevelopmentReportDraftInput" }
+      responses:
+        "200":
+          description: Reviewed family draft
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DevelopmentReportDraft" }
+
+  /development-cycles/{cycleId}/submit:
+    post:
+      operationId: submitDevelopmentCycle
+      tags: [development]
+      summary: Submit and lock a complete cycle
+      parameters:
+        - $ref: "#/components/parameters/CycleId"
+      responses:
+        "200":
+          description: Submitted cycle
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DevelopmentCycleDetail" }
+
+  /development-cycles/{cycleId}/release:
+    post:
+      operationId: releaseDevelopmentReports
+      tags: [development]
+      summary: Create immutable family reports and notify authorised recipients
+      parameters:
+        - $ref: "#/components/parameters/CycleId"
+      responses:
+        "200":
+          description: Released reports
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DevelopmentReleaseResult" }
+
+  /development-cycles/{cycleId}/internal-summary:
+    get:
+      operationId: getDevelopmentInternalSummary
+      tags: [development]
+      summary: Restricted submitted-cycle team summary and prior-cycle changes
+      parameters:
+        - $ref: "#/components/parameters/CycleId"
+      responses:
+        "200":
+          description: Restricted internal summary
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DevelopmentInternalSummary" }
+
+  /players/{playerId}/development-reports:
+    get:
+      operationId: listPlayerDevelopmentReports
+      tags: [development]
+      summary: List released family reports for a player
+      parameters:
+        - $ref: "#/components/parameters/PlayerId"
+      responses:
+        "200":
+          description: Released reports
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/DevelopmentFamilyReport" }
+
+  /development-reports/{reportId}:
+    get:
+      operationId: getDevelopmentReport
+      tags: [development]
+      summary: Get one released family-safe report
+      parameters:
+        - $ref: "#/components/parameters/ReportId"
+      responses:
+        "200":
+          description: Family report
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DevelopmentFamilyReport" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+components:
+  parameters:
+    TeamId:
+      name: teamId
+      in: path
+      required: true
+      schema:
+        type: integer
+    CycleId:
+      name: cycleId
+      in: path
+      required: true
+      schema: { type: integer }
+    PlayerId:
+      name: playerId
+      in: path
+      required: true
+      schema: { type: integer }
+    ReportId:
+      name: reportId
+      in: path
+      required: true
+      schema: { type: integer }
+    MemberId:
+      name: memberId
+      in: path
+      required: true
+      schema:
+        type: integer
+    PersonId:
+      name: personId
+      in: path
+      required: true
+      schema:
+        type: integer
+    GuardianshipId:
+      name: guardianshipId
+      in: path
+      required: true
+      schema:
+        type: integer
+    PostId:
+      name: postId
+      in: path
+      required: true
+      schema:
+        type: integer
+    EventId:
+      name: eventId
+      in: path
+      required: true
+      schema:
+        type: integer
+    ChatId:
+      name: chatId
+      in: path
+      required: true
+      schema:
+        type: integer
+
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    Notification:
+      type: object
+      required: [id, kind, title, body, deepLink, createdAt, readAt, unread]
+      properties:
+        id: { type: integer }
+        kind: { type: string, enum: [event, post] }
+        title: { type: string }
+        body: { type: string }
+        deepLink: { type: string }
+        createdAt: { type: string }
+        readAt: { type: ["string", "null"] }
+        unread: { type: boolean }
+    NotificationList:
+      type: object
+      required: [unreadCount, hasMore, nextCursor, notifications]
+      properties:
+        unreadCount: { type: integer }
+        hasMore: { type: boolean }
+        nextCursor: { type: ["integer", "null"] }
+        notifications:
+          type: array
+          items: { $ref: "#/components/schemas/Notification" }
+    PushConfig:
+      type: object
+      required: [enabled, publicKey]
+      properties:
+        enabled: { type: boolean }
+        publicKey: { type: ["string", "null"] }
+    PushSubscriptionInput:
+      type: object
+      required: [endpoint, keys]
+      properties:
+        endpoint: { type: string, minLength: 1 }
+        contentEncoding: { type: string }
+        keys:
+          type: object
+          required: [p256dh, auth]
+          properties:
+            p256dh: { type: string, minLength: 1 }
+            auth: { type: string, minLength: 1 }
+    PushSubscriptionDelete:
+      type: object
+      required: [endpoint]
+      properties:
+        endpoint: { type: string, minLength: 1 }
+    NotificationPreferencesUpdate:
+      type: object
+      required: [pushNotificationsEnabled]
+      properties:
+        pushNotificationsEnabled: { type: boolean }
+
+    DevelopmentPerson:
+      type: object
+      required: [id, firstName, lastName, fullName]
+      properties:
+        id: { type: integer }
+        firstName: { type: string }
+        lastName: { type: string }
+        fullName: { type: string }
+
+    DevelopmentCycleInput:
+      type: object
+      required: [title, reportingPeriod, assessorIds]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 120 }
+        reportingPeriod: { type: string, minLength: 1, maxLength: 120 }
+        assessorIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { type: integer }
+        internalRecipientId: { type: ["integer", "null"] }
+
+    DevelopmentRatings:
+      type: object
+      required: [technical, tactical, physical, coachabilityMindset, effortConsistency, teamworkCommunication, attendanceReliability]
+      properties:
+        technical: { type: integer, minimum: 1, maximum: 5 }
+        tactical: { type: integer, minimum: 1, maximum: 5 }
+        physical: { type: integer, minimum: 1, maximum: 5 }
+        coachabilityMindset: { type: integer, minimum: 1, maximum: 5 }
+        effortConsistency: { type: integer, minimum: 1, maximum: 5 }
+        teamworkCommunication: { type: integer, minimum: 1, maximum: 5 }
+        attendanceReliability: { type: integer, minimum: 1, maximum: 5 }
+
+    DevelopmentAssessmentInput:
+      allOf:
+        - $ref: "#/components/schemas/DevelopmentRatings"
+        - type: object
+          required: [strength, focus]
+          properties:
+            strength: { type: string, minLength: 1, maxLength: 2000 }
+            focus: { type: string, minLength: 1, maxLength: 2000 }
+            internalNotes: { type: ["string", "null"], maxLength: 5000 }
+
+    DevelopmentAssessment:
+      allOf:
+        - $ref: "#/components/schemas/DevelopmentAssessmentInput"
+        - type: object
+          required: [id, player, updatedBy, updatedAt]
+          properties:
+            id: { type: integer }
+            player: { $ref: "#/components/schemas/DevelopmentPerson" }
+            updatedBy: { $ref: "#/components/schemas/DevelopmentPerson" }
+            updatedAt: { type: string }
+
+    DevelopmentRubricCategory:
+      type: object
+      required: [key, label, description]
+      properties:
+        key: { type: string }
+        label: { type: string }
+        description: { type: string }
+
+    DevelopmentCycleCapabilities:
+      type: object
       required: [canView, canEdit, canSubmit, canReviewReports, canRelease]
       properties:
         canView: { type: boolean }
