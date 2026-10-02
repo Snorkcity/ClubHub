@@ -17,6 +17,7 @@ import {
   SubmitWellnessBody,
   SubmitRpeBody,
   LogExtraSessionBody,
+  GetTeamMonitoringResponse,
 } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
 import { buildEvents } from "../lib/build";
@@ -444,12 +445,12 @@ router.get("/teams/:teamId/monitoring", requireAuth, async (req, res) => {
   const players = roster.map((r) => r.u);
   const playerIds = players.map((p) => p.id);
   if (playerIds.length === 0)
-    return res.json({
+    return res.json(GetTeamMonitoringResponse.parse({
       teamId,
       windowDays,
       generatedAt: now.toISOString(),
       players: [],
-    });
+    }));
 
   // Wellness: pull 28 days for baselines regardless of window.
   const since28 = dateStr(daysAgo(28));
@@ -664,6 +665,12 @@ router.get("/teams/:teamId/monitoring", requireAuth, async (req, res) => {
       acwr,
       flags,
       weeklyHistory,
+      externalSessions: [...myExtras]
+        .sort(
+          (a, b) =>
+            b.sessionDate.localeCompare(a.sessionDate) || b.id - a.id,
+        )
+        .map(toExtraSession),
     };
   });
 
@@ -715,12 +722,12 @@ router.get("/teams/:teamId/monitoring", requireAuth, async (req, res) => {
     return sev(b) - sev(a) || a.person.fullName.localeCompare(b.person.fullName);
   });
 
-  return res.json({
+  return res.json(GetTeamMonitoringResponse.parse({
     teamId,
     windowDays,
     generatedAt: now.toISOString(),
     players: result,
-  });
+  }));
 });
 
 export default router;

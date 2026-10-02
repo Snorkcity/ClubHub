@@ -16,6 +16,7 @@ description: Product decisions for the RPE/wellness monitoring module (capture, 
 - Always-live snapshot, checked before sessions; time filters 24h / 7d / 14d / 28d, default 7d.
 - Grid: players down the left, metrics across top, colour-coded flags.
 - Flags are baseline-relative (change from the player's own norm), not absolute scores. Use acute (7d) vs chronic (28d) load comparison (ACWR-style); algorithm to be validated with user's physio/lecturer — prepare an evidence-backed draft for them.
+- Coaches need an itemized view of outside-club sessions contributing to workload flags, not only the aggregate.
 - AI summary generated on open from the selected window; items clickable to drill in.
 - Retention: keep all data forever (season reports); dashboard reads a rolling window (28d chronic baseline powering the 7d story).
 
@@ -31,3 +32,8 @@ description: Product decisions for the RPE/wellness monitoring module (capture, 
 Rule: flag a player when their 4-week average weekly load (club + external sessions) is >=1.5x squad median (watch) or >=2x (alert). Requires >=4 squad players with nonzero chronic load.
 **Why:** Scott spotted ACWR's blind spot — a player grinding heavy weeks for a month drifts back to ~1.0 (green) because chronic load ratchets up. Squad-median comparison is self-calibrating; a fixed weekly ceiling was deferred pending physio input (like the other thresholds).
 **How to apply:** any new load metric must consider both change (ACWR) and absolute level; Scott's intent is flags trigger check-ins or a skipped session, not automatic restrictions.
+
+## Outside-club session visibility
+Show coaches the player's recent non-club sessions with date, category, activity label, surface, RPE, duration, and session load alongside workload details.
+**Why:** an aggregate external-load number does not tell a coach what activity caused the increase.
+**How to apply:** include the itemized records in the staff-only monitoring detail, scoped to the same 28-day history used for chronic load.

@@ -274,6 +274,75 @@ function windowLabel(days: number): string {
   return days === 1 ? "24-hour" : `${days}-day`;
 }
 
+const EXTERNAL_SESSION_KIND_LABEL: Record<
+  PlayerMonitoring["externalSessions"][number]["kind"],
+  string
+> = {
+  rep: "Rep squad",
+  school: "School sport",
+  gym: "Gym",
+  athletics: "Athletics",
+  other: "Other",
+};
+
+function ExternalSessionsList({
+  sessions,
+  placement,
+}: {
+  sessions: PlayerMonitoring["externalSessions"];
+  placement: "card" | "dialog";
+}) {
+  return (
+    <section
+      className="mt-3 rounded-xl border bg-card/70 p-3"
+      data-testid={`list-external-sessions-${placement}`}
+    >
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h5 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          Outside-club sessions · past 28 days
+        </h5>
+        <span className="shrink-0 text-xs text-muted-foreground">
+          {sessions.length} session{sessions.length === 1 ? "" : "s"}
+        </span>
+      </div>
+      {sessions.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No outside-club sessions logged in the past 28 days.
+        </p>
+      ) : (
+        <ul className="max-h-56 space-y-2 overflow-y-auto">
+          {sessions.map((session) => (
+            <li
+              key={session.id}
+              className="flex items-start justify-between gap-3 rounded-lg bg-muted/40 p-2"
+              data-testid={`row-external-session-${placement}-${session.id}`}
+            >
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold">
+                  {session.label?.trim() || EXTERNAL_SESSION_KIND_LABEL[session.kind]}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {format(new Date(`${session.sessionDate}T12:00:00`), "EEE d MMM")}
+                  {" · "}
+                  {EXTERNAL_SESSION_KIND_LABEL[session.kind]}
+                  {session.surface ? ` · ${session.surface}` : ""}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  RPE {session.rpe} × {session.minutes} min
+                </p>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="text-sm font-bold tabular-nums">{session.load}</p>
+                <p className="text-[10px] text-muted-foreground">load</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 function PlayerCard({ p, windowDays, squadNote }: { p: PlayerMonitoring; windowDays: number; squadNote: string | null }) {
   const [open, setOpen] = useState<"wellness" | "acwr" | null>(null);
   const toggle = (which: "wellness" | "acwr") => setOpen((o) => (o === which ? null : which));
@@ -374,9 +443,10 @@ function PlayerCard({ p, windowDays, squadNote }: { p: PlayerMonitoring; windowD
           </details>
           {p.windowExternalLoad ? (
             <p className="text-base text-muted-foreground">
-              Includes {p.windowExternalLoad} from sessions outside the club (rep, school, other).
+              Includes {p.windowExternalLoad} from sessions outside the club.
             </p>
           ) : null}
+          <ExternalSessionsList sessions={p.externalSessions} placement="card" />
           {p.flags.length > 0 && (
             <ul className="space-y-0.5">
               {p.flags.map((f, i) => (
@@ -613,9 +683,10 @@ export default function TeamMonitoring() {
                       )}
                       {selected.windowExternalLoad ? (
                         <p className="text-[11px] text-muted-foreground mt-1">
-                          Includes {selected.windowExternalLoad} from sessions outside the club (rep, school, other).
+                          Includes {selected.windowExternalLoad} from sessions outside the club.
                         </p>
                       ) : null}
+                      <ExternalSessionsList sessions={selected.externalSessions} placement="dialog" />
                       <div className="mt-3">
                         <WeeklyHistoryBlock p={selected} compact />
                       </div>

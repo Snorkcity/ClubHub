@@ -5,6 +5,7 @@
  * Nahreo API — multi-team sports club management
  * OpenAPI spec version: 0.1.0
  */
+import type { ExtraSession } from './extraSession';
 import type { MonitoringFlag } from './monitoringFlag';
 import type { Person } from './person';
 import type { WeeklyHistory } from './weeklyHistory';
@@ -28,6 +29,8 @@ export interface PlayerMonitoring {
   chronicWeeklyLoad?: number | null;
   acwr?: number | null;
   flags: MonitoringFlag[];
+  /** Outside-club sessions logged by this player in the last 28 days, newest first. */
+  externalSessions: ExtraSession[];
   /** Last 4 weeks, oldest first. */
   weeklyHistory?: WeeklyHistory[];
 }
