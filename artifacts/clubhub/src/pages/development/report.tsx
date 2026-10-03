@@ -1,4 +1,5 @@
 import { useParams, Link } from "wouter";
+import { useEffect } from "react";
 import { format } from "date-fns";
 import { ArrowLeft, CheckCircle2, TrendingUp, Award, Target, Info, CalendarDays } from "lucide-react";
 
@@ -7,6 +8,8 @@ import { LoadingScreen, ErrorState } from "@/components/ui/states";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { PrintReportAction } from "@/components/development/print-report-action";
+import "@/components/development/print-report.css";
 
 function ScoreBadge({ score }: { score: number }) {
   if (score >= 5) return <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-200">5 - Strong</Badge>;
@@ -24,11 +27,20 @@ export default function DevelopmentReport() {
     query: { queryKey: getGetDevelopmentReportQueryKey(reportId) }
   });
 
+  useEffect(() => {
+    document.documentElement.classList.add("nahreo-report-print-active");
+    document.body.classList.add("nahreo-report-print-active");
+    return () => {
+      document.documentElement.classList.remove("nahreo-report-print-active");
+      document.body.classList.remove("nahreo-report-print-active");
+    };
+  }, []);
+
   if (isLoading) return <LoadingScreen message="Loading report..." />;
   if (error || !report) return <ErrorState onRetry={() => refetch()} />;
 
   return (
-    <div className="flex-1 overflow-y-auto bg-muted/10 print:bg-white print:overflow-visible">
+    <div className="nahreo-report-page flex-1 overflow-y-auto bg-muted/10 print:bg-white print:overflow-visible">
       {/* Non-printable header */}
       <div className="container mx-auto p-4 md:p-8 max-w-4xl print:hidden">
         <Link
@@ -37,12 +49,30 @@ export default function DevelopmentReport() {
         >
           <ArrowLeft className="h-4 w-4" /> Back to Profile
         </Link>
+        <div className="flex flex-col gap-3 rounded-2xl border border-primary/10 bg-background/80 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-foreground">Keep a copy for your family</p>
+            <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+              Print or save a PDF copy. Saved copies can be shared outside Nahreo.
+            </p>
+          </div>
+          <PrintReportAction />
+        </div>
       </div>
 
-      <div className="container mx-auto px-4 md:px-8 pb-12 max-w-4xl print:p-0">
-        <div className="bg-card border rounded-3xl overflow-hidden shadow-sm print:shadow-none print:border-none print:rounded-none">
+      <div className="nahreo-report-content container mx-auto px-4 md:px-8 pb-12 max-w-4xl print:p-0">
+        <div className="nahreo-report-card bg-card border rounded-3xl overflow-hidden shadow-sm print:shadow-none print:border-none print:rounded-none">
+          <div className="nahreo-print-masthead print-keep-together items-center justify-between border-b border-[#dce3eb] px-10 py-5">
+            <div className="flex items-center gap-3">
+              <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="Nahreo" data-testid="img-nahreo-print-logo" className="h-9 w-9" />
+              <span className="text-lg font-bold tracking-tight text-[#173f8a]">Nahreo</span>
+            </div>
+            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-[#64748b]">
+              Player development · Family report
+            </span>
+          </div>
           {/* Report Header */}
-          <div className="bg-primary/5 p-6 md:p-10 border-b relative overflow-hidden">
+          <div className="print-keep-together bg-primary/5 p-6 md:p-10 border-b relative overflow-hidden print:bg-[#f2f6fb] print:px-10 print:py-7">
             <div className="absolute top-0 right-0 -mt-16 -mr-16 text-primary/10">
               <TrendingUp className="w-64 h-64" />
             </div>
@@ -77,7 +107,7 @@ export default function DevelopmentReport() {
             
             {/* Written Feedback */}
             <div className="grid md:grid-cols-2 gap-6">
-              <Card className="p-6 bg-green-50/50 border-green-100 rounded-2xl shadow-sm">
+              <Card className="print-keep-together p-6 bg-green-50/50 border-green-100 rounded-2xl shadow-sm">
                 <div className="flex items-center gap-3 mb-4 text-green-800">
                   <Award className="h-6 w-6" />
                   <h3 className="font-display font-bold text-lg">Key Strength</h3>
@@ -87,7 +117,7 @@ export default function DevelopmentReport() {
                 </p>
               </Card>
 
-              <Card className="p-6 bg-amber-50/50 border-amber-100 rounded-2xl shadow-sm">
+              <Card className="print-keep-together p-6 bg-amber-50/50 border-amber-100 rounded-2xl shadow-sm">
                 <div className="flex items-center gap-3 mb-4 text-amber-800">
                   <Target className="h-6 w-6" />
                   <h3 className="font-display font-bold text-lg">Focus Area</h3>
@@ -107,7 +137,7 @@ export default function DevelopmentReport() {
               
               <div className="grid gap-3">
                 {report.categories.map((cat, i) => (
-                  <div key={cat.key} className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl ${i % 2 === 0 ? "bg-muted/30" : ""}`}>
+                  <div key={cat.key} className={`print-keep-together flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl ${i % 2 === 0 ? "bg-muted/30" : ""}`}>
                     <div className="flex-1">
                       <h4 className="font-bold text-base text-foreground mb-0.5">{cat.label}</h4>
                       <p className="text-sm text-muted-foreground leading-snug">{cat.narrative}</p>
@@ -121,7 +151,7 @@ export default function DevelopmentReport() {
             </div>
 
             {/* Coaching Team */}
-            <div className="bg-muted/20 border p-5 md:p-6 rounded-2xl flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+            <div className="print-keep-together bg-muted/20 border p-5 md:p-6 rounded-2xl flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
               <div>
                 <h3 className="font-display font-bold text-lg mb-1 text-foreground">Reporting Coaching Team</h3>
                 <p className="text-muted-foreground text-sm font-medium">

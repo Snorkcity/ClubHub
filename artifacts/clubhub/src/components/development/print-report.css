@@ -1,0 +1,85 @@
+@media print {
+  html.nahreo-report-print-active,
+  body.nahreo-report-print-active,
+  body.nahreo-report-print-active #root {
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  body.nahreo-report-print-active {
+    color: #26364d !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  body.nahreo-report-print-active header,
+  body.nahreo-report-print-active aside,
+  body.nahreo-report-print-active nav {
+    display: none !important;
+  }
+
+  body.nahreo-report-print-active main {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  .nahreo-report-page {
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  .nahreo-report-content {
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  .nahreo-report-card {
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+
+  .nahreo-report-card [class*="bg-"] {
+    box-shadow: none !important;
+  }
+
+  .nahreo-print-masthead {
+    display: flex !important;
+  }
+
+  .nahreo-report-card h1,
+  .nahreo-report-card h3,
+  .nahreo-report-card h4 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .nahreo-report-card p {
+    orphans: 3;
+    widows: 3;
+  }
+
+  .nahreo-report-card .print-keep-together {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .nahreo-report-page a {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+}
+
+.nahreo-print-masthead {
+  display: none;
+}
