@@ -97,14 +97,22 @@ export function AssessmentForm({
     <div className="flex-1 flex flex-col h-full relative">
       <div className="shrink-0 p-4 border-b bg-card flex items-center justify-between sticky top-0 z-10 shadow-sm md:shadow-none">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="md:hidden -ml-2 shrink-0" onClick={onBack}>
-            <ArrowLeft className="h-5 w-5" />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="md:hidden -ml-2 shrink-0 px-2"
+            onClick={onBack}
+            aria-label="Back to player list"
+            data-testid="button-back-to-player-list"
+          >
+            <ArrowLeft className="mr-1 h-5 w-5" />
+            Players
           </Button>
-          <Avatar className="h-10 w-10 border shadow-sm">
+          <Avatar className="h-10 w-10 shrink-0 border shadow-sm">
             <AvatarFallback>{player.person.firstName.charAt(0)}</AvatarFallback>
           </Avatar>
-          <div>
-            <h2 className="font-display font-bold text-lg leading-tight">{player.person.fullName}</h2>
+          <div className="min-w-0">
+            <h2 className="truncate font-display font-bold text-lg leading-tight">{player.person.fullName}</h2>
             {player.assessment?.updatedAt && (
               <p className="text-xs text-muted-foreground">
                 Last updated {format(new Date(player.assessment.updatedAt), "MMM d, h:mm a")} by {player.assessment.updatedBy.firstName}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useParams } from "wouter";
 import { ArrowLeft, Check, Lock, Eye, HelpCircle, User, Loader2 } from "lucide-react";
 
@@ -28,6 +28,10 @@ export default function DevelopmentCycle() {
   const params = useParams();
   const cycleId = Number(params.cycleId);
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
+  const initialSelectionCycleId = useRef<number | null>(null);
+  const [isDesktop, setIsDesktop] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches,
+  );
   const [rubricOpen, setRubricOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"wording" | "team" | "assessments" | null>(null);
 
@@ -35,12 +39,21 @@ export default function DevelopmentCycle() {
     query: { queryKey: getGetDevelopmentCycleQueryKey(cycleId) }
   });
 
-  // Select first player by default if none selected
   useEffect(() => {
-    if (cycle && !selectedPlayerId && cycle.players.length > 0) {
-      setSelectedPlayerId(cycle.players[0].person.id);
+    const desktopQuery = window.matchMedia("(min-width: 768px)");
+    const updateViewport = () => setIsDesktop(desktopQuery.matches);
+    desktopQuery.addEventListener("change", updateViewport);
+    return () => desktopQuery.removeEventListener("change", updateViewport);
+  }, []);
+
+  // Keep the desktop split view focused on the first player, but let phone
+  // users start from the roster and choose who to open.
+  useEffect(() => {
+    if (cycle && cycle.players.length > 0 && initialSelectionCycleId.current !== cycle.id) {
+      initialSelectionCycleId.current = cycle.id;
+      if (isDesktop) setSelectedPlayerId(cycle.players[0].person.id);
     }
-  }, [cycle, selectedPlayerId]);
+  }, [cycle, isDesktop]);
 
   useEffect(() => {
     if (cycle && cycle.status !== "active" && !activeTab) {
@@ -63,9 +76,12 @@ export default function DevelopmentCycle() {
           <div className="flex items-center gap-4 min-w-0">
             <Link
               href={`/teams/${cycle.teamId}/development`}
-              className="shrink-0 p-2 -ml-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Back to player development cycles"
+              data-testid="link-back-to-development-cycles"
+              className="inline-flex shrink-0 items-center gap-1 p-2 -ml-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="h-5 w-5" />
+              <span className="text-xs font-semibold md:hidden">Cycles</span>
             </Link>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
@@ -117,17 +133,17 @@ export default function DevelopmentCycle() {
       </header>
 
       {/* Main Workspace */}
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+      <div className="flex-1 min-h-0 flex flex-col md:flex-row overflow-hidden relative">
         {/* Player List (Sidebar) */}
         {renderSidebar && (
-        <div className={`md:w-80 shrink-0 border-r bg-muted/20 flex flex-col transition-transform ${selectedPlayerId && 'hidden md:flex'}`}>
+        <div className={`md:w-80 min-h-0 shrink-0 border-r bg-muted/20 flex flex-col transition-transform ${selectedPlayerId && 'hidden md:flex'}`}>
           <div className="p-3 border-b bg-card shrink-0 flex items-center justify-between">
             <span className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Players</span>
             <Button variant="ghost" size="icon" className="h-8 w-8 sm:hidden" onClick={() => setRubricOpen(true)}>
               <HelpCircle className="h-4 w-4" />
             </Button>
           </div>
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1 min-h-0">
             <div className="p-2 space-y-1">
               {cycle.players.map(player => {
                 const isSelected = player.person.id === selectedPlayerId;
@@ -172,7 +188,7 @@ export default function DevelopmentCycle() {
         )}
 
         {/* Assessment Area */}
-        <div className={`flex-1 flex flex-col min-w-0 bg-background ${renderSidebar && !selectedPlayerId && 'hidden md:flex'}`}>
+        <div className={`flex-1 min-h-0 flex flex-col min-w-0 bg-background ${renderSidebar && !selectedPlayerId && 'hidden md:flex'}`}>
           {activeTab === "team" ? (
             <TeamReportView cycle={cycle} />
           ) : activeTab === "wording" && selectedPlayer ? (
@@ -188,7 +204,11 @@ export default function DevelopmentCycle() {
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
               <User className="h-12 w-12 mb-4 opacity-20" />
               <p className="text-lg font-medium text-foreground">Select a player</p>
-              <p className="text-sm">Choose a player from the list to begin their assessment.</p>
+              <p className="text-sm">
+                {activeTab === "wording"
+                  ? "Choose a player from the list to review their family report."
+                  : "Choose a player from the list to begin their assessment."}
+              </p>
             </div>
           )}
         </div>
