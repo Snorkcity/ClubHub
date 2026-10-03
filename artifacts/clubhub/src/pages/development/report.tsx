@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 
 function ScoreBadge({ score }: { score: number }) {
-  if (score >= 5) return <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-200">5 - Exceptional</Badge>;
+  if (score >= 5) return <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-200">5 - Strong</Badge>;
   if (score >= 4) return <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200">4 - Above Standard</Badge>;
   if (score >= 3) return <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200">3 - Meets Standard</Badge>;
   if (score >= 2) return <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200">2 - Developing</Badge>;

@@ -231,7 +231,7 @@ export default function DevelopmentCycle() {
                   <div className="font-bold text-amber-600">2</div><div>Developing toward standard</div>
                   <div className="font-bold text-green-600">3</div><div>Meets expected standard</div>
                   <div className="font-bold text-blue-600">4</div><div>Above expected standard</div>
-                  <div className="font-bold text-purple-600">5</div><div>Exceptional at this level</div>
+                  <div className="font-bold text-purple-600">5</div><div>Strong at this level</div>
                 </div>
               </div>
 
