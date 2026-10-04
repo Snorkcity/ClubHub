@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useClerk, useUser } from "@clerk/react";
 import { 
   Home, Users, CalendarDays, MessageSquare, Settings, 
-  LogOut, ChevronDown, UserSquare2, ClipboardCheck, Activity, Bell, TrendingUp
+  LogOut, ChevronDown, UserSquare2, ClipboardCheck, Activity, Bell, TrendingUp,
+  PanelLeftClose, PanelLeftOpen
 } from "lucide-react";
 import {
   useGetMe, useGetClub, useListNotifications,
@@ -20,10 +22,31 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { NahreoMark } from "@/components/brand/nahreo-logo";
 
+const DESKTOP_NAV_COLLAPSED_KEY = "nahreo-desktop-nav-collapsed";
+
+function getInitialDesktopNavCollapsed() {
+  try {
+    return window.localStorage.getItem(DESKTOP_NAV_COLLAPSED_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
 export default function Shell({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
+  const [isNavCollapsed, setIsNavCollapsed] = useState(getInitialDesktopNavCollapsed);
   const { signOut } = useClerk();
   const { user: clerkUser } = useUser();
+
+  const toggleDesktopNav = () => {
+    const next = !isNavCollapsed;
+    setIsNavCollapsed(next);
+    try {
+      window.localStorage.setItem(DESKTOP_NAV_COLLAPSED_KEY, String(next));
+    } catch {
+      // Keep the current session usable if browser storage is unavailable.
+    }
+  };
 
   // We use the same query keys that the generated hook uses internally 
   const { data: me, isLoading: isLoadingMe } = useGetMe({ 
@@ -101,67 +124,124 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-muted/20 flex flex-col md:flex-row overflow-x-clip">
       {/* Sidebar for Desktop */}
-      <aside className="hidden md:flex flex-col w-72 bg-background border-r shrink-0 sticky top-0 h-screen">
-        <div className="h-16 flex items-center px-6 border-b shrink-0">
-          <Link href="/home" className="flex items-center gap-3 w-full">
+      <aside className={`hidden md:flex flex-col ${isNavCollapsed ? "w-20" : "w-72"} bg-background border-r shrink-0 sticky top-0 h-screen transition-[width] duration-200 ease-in-out`}>
+        <div className={`h-16 flex items-center border-b shrink-0 ${isNavCollapsed ? "justify-center gap-1 px-1" : "justify-between px-6"}`}>
+          <Link
+            href="/home"
+            aria-label={club?.name || "Nahreo"}
+            title={isNavCollapsed ? club?.name || "Nahreo" : undefined}
+            className={`flex min-w-0 items-center ${isNavCollapsed ? "h-8 w-8 justify-center" : "flex-1 gap-3"}`}
+          >
             {club?.logoUrl ? (
               <img src={club.logoUrl} alt={club.name} className="h-8 w-8 object-contain" />
             ) : (
               <NahreoMark className="h-8 w-8 shrink-0" />
             )}
-            <span className="font-display font-bold text-lg truncate">
-              {club?.name || "Nahreo"}
-            </span>
+            {!isNavCollapsed && (
+              <span className="font-display font-bold text-lg truncate">
+                {club?.name || "Nahreo"}
+              </span>
+            )}
           </Link>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 shrink-0"
+            onClick={toggleDesktopNav}
+            aria-label={isNavCollapsed ? "Expand navigation" : "Collapse navigation"}
+            aria-expanded={!isNavCollapsed}
+            aria-controls="desktop-primary-navigation"
+            title={isNavCollapsed ? "Expand navigation" : "Collapse navigation"}
+            data-testid="button-toggle-desktop-nav"
+          >
+            {isNavCollapsed
+              ? <PanelLeftOpen className="h-4 w-4" />
+              : <PanelLeftClose className="h-4 w-4" />}
+          </Button>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-6 px-4 flex flex-col gap-1">
-          <div className="mb-4">
-            <TeamSwitcher />
+        <nav
+          id="desktop-primary-navigation"
+          aria-label="Primary navigation"
+          className={`flex-1 overflow-y-auto py-6 flex flex-col gap-1 ${isNavCollapsed ? "px-2" : "px-4"}`}
+        >
+          <div className={`mb-4 ${isNavCollapsed ? "flex justify-center" : ""}`}>
+            <TeamSwitcher collapsed={isNavCollapsed} />
           </div>
-          <div className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-            Menu
-          </div>
+          {!isNavCollapsed && (
+            <div className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+              Menu
+            </div>
+          )}
           {navItems.map((item) => {
             const isActive = location.startsWith(item.href);
             return (
-              <Link 
-                key={item.href} 
+              <Link
+                key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                aria-label={item.label}
+                aria-current={isActive ? "page" : undefined}
+                title={isNavCollapsed ? item.label : undefined}
+                data-testid={`link-nav-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
+                className={`flex items-center rounded-xl text-sm font-medium transition-colors ${
+                  isNavCollapsed
+                    ? "mx-auto h-12 w-12 justify-center px-0"
+                    : "gap-3 px-3 py-2.5"
+                } ${
                   isActive 
                     ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20" 
                     : "text-foreground hover:bg-muted"
                 }`}
               >
-                <item.icon className="h-5 w-5" />
-                {item.label}
+                <item.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                {!isNavCollapsed && <span className="truncate">{item.label}</span>}
               </Link>
             );
           })}
-        </div>
+        </nav>
 
-        <div className="p-4 border-t shrink-0 flex flex-col gap-2">
-          <Link href="/notifications" className={`flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+        <div className={`border-t shrink-0 flex flex-col gap-2 ${isNavCollapsed ? "items-center p-2" : "p-4"}`}>
+          <Link
+            href="/notifications"
+            aria-label={`Notifications${notificationsUnread > 0 ? `, ${notificationsUnread} unread` : ""}`}
+            title={isNavCollapsed ? "Notifications" : undefined}
+            data-testid="link-nav-notifications"
+            className={`relative flex items-center rounded-xl text-sm font-medium transition-colors ${
+              isNavCollapsed
+                ? "mx-auto h-12 w-12 justify-center px-0"
+                : "justify-between px-3 py-2"
+            } ${
             location.startsWith("/notifications")
               ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
               : "text-foreground hover:bg-muted"
-          }`}>
-            <div className="flex items-center gap-3">
-              <Bell className="h-5 w-5" />
-              Notifications
+            }`}
+          >
+            <div className={`flex items-center ${isNavCollapsed ? "" : "gap-3"}`}>
+              <Bell className="h-5 w-5" aria-hidden="true" />
+              {!isNavCollapsed && <span>Notifications</span>}
             </div>
             {notificationsUnread > 0 && (
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                location.startsWith("/notifications")
-                  ? "bg-primary-foreground text-primary"
-                  : "bg-primary text-primary-foreground"
-              }`}>
-                {notificationsUnread}
-              </span>
+              isNavCollapsed
+                ? <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-background" />
+                : <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    location.startsWith("/notifications")
+                      ? "bg-primary-foreground text-primary"
+                      : "bg-primary text-primary-foreground"
+                  }`}>
+                    {notificationsUnread}
+                  </span>
             )}
           </Link>
-          <UserMenu me={me} clerkUser={clerkUser} onSignOut={() => signOut({ redirectUrl: "/" })} isStaff={isStaff} notificationsUnread={notificationsUnread} staffTeamId={staffTeamId} />
+          <UserMenu
+            me={me}
+            clerkUser={clerkUser}
+            onSignOut={() => signOut({ redirectUrl: "/" })}
+            avatarOnly={isNavCollapsed}
+            isStaff={isStaff}
+            notificationsUnread={notificationsUnread}
+            staffTeamId={staffTeamId}
+          />
         </div>
       </aside>
 
@@ -251,7 +331,7 @@ function UserMenu({ me, clerkUser, onSignOut, avatarOnly = false, isStaff = fals
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         {avatarOnly ? (
-          <Button variant="ghost" size="icon" className="rounded-full" aria-label="Account menu">
+          <Button variant="ghost" size="icon" className="rounded-full" aria-label="Account menu" title="Account menu">
             <Avatar className="h-9 w-9 border border-border/50">
               <AvatarImage src={avatarUrl} />
               <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">

@@ -34,7 +34,13 @@ export function useTeamUnreads() {
  * chevron; the dropdown lists every team you belong to, with unread badges
  * for the teams you're NOT currently looking at.
  */
-export function TeamSwitcher({ compact = false }: { compact?: boolean }) {
+export function TeamSwitcher({
+  compact = false,
+  collapsed = false,
+}: {
+  compact?: boolean;
+  collapsed?: boolean;
+}) {
   const { activeTeamId, setActiveTeamId } = useActiveTeam();
   const { data: unreads } = useTeamUnreads();
 
@@ -67,13 +73,17 @@ export function TeamSwitcher({ compact = false }: { compact?: boolean }) {
         <Button
           variant="ghost"
           aria-label={`My teams, currently showing ${label}`}
-          className={
-            compact
+          title={collapsed ? `My teams: ${label}` : undefined}
+          data-testid="button-switch-team"
+          className={collapsed
+            ? "h-11 w-11 justify-center rounded-xl p-0"
+            : compact
               ? "h-11 max-w-[45vw] gap-1.5 px-2"
-              : "w-full justify-between rounded-xl h-10 px-3 font-semibold"
-          }
+              : "w-full justify-between rounded-xl h-10 px-3 font-semibold"}
         >
-          {compact ? (
+          {collapsed ? (
+            <Users className="h-5 w-5" aria-hidden="true" />
+          ) : compact ? (
             <span className="flex min-w-0 flex-col items-start leading-tight">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 My teams
@@ -85,7 +95,7 @@ export function TeamSwitcher({ compact = false }: { compact?: boolean }) {
           ) : (
             <span className="truncate">{label}</span>
           )}
-          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+          {!collapsed && <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-64 rounded-2xl p-2 shadow-xl">
