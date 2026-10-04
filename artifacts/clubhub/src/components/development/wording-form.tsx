@@ -225,6 +225,19 @@ export function WordingForm({
                   />
                 ))}
               </div>
+
+              {canEdit && (
+                <div className="flex justify-end pt-2">
+                  <Button
+                    type="submit"
+                    disabled={saveDraft.isPending}
+                    className="w-full sm:w-auto rounded-xl"
+                  >
+                    {saveDraft.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+                    Review & save
+                  </Button>
+                </div>
+              )}
             </form>
           </Form>
         </div>

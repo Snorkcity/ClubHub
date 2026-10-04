@@ -328,7 +328,7 @@ function UserMenu({ me, clerkUser, onSignOut, avatarOnly = false, isStaff = fals
           <DropdownMenuItem asChild className="rounded-xl py-2 cursor-pointer md:hidden">
             <Link href={`/teams/${staffTeamId}/development`} className="flex items-center w-full">
               <TrendingUp className="mr-2 h-4 w-4 text-muted-foreground" />
-              <span>Player Development</span>
+              <span>Player Reports</span>
             </Link>
           </DropdownMenuItem>
         )}
