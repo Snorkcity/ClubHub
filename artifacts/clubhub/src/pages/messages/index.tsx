@@ -11,7 +11,6 @@ import {
 import { useActiveTeam } from "@/lib/active-team";
 import { LoadingScreen, ErrorState, EmptyState } from "@/components/ui/states";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -38,7 +37,7 @@ export default function Messages() {
           <NewChatDialog myId={myId} />
         </div>
       </header>
-      <div className="container mx-auto p-4 md:p-6 lg:max-w-4xl space-y-6">
+      <div className="container mx-auto px-3 py-3 md:p-6 lg:max-w-4xl space-y-4">
         {chats.length === 0 ? (
           <EmptyState 
             title="No messages yet" 
@@ -46,11 +45,11 @@ export default function Messages() {
             icon={MessageSquare}
           />
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-5">
             {teamChats.length > 0 && (
-              <div className="space-y-4">
-                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider pl-1">Team Chats</h2>
-                <div className="bg-card border rounded-3xl overflow-hidden shadow-sm flex flex-col divide-y">
+              <div className="space-y-2">
+                <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider pl-1">Team Chats</h2>
+                <div className="bg-card border rounded-2xl overflow-hidden flex flex-col divide-y">
                   {teamChats.map(chat => (
                     <ChatRow key={chat.id} chat={chat} myId={myId} />
                   ))}
@@ -59,9 +58,9 @@ export default function Messages() {
             )}
             
             {otherChats.length > 0 && (
-              <div className="space-y-4">
-                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider pl-1">Direct & Groups</h2>
-                <div className="bg-card border rounded-3xl overflow-hidden shadow-sm flex flex-col divide-y">
+              <div className="space-y-2">
+                <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider pl-1">Direct & Groups</h2>
+                <div className="bg-card border rounded-2xl overflow-hidden flex flex-col divide-y">
                   {otherChats.map(chat => (
                     <ChatRow key={chat.id} chat={chat} myId={myId} />
                   ))}
@@ -85,14 +84,14 @@ function ChatRow({ chat, myId }: { chat: any; myId?: number }) {
       new Date(chat.lastMessage.createdAt) > new Date(chat.myLastReadAt));
 
   return (
-    <Link href={`/messages/${chat.id}`} className="block p-4 hover:bg-muted/30 transition-colors cursor-pointer group">
-      <div className="flex items-center gap-4">
+    <Link href={`/messages/${chat.id}`} className="block px-3 py-2.5 md:px-4 md:py-3 hover:bg-muted/30 transition-colors cursor-pointer group">
+      <div className="flex items-center gap-3">
         {isTeam ? (
-          <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-            <Hash className="h-6 w-6 text-primary group-hover:text-primary-foreground transition-colors" />
+          <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+            <Hash className="h-5 w-5 text-primary group-hover:text-primary-foreground transition-colors" />
           </div>
         ) : (
-          <Avatar className="h-14 w-14 border shadow-sm shrink-0">
+          <Avatar className="h-11 w-11 border shadow-sm shrink-0">
             <AvatarFallback className="bg-muted text-muted-foreground font-bold">
               {chat.name.substring(0, 2).toUpperCase()}
             </AvatarFallback>
@@ -100,10 +99,10 @@ function ChatRow({ chat, myId }: { chat: any; myId?: number }) {
         )}
         
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-1">
-            <h3 className="font-bold text-lg truncate pr-4 group-hover:text-primary transition-colors">{chat.name}</h3>
+          <div className="flex items-center justify-between gap-2 mb-0.5">
+            <h3 className="font-bold text-[15px] leading-tight truncate pr-1 group-hover:text-primary transition-colors">{chat.name}</h3>
             {chat.lastMessage && (
-              <span className="text-xs text-muted-foreground shrink-0 font-medium">
+              <span className="text-[11px] text-muted-foreground shrink-0 font-medium">
                 {format(new Date(chat.lastMessage.createdAt), "MMM d")}
               </span>
             )}
@@ -111,19 +110,19 @@ function ChatRow({ chat, myId }: { chat: any; myId?: number }) {
           
           <div className="flex items-center gap-2">
             {chat.lastMessage ? (
-              <p className={`text-sm truncate flex-1 ${unread ? "text-foreground font-semibold" : "text-muted-foreground font-medium"}`}>
-                <span className="text-foreground">{chat.lastMessage.author.firstName}: </span>
+              <p className={`text-[13px] leading-[1.35] line-clamp-2 flex-1 min-w-0 ${unread ? "text-foreground font-semibold" : "text-muted-foreground font-medium"}`}>
+                <span className="text-foreground/90">{chat.lastMessage.author.firstName}: </span>
                 {chat.lastMessage.body}
               </p>
             ) : (
-              <p className="text-sm text-muted-foreground/60 italic flex-1">No messages yet</p>
+              <p className="text-[13px] text-muted-foreground/60 italic flex-1">No messages yet</p>
             )}
 
             {unread && (
-              <span className="h-2.5 w-2.5 rounded-full bg-destructive shrink-0" />
+              <span className="h-2 w-2 rounded-full bg-destructive shrink-0" />
             )}
             {isTeam && (
-              <span className="flex items-center text-xs font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+              <span className="flex items-center text-[11px] font-semibold text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full shrink-0">
                 <Users className="h-3 w-3 mr-1" /> {chat.memberCount}
               </span>
             )}

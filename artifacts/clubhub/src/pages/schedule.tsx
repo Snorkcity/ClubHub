@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { format, isToday, isTomorrow } from "date-fns";
+import { format } from "date-fns";
 import { Link } from "wouter";
 import { CalendarDays, Check, ChevronDown, MapPin, Users, X } from "lucide-react";
 import { 
@@ -49,25 +49,15 @@ export default function Schedule() {
             icon={CalendarDays}
           />
         ) : (
-          <div className="space-y-8 md:space-y-12">
+          <div className="space-y-2">
             {sortedDays.map((day) => {
               const dayEvents = groupedEvents[day];
-              const dateObj = new Date(day + 'T12:00:00'); // Midday to avoid timezone shifting
-              
-              let dayLabel = format(dateObj, "EEEE, MMMM d");
-              if (isToday(dateObj)) dayLabel = `Today, ${format(dateObj, "MMM d")}`;
-              if (isTomorrow(dateObj)) dayLabel = `Tomorrow, ${format(dateObj, "MMM d")}`;
 
               return (
-                <div key={day} className="space-y-4">
-                  <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground sticky top-12 bg-muted/10 backdrop-blur-md py-1.5 z-10">
-                    {dayLabel}
-                  </h2>
-                  <div className="flex flex-col gap-2 md:gap-4">
-                    {dayEvents.map(event => (
-                      <ScheduleCard key={event.id} event={event} />
-                    ))}
-                  </div>
+                <div key={day} className="flex flex-col gap-2 md:gap-3">
+                  {dayEvents.map(event => (
+                    <ScheduleCard key={event.id} event={event} />
+                  ))}
                 </div>
               );
             })}
@@ -128,18 +118,29 @@ function ScheduleCard({ event }: { event: any }) {
   }
 
   return (
-    <div className="bg-card border rounded-2xl px-4 py-3 hover:shadow-md transition-shadow group relative overflow-hidden">
+    <div className="bg-card border rounded-2xl px-3.5 py-3 hover:shadow-md transition-shadow group relative overflow-hidden">
       <div className={`absolute top-0 left-0 bottom-0 w-1.5 ${barColor}`} />
 
-      <div className="flex items-center gap-3 pl-2">
-        {/* Time */}
-        <div className="w-14 shrink-0 text-center">
-          <div className="font-display font-bold text-lg leading-tight">{format(new Date(event.startsAt), "h:mm")}</div>
-          <div className="text-[11px] font-semibold text-muted-foreground uppercase leading-none">{format(new Date(event.startsAt), "a")}</div>
-        </div>
+      <div className="flex items-center gap-2.5 pl-2">
+        {/* The date lives with its event, so separate day headings aren't needed. */}
+        <time
+          dateTime={format(new Date(event.startsAt), "yyyy-MM-dd")}
+          aria-label={format(new Date(event.startsAt), "EEEE, MMMM d")}
+          className="w-11 shrink-0 self-stretch min-h-[3.25rem] rounded-xl bg-muted/70 flex flex-col items-center justify-center leading-none"
+        >
+          <span className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground">
+            {format(new Date(event.startsAt), "MMM")}
+          </span>
+          <span className="mt-0.5 font-display text-lg font-bold text-foreground">
+            {format(new Date(event.startsAt), "d")}
+          </span>
+          <span className="mt-0.5 text-[9px] font-semibold uppercase text-muted-foreground">
+            {format(new Date(event.startsAt), "EEE")}
+          </span>
+        </time>
 
         {/* Main content */}
-        <Link href={`/events/${event.id}`} className="flex-1 min-w-0">
+        <Link href={`/events/${event.id}`} className="flex-1 min-w-0 py-0.5">
           <div className="flex items-center gap-2">
             <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${typeColor}`}>
               {event.type}
@@ -150,10 +151,11 @@ function ScheduleCard({ event }: { event: any }) {
               </span>
             )}
           </div>
-          <h3 className={`font-bold text-base group-hover:text-primary transition-colors truncate mt-0.5 ${event.cancelledAt ? "line-through text-muted-foreground" : ""}`}>
+          <h3 className={`font-bold text-[15px] leading-tight group-hover:text-primary transition-colors truncate mt-0.5 ${event.cancelledAt ? "line-through text-muted-foreground" : ""}`}>
             {event.title}
           </h3>
-          <div className="flex flex-wrap gap-x-3 text-xs text-muted-foreground mt-0.5">
+          <div className="flex flex-wrap items-center gap-x-2.5 text-xs text-muted-foreground mt-1">
+            <span className="font-semibold text-foreground/80">{format(new Date(event.startsAt), "h:mm a")}</span>
             {event.location && (
               <span className="flex items-center truncate"><MapPin className="h-3 w-3 mr-1 opacity-70" /> {locationName(event.location)}</span>
             )}
@@ -212,7 +214,7 @@ function ScheduleCard({ event }: { event: any }) {
 
       {/* Reason field, shown when marking Not */}
       {reasonOpen && (
-        <div className="mt-3 ml-2 pl-14 pr-1 flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-150">
+        <div className="mt-3 ml-2 pl-11 pr-1 flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-150">
           <input
             autoFocus
             value={reason}
