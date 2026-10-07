@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { format } from "date-fns";
+import { addDays, format, startOfWeek } from "date-fns";
 import { Link } from "wouter";
 import { CalendarDays, Check, ChevronDown, MapPin, Users, X } from "lucide-react";
 import { 
@@ -21,16 +21,20 @@ export default function Schedule() {
   if (isLoading) return <LoadingScreen message="Loading schedule..." />;
   if (error || !events) return <ErrorState onRetry={() => refetch()} />;
 
-  // Group events by day
-  const groupedEvents: Record<string, any[]> = {};
-  
-  events.forEach((event) => {
-    const dateStr = format(new Date(event.startsAt), "yyyy-MM-dd");
-    if (!groupedEvents[dateStr]) groupedEvents[dateStr] = [];
-    groupedEvents[dateStr].push(event);
+  // Split against local Monday-to-Monday boundaries; the next Monday starts
+  // "Coming up", leaving all seven local calendar days in "This week".
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+  const nextWeekStart = addDays(weekStart, 7);
+  const chronologicalEvents = [...events].sort(
+    (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime(),
+  );
+  const thisWeekEvents = chronologicalEvents.filter((event) => {
+    const startsAt = new Date(event.startsAt);
+    return startsAt >= weekStart && startsAt < nextWeekStart;
   });
-
-  const sortedDays = Object.keys(groupedEvents).sort();
+  const comingUpEvents = chronologicalEvents.filter(
+    (event) => new Date(event.startsAt) >= nextWeekStart,
+  );
 
   return (
     <div className="flex-1 overflow-y-auto overflow-x-hidden bg-muted/10">
@@ -49,21 +53,65 @@ export default function Schedule() {
             icon={CalendarDays}
           />
         ) : (
-          <div className="space-y-2">
-            {sortedDays.map((day) => {
-              const dayEvents = groupedEvents[day];
-
-              return (
-                <div key={day} className="flex flex-col gap-2 md:gap-3">
-                  {dayEvents.map(event => (
-                    <ScheduleCard key={event.id} event={event} />
-                  ))}
+          <div className="space-y-5">
+            <section
+              aria-labelledby="this-week-heading"
+              className="rounded-2xl border border-primary/15 bg-primary/[0.035] p-3 md:p-5"
+            >
+              <div className="mb-3 flex items-center justify-between gap-3 px-0.5">
+                <div className="min-w-0">
+                  <h2 id="this-week-heading" className="font-display text-base font-bold text-foreground">
+                    This week
+                  </h2>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {format(weekStart, "MMM d")} – {format(addDays(weekStart, 6), "MMM d")}
+                  </p>
                 </div>
-              );
-            })}
+                <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
+                  {thisWeekEvents.length} {thisWeekEvents.length === 1 ? "event" : "events"}
+                </span>
+              </div>
+              {thisWeekEvents.length > 0 ? (
+                <EventList events={thisWeekEvents} />
+              ) : (
+                <p className="rounded-xl border border-dashed border-primary/20 bg-background/70 px-3 py-3 text-sm text-muted-foreground">
+                  No more activities this week
+                </p>
+              )}
+            </section>
+
+            {comingUpEvents.length > 0 && (
+              <section aria-labelledby="coming-up-heading" className="space-y-3">
+                <div className="px-1">
+                  <h2 id="coming-up-heading" className="font-display text-base font-bold">
+                    Coming up
+                  </h2>
+                </div>
+                <EventList events={comingUpEvents} />
+              </section>
+            )}
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function EventList({ events }: { events: any[] }) {
+  const groupedEvents: Record<string, any[]> = {};
+
+  events.forEach((event) => {
+    const dateStr = format(new Date(event.startsAt), "yyyy-MM-dd");
+    if (!groupedEvents[dateStr]) groupedEvents[dateStr] = [];
+    groupedEvents[dateStr].push(event);
+  });
+
+  return (
+    <div className="flex flex-col gap-2 md:gap-3">
+      {Object.keys(groupedEvents)
+        .sort()
+        .flatMap((day) => groupedEvents[day])
+        .map((event) => <ScheduleCard key={event.id} event={event} />)}
     </div>
   );
 }
