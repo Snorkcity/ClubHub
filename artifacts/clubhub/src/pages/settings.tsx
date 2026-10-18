@@ -25,6 +25,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { phonePlaceholder } from "@/lib/localisation";
 import { fileToAvatarDataUrl } from "@/lib/profile-photo";
+import { PlayerLearningPreferences } from "@/components/people/learning-preferences";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -356,6 +357,7 @@ export default function Settings() {
     phonePrivacy !== (me.person.phonePrivacy || "everyone") ||
     emailPrivacy !== (me.person.emailPrivacy || "everyone") ||
     bioPrivacy !== (me.person.bioPrivacy || "everyone");
+  const isPlayer = me.memberships.some((membership) => membership.role === "player");
 
   return (
     <div className="flex-1 overflow-y-auto overflow-x-hidden bg-muted/10">
@@ -369,6 +371,8 @@ export default function Settings() {
           <AppearanceCard />
 
           <NotificationsCard me={me} />
+
+          {isPlayer && <PlayerLearningPreferences />}
 
           <Card className="p-6 md:p-8 rounded-3xl border shadow-sm">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2">

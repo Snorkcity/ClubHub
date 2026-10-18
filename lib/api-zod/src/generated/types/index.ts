@@ -8,6 +8,7 @@
 
 export * from './acceptTeamInvitation200';
 export * from './avatarImageInput';
+export * from './badRequestResponse';
 export * from './chat';
 export * from './chatDetail';
 export * from './chatInput';
@@ -68,6 +69,7 @@ export * from './extraSession';
 export * from './extraSessionInput';
 export * from './extraSessionInputKind';
 export * from './extraSessionKind';
+export * from './forbiddenResponse';
 export * from './gamePeriod';
 export * from './getCheckinStatusParams';
 export * from './getTeamMonitoringParams';
@@ -76,6 +78,9 @@ export * from './guardianshipInput';
 export * from './guardianshipInputRelationship';
 export * from './guardianshipRelationship';
 export * from './healthStatus';
+export * from './learningPreferences';
+export * from './learningPreferencesInput';
+export * from './learningPreferencesInputAnswersItem';
 export * from './listNotificationsParams';
 export * from './listPeopleParams';
 export * from './listPeopleRole';

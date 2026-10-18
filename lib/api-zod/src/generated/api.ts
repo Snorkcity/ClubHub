@@ -927,6 +927,87 @@ export const UpdatePersonResponse = zod.object({
 
 
 /**
+ * @summary Get the signed-in player's saved learning preferences
+ */
+export const getMyLearningPreferencesResponseVisualScoreMin = 0;
+export const getMyLearningPreferencesResponseVisualScoreMax = 30;
+
+export const getMyLearningPreferencesResponseAuditoryScoreMin = 0;
+export const getMyLearningPreferencesResponseAuditoryScoreMax = 30;
+
+export const getMyLearningPreferencesResponseKinestheticScoreMin = 0;
+export const getMyLearningPreferencesResponseKinestheticScoreMax = 30;
+
+
+
+export const GetMyLearningPreferencesResponse = zod.object({
+  "completed": zod.boolean(),
+  "visualScore": zod.number().min(getMyLearningPreferencesResponseVisualScoreMin).max(getMyLearningPreferencesResponseVisualScoreMax),
+  "auditoryScore": zod.number().min(getMyLearningPreferencesResponseAuditoryScoreMin).max(getMyLearningPreferencesResponseAuditoryScoreMax),
+  "kinestheticScore": zod.number().min(getMyLearningPreferencesResponseKinestheticScoreMin).max(getMyLearningPreferencesResponseKinestheticScoreMax),
+  "questionnaireVersion": zod.number(),
+  "completedAt": zod.coerce.date().nullable()
+})
+
+
+/**
+ * @summary Submit or retake the signed-in player's learning-preference questionnaire
+ */
+export const submitMyLearningPreferencesBodyAnswersMin = 30;
+export const submitMyLearningPreferencesBodyAnswersMax = 30;
+
+
+
+export const SubmitMyLearningPreferencesBody = zod.object({
+  "answers": zod.array(zod.enum(['visual', 'auditory', 'kinesthetic'])).min(submitMyLearningPreferencesBodyAnswersMin).max(submitMyLearningPreferencesBodyAnswersMax)
+})
+
+export const submitMyLearningPreferencesResponseVisualScoreMin = 0;
+export const submitMyLearningPreferencesResponseVisualScoreMax = 30;
+
+export const submitMyLearningPreferencesResponseAuditoryScoreMin = 0;
+export const submitMyLearningPreferencesResponseAuditoryScoreMax = 30;
+
+export const submitMyLearningPreferencesResponseKinestheticScoreMin = 0;
+export const submitMyLearningPreferencesResponseKinestheticScoreMax = 30;
+
+
+
+export const SubmitMyLearningPreferencesResponse = zod.object({
+  "completed": zod.boolean(),
+  "visualScore": zod.number().min(submitMyLearningPreferencesResponseVisualScoreMin).max(submitMyLearningPreferencesResponseVisualScoreMax),
+  "auditoryScore": zod.number().min(submitMyLearningPreferencesResponseAuditoryScoreMin).max(submitMyLearningPreferencesResponseAuditoryScoreMax),
+  "kinestheticScore": zod.number().min(submitMyLearningPreferencesResponseKinestheticScoreMin).max(submitMyLearningPreferencesResponseKinestheticScoreMax),
+  "questionnaireVersion": zod.number(),
+  "completedAt": zod.coerce.date().nullable()
+})
+
+
+/**
+ * @summary Get a player's learning preferences for authorized team staff
+ */
+export const getPersonLearningPreferencesResponseVisualScoreMin = 0;
+export const getPersonLearningPreferencesResponseVisualScoreMax = 30;
+
+export const getPersonLearningPreferencesResponseAuditoryScoreMin = 0;
+export const getPersonLearningPreferencesResponseAuditoryScoreMax = 30;
+
+export const getPersonLearningPreferencesResponseKinestheticScoreMin = 0;
+export const getPersonLearningPreferencesResponseKinestheticScoreMax = 30;
+
+
+
+export const GetPersonLearningPreferencesResponse = zod.object({
+  "completed": zod.boolean(),
+  "visualScore": zod.number().min(getPersonLearningPreferencesResponseVisualScoreMin).max(getPersonLearningPreferencesResponseVisualScoreMax),
+  "auditoryScore": zod.number().min(getPersonLearningPreferencesResponseAuditoryScoreMin).max(getPersonLearningPreferencesResponseAuditoryScoreMax),
+  "kinestheticScore": zod.number().min(getPersonLearningPreferencesResponseKinestheticScoreMin).max(getPersonLearningPreferencesResponseKinestheticScoreMax),
+  "questionnaireVersion": zod.number(),
+  "completedAt": zod.coerce.date().nullable()
+})
+
+
+/**
  * @summary Link a guardian to a player's lifelong account
  */
 export const CreateGuardianshipBody = zod.object({

@@ -634,6 +634,45 @@ export interface PersonDetail {
   wards: Guardianship[];
 }
 
+export interface LearningPreferences {
+  completed: boolean;
+  /**
+     * @minimum 0
+     * @maximum 30
+     */
+  visualScore: number;
+  /**
+     * @minimum 0
+     * @maximum 30
+     */
+  auditoryScore: number;
+  /**
+     * @minimum 0
+     * @maximum 30
+     */
+  kinestheticScore: number;
+  questionnaireVersion: number;
+  /** @nullable */
+  completedAt: string | null;
+}
+
+export type LearningPreferencesInputAnswersItem = typeof LearningPreferencesInputAnswersItem[keyof typeof LearningPreferencesInputAnswersItem];
+
+
+export const LearningPreferencesInputAnswersItem = {
+  visual: 'visual',
+  auditory: 'auditory',
+  kinesthetic: 'kinesthetic',
+} as const;
+
+export interface LearningPreferencesInput {
+  /**
+     * @minItems 30
+     * @maxItems 30
+     */
+  answers: LearningPreferencesInputAnswersItem[];
+}
+
 export interface PostPhoto {
   id: number;
   /** Signed, expiring relative URL for the photo */
@@ -1401,6 +1440,16 @@ export interface SeasonMinutes {
   trackedGames: number;
   players: SeasonMinutesPlayer[];
 }
+
+/**
+ * Invalid request
+ */
+export type BadRequestResponse = Error;
+
+/**
+ * The caller is not allowed to access this resource
+ */
+export type ForbiddenResponse = Error;
 
 /**
  * Resource not found

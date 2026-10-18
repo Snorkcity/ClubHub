@@ -607,6 +607,59 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /me/learning-preferences:
+    get:
+      operationId: getMyLearningPreferences
+      tags: [people]
+      summary: Get the signed-in player's saved learning preferences
+      responses:
+        "200":
+          description: Current learning-preference result, if completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearningPreferences"
+    put:
+      operationId: submitMyLearningPreferences
+      tags: [people]
+      summary: Submit or retake the signed-in player's learning-preference questionnaire
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LearningPreferencesInput"
+      responses:
+        "200":
+          description: Saved learning-preference result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearningPreferences"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /people/{personId}/learning-preferences:
+    get:
+      operationId: getPersonLearningPreferences
+      tags: [people]
+      summary: Get a player's learning preferences for authorized team staff
+      parameters:
+        - $ref: "#/components/parameters/PersonId"
+      responses:
+        "200":
+          description: Player learning-preference result, if completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearningPreferences"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /guardianships:
     post:
       operationId: createGuardianship
@@ -1487,6 +1540,18 @@ components:
         type: integer
 
   responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: The caller is not allowed to access this resource
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
     NotFound:
       description: Resource not found
       content:
@@ -1965,6 +2030,29 @@ components:
         wards:
           type: array
           items: { $ref: "#/components/schemas/Guardianship" }
+
+    LearningPreferences:
+      type: object
+      required: [completed, visualScore, auditoryScore, kinestheticScore, questionnaireVersion, completedAt]
+      properties:
+        completed: { type: boolean }
+        visualScore: { type: integer, minimum: 0, maximum: 30 }
+        auditoryScore: { type: integer, minimum: 0, maximum: 30 }
+        kinestheticScore: { type: integer, minimum: 0, maximum: 30 }
+        questionnaireVersion: { type: integer }
+        completedAt: { type: ["string", "null"], format: date-time }
+
+    LearningPreferencesInput:
+      type: object
+      required: [answers]
+      properties:
+        answers:
+          type: array
+          minItems: 30
+          maxItems: 30
+          items:
+            type: string
+            enum: [visual, auditory, kinesthetic]
 
     Post:
       type: object
