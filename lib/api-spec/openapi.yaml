@@ -2042,17 +2042,27 @@ components:
         questionnaireVersion: { type: integer }
         completedAt: { type: ["string", "null"], format: date-time }
 
+    LearningPreferenceAnswer:
+      oneOf:
+        - type: string
+          enum: [visual, auditory, kinesthetic, depends]
+        - type: array
+          minItems: 1
+          maxItems: 3
+          uniqueItems: true
+          items:
+            type: string
+            enum: [visual, auditory, kinesthetic]
+
     LearningPreferencesInput:
       type: object
       required: [answers]
       properties:
         answers:
           type: array
-          minItems: 30
+          minItems: 15
           maxItems: 30
-          items:
-            type: string
-            enum: [visual, auditory, kinesthetic]
+          items: { $ref: "#/components/schemas/LearningPreferenceAnswer" }
 
     Post:
       type: object

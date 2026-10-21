@@ -15,10 +15,14 @@ import {
 } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
 import { isTeamStaff } from "../lib/authz";
-import { scoreLearningPreferences } from "../lib/learning-preferences";
+import {
+  scoreLearningPreferences,
+  type LearningModality,
+  type LearningPreferenceAnswer,
+} from "../lib/learning-preferences";
 
 const router: IRouter = Router();
-const QUESTIONNAIRE_VERSION = 1;
+const QUESTIONNAIRE_VERSION = 2;
 
 async function hasPlayerRole(userId: number): Promise<boolean> {
   const [membership] = await db
@@ -78,7 +82,33 @@ router.put("/me/learning-preferences", requireAuth, async (req, res): Promise<vo
     return;
   }
 
-  const scores = scoreLearningPreferences(parsed.data.answers);
+  const answers = parsed.data.answers as LearningPreferenceAnswer[];
+  const isLegacyV1 =
+    answers.length === 30 &&
+    answers.every(
+      (answer): answer is LearningModality =>
+        typeof answer === "string" &&
+        (answer === "visual" || answer === "auditory" || answer === "kinesthetic"),
+    );
+  const isCurrentV2 =
+    answers.length === 15 &&
+    answers.every((answer) => Array.isArray(answer) || answer === "depends");
+
+  if (!isLegacyV1 && !isCurrentV2) {
+    res.status(400).json({ error: "Submit all 15 current answers or all 30 legacy answers." });
+    return;
+  }
+
+  const answeredPreferenceCount = isCurrentV2
+    ? answers.filter(Array.isArray).length
+    : 30;
+  if (isCurrentV2 && answeredPreferenceCount < 8) {
+    res.status(400).json({ error: "Choose at least one approach for 8 questions; use “It depends” for the rest." });
+    return;
+  }
+
+  const scores = scoreLearningPreferences(answers);
+  const questionnaireVersion = isLegacyV1 ? 1 : QUESTIONNAIRE_VERSION;
   await db
     .insert(learningPreferencesTable)
     .values({
@@ -87,7 +117,7 @@ router.put("/me/learning-preferences", requireAuth, async (req, res): Promise<vo
       visualScore: scores.visual,
       auditoryScore: scores.auditory,
       kinestheticScore: scores.kinesthetic,
-      questionnaireVersion: QUESTIONNAIRE_VERSION,
+      questionnaireVersion,
     })
     .onConflictDoUpdate({
       target: learningPreferencesTable.userId,
@@ -96,7 +126,7 @@ router.put("/me/learning-preferences", requireAuth, async (req, res): Promise<vo
         visualScore: scores.visual,
         auditoryScore: scores.auditory,
         kinestheticScore: scores.kinesthetic,
-        questionnaireVersion: QUESTIONNAIRE_VERSION,
+        questionnaireVersion,
         completedAt: new Date(),
       },
     });

@@ -5,12 +5,12 @@
  * Nahreo API — multi-team sports club management
  * OpenAPI spec version: 0.1.0
  */
-import type { LearningPreferencesInputAnswersItem } from './learningPreferencesInputAnswersItem';
+import type { LearningPreferenceAnswer } from './learningPreferenceAnswer';
 
 export interface LearningPreferencesInput {
   /**
-     * @minItems 30
+     * @minItems 15
      * @maxItems 30
      */
-  answers: LearningPreferencesInputAnswersItem[];
+  answers: LearningPreferenceAnswer[];
 }

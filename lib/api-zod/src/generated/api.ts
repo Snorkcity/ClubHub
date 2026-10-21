@@ -953,13 +953,15 @@ export const GetMyLearningPreferencesResponse = zod.object({
 /**
  * @summary Submit or retake the signed-in player's learning-preference questionnaire
  */
-export const submitMyLearningPreferencesBodyAnswersMin = 30;
+export const submitMyLearningPreferencesBodyAnswersItemTwoMax = 3;
+
+export const submitMyLearningPreferencesBodyAnswersMin = 15;
 export const submitMyLearningPreferencesBodyAnswersMax = 30;
 
 
 
 export const SubmitMyLearningPreferencesBody = zod.object({
-  "answers": zod.array(zod.enum(['visual', 'auditory', 'kinesthetic'])).min(submitMyLearningPreferencesBodyAnswersMin).max(submitMyLearningPreferencesBodyAnswersMax)
+  "answers": zod.array(zod.union([zod.enum(['visual', 'auditory', 'kinesthetic', 'depends']),zod.array(zod.enum(['visual', 'auditory', 'kinesthetic'])).min(1).max(submitMyLearningPreferencesBodyAnswersItemTwoMax)])).min(submitMyLearningPreferencesBodyAnswersMin).max(submitMyLearningPreferencesBodyAnswersMax)
 })
 
 export const submitMyLearningPreferencesResponseVisualScoreMin = 0;

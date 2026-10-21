@@ -656,21 +656,14 @@ export interface LearningPreferences {
   completedAt: string | null;
 }
 
-export type LearningPreferencesInputAnswersItem = typeof LearningPreferencesInputAnswersItem[keyof typeof LearningPreferencesInputAnswersItem];
-
-
-export const LearningPreferencesInputAnswersItem = {
-  visual: 'visual',
-  auditory: 'auditory',
-  kinesthetic: 'kinesthetic',
-} as const;
+export type LearningPreferenceAnswer = 'visual' | 'auditory' | 'kinesthetic' | 'depends' | ('visual' | 'auditory' | 'kinesthetic')[];
 
 export interface LearningPreferencesInput {
   /**
-     * @minItems 30
+     * @minItems 15
      * @maxItems 30
      */
-  answers: LearningPreferencesInputAnswersItem[];
+  answers: LearningPreferenceAnswer[];
 }
 
 export interface PostPhoto {

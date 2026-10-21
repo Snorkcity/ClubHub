@@ -13,43 +13,42 @@ import { Card } from "@/components/ui/card";
 type LearningModality = "visual" | "auditory" | "kinesthetic";
 
 const modalityMeta: Record<LearningModality, { label: string; detail: string; icon: typeof Eye; color: string; bar: string }> = {
-  visual: { label: "Seeing it", detail: "Diagrams, demonstrations and watching a skill", icon: Eye, color: "text-sky-800", bar: "bg-sky-600" },
-  auditory: { label: "Hearing it", detail: "Talking it through, cues and listening", icon: Headphones, color: "text-amber-800", bar: "bg-amber-500" },
-  kinesthetic: { label: "Trying it", detail: "Movement, practice and hands-on repetition", icon: Activity, color: "text-emerald-800", bar: "bg-emerald-600" },
+  visual: { label: "Seeing examples", detail: "Diagrams, maps, layouts and visual examples", icon: Eye, color: "text-sky-800", bar: "bg-sky-600" },
+  auditory: { label: "Talking it through", detail: "Clear explanations, conversation and questions", icon: Headphones, color: "text-amber-800", bar: "bg-amber-500" },
+  kinesthetic: { label: "Trying it out", detail: "Examples, hands-on practice and real situations", icon: Activity, color: "text-emerald-800", bar: "bg-emerald-600" },
 };
 
 const questions: { prompt: string; choices: { text: string; modality: LearningModality }[] }[] = [
-  { prompt: "When a coach shows a new play, what helps you get the shape of it?", choices: [{ text: "Seeing it drawn on a board or shown on the field", modality: "visual" }, { text: "Hearing the coach explain each player's job", modality: "auditory" }, { text: "Walking or running through the play myself", modality: "kinesthetic" }] },
-  { prompt: "Before a match, how do you like to learn the plan?", choices: [{ text: "Look over a formation or a few key pictures", modality: "visual" }, { text: "Talk through the plan with my coach or teammates", modality: "auditory" }, { text: "Practise a few of the moves in a warm-up", modality: "kinesthetic" }] },
-  { prompt: "When learning a new skill, what is a useful first step for you?", choices: [{ text: "Watch someone do it slowly", modality: "visual" }, { text: "Listen for a short cue that explains it", modality: "auditory" }, { text: "Have a go and adjust as I practise", modality: "kinesthetic" }] },
-  { prompt: "If you forget where to move during a drill, what would help most?", choices: [{ text: "A marker or diagram showing the right spot", modality: "visual" }, { text: "A teammate calling out where to go", modality: "auditory" }, { text: "Repeating the drill until the movement feels familiar", modality: "kinesthetic" }] },
-  { prompt: "How do you prefer a teammate to explain a new team routine?", choices: [{ text: "Show me the steps in order", modality: "visual" }, { text: "Say the steps out loud", modality: "auditory" }, { text: "Do the routine together once", modality: "kinesthetic" }] },
-  { prompt: "What makes a coach's feedback easiest to remember?", choices: [{ text: "A quick sketch or a visible example", modality: "visual" }, { text: "A clear phrase I can repeat to myself", modality: "auditory" }, { text: "A chance to try the adjustment straight away", modality: "kinesthetic" }] },
-  { prompt: "When you are learning a new position, what helps you picture your role?", choices: [{ text: "A map of the field and where I should be", modality: "visual" }, { text: "A conversation about what I need to notice", modality: "auditory" }, { text: "Playing a short practice game in that position", modality: "kinesthetic" }] },
-  { prompt: "At practice, how do you like to learn a warm-up sequence?", choices: [{ text: "Follow the coach and watch each movement", modality: "visual" }, { text: "Listen as the coach names each movement", modality: "auditory" }, { text: "Join in and learn the order by doing it", modality: "kinesthetic" }] },
-  { prompt: "If your team is deciding how to defend a corner, what helps you contribute?", choices: [{ text: "Seeing the players placed on a field diagram", modality: "visual" }, { text: "Talking through who marks whom", modality: "auditory" }, { text: "Trying the set-up with teammates", modality: "kinesthetic" }] },
-  { prompt: "How would you rather remember a new coaching cue?", choices: [{ text: "Keep a short written note or picture", modality: "visual" }, { text: "Hear it and say it back", modality: "auditory" }, { text: "Use it during a drill until it sticks", modality: "kinesthetic" }] },
-  { prompt: "When watching match footage, what do you focus on first?", choices: [{ text: "Where players are positioned", modality: "visual" }, { text: "What the coach or commentator is saying", modality: "auditory" }, { text: "How the movement might feel if I tried it", modality: "kinesthetic" }] },
-  { prompt: "A drill has several steps. What is the easiest way for you to follow them?", choices: [{ text: "See the steps written or shown", modality: "visual" }, { text: "Hear the steps explained in order", modality: "auditory" }, { text: "Start the drill and learn each step as I go", modality: "kinesthetic" }] },
-  { prompt: "When a teammate gives you directions, what do you appreciate?", choices: [{ text: "A point or gesture toward the right place", modality: "visual" }, { text: "A calm, clear explanation", modality: "auditory" }, { text: "They guide me through the movement", modality: "kinesthetic" }] },
-  { prompt: "How would you choose to practise a new footwork pattern?", choices: [{ text: "Watch a few examples first", modality: "visual" }, { text: "Listen to the rhythm or count", modality: "auditory" }, { text: "Move through the pattern a few times", modality: "kinesthetic" }] },
-  { prompt: "What helps you understand a referee's signal?", choices: [{ text: "Seeing the hand signal clearly", modality: "visual" }, { text: "Hearing the referee explain the call", modality: "auditory" }, { text: "Connecting the signal to what just happened in play", modality: "kinesthetic" }] },
-  { prompt: "You are practising a pass. What kind of reminder works best?", choices: [{ text: "A picture showing the passing lane", modality: "visual" }, { text: "A short cue like 'look, step, pass'", modality: "auditory" }, { text: "Repeating the pass with a partner", modality: "kinesthetic" }] },
-  { prompt: "When you are nervous before a game, what helps you settle in?", choices: [{ text: "Picture the first few moments of the game", modality: "visual" }, { text: "Talk with someone or listen to a steady voice", modality: "auditory" }, { text: "Move around and do a familiar warm-up", modality: "kinesthetic" }] },
-  { prompt: "How do you like to learn your team's signals?", choices: [{ text: "Look at a chart showing each signal", modality: "visual" }, { text: "Hear the signal and its meaning explained", modality: "auditory" }, { text: "Practise responding to each signal", modality: "kinesthetic" }] },
-  { prompt: "A coach is describing a change to your role. What would help you most?", choices: [{ text: "A simple diagram of the new position", modality: "visual" }, { text: "A chance to ask questions and talk it over", modality: "auditory" }, { text: "A short drill to try the role out", modality: "kinesthetic" }] },
-  { prompt: "How do you most enjoy learning about another team's tactics?", choices: [{ text: "Reviewing their formation or match clips", modality: "visual" }, { text: "Listening to a coach explain what to expect", modality: "auditory" }, { text: "Practising how our team will respond", modality: "kinesthetic" }] },
-  { prompt: "If you make the same mistake twice, what is a helpful next step?", choices: [{ text: "See a clear example of the correct movement", modality: "visual" }, { text: "Hear one simple thing to focus on", modality: "auditory" }, { text: "Slow the skill down and practise it again", modality: "kinesthetic" }] },
-  { prompt: "What helps you remember where to meet your team on game day?", choices: [{ text: "A map or a photo of the meeting place", modality: "visual" }, { text: "Someone telling me the directions", modality: "auditory" }, { text: "Going there once with someone", modality: "kinesthetic" }] },
-  { prompt: "When learning a celebration or team routine, what is most fun?", choices: [{ text: "Watching the sequence and copying it", modality: "visual" }, { text: "Following a count or someone calling it out", modality: "auditory" }, { text: "Jumping in and learning as we do it", modality: "kinesthetic" }] },
-  { prompt: "How do you prefer to review what went well after a match?", choices: [{ text: "Look at photos, clips or a simple field map", modality: "visual" }, { text: "Talk about the moments with the team", modality: "auditory" }, { text: "Try a good moment again during the next practice", modality: "kinesthetic" }] },
-  { prompt: "A new drill feels confusing. What would you ask for?", choices: [{ text: "A demonstration of the whole drill", modality: "visual" }, { text: "The instructions one step at a time", modality: "auditory" }, { text: "A slow first turn with a coach beside me", modality: "kinesthetic" }] },
-  { prompt: "What helps you keep track of a training goal?", choices: [{ text: "A progress chart I can look at", modality: "visual" }, { text: "A regular check-in conversation", modality: "auditory" }, { text: "A practice target I can work toward each session", modality: "kinesthetic" }] },
-  { prompt: "When a coach gives the team a short talk, what do you remember best?", choices: [{ text: "Examples shown on a board or screen", modality: "visual" }, { text: "The coach's words and key phrases", modality: "auditory" }, { text: "The part where we put the idea into action", modality: "kinesthetic" }] },
-  { prompt: "How do you like to learn a safe way to land or fall?", choices: [{ text: "Watch the movement demonstrated carefully", modality: "visual" }, { text: "Listen to the safety steps before trying", modality: "auditory" }, { text: "Practise slowly on a safe surface with guidance", modality: "kinesthetic" }] },
-  { prompt: "If you are helping a new player learn a drill, what would you do first?", choices: [{ text: "Show them where to stand and what to watch", modality: "visual" }, { text: "Explain the steps and answer questions", modality: "auditory" }, { text: "Join in and practise the drill together", modality: "kinesthetic" }] },
-  { prompt: "After practice, what kind of reminder would help you prepare for next time?", choices: [{ text: "A note or picture of one thing to remember", modality: "visual" }, { text: "A quick conversation about the next focus", modality: "auditory" }, { text: "A simple activity to try before the next session", modality: "kinesthetic" }] },
+  { prompt: "A friend has sent you the address of a place you haven't visited. What do you do first?", choices: [{ text: "Check a map and pick out a landmark on the way", modality: "visual" }, { text: "Ask someone to talk me through the route", modality: "auditory" }, { text: "Set off and get my bearings along the way", modality: "kinesthetic" }] },
+  { prompt: "You're trying a recipe you haven't made before. What sounds most useful?", choices: [{ text: "Look over the recipe and notice how the steps fit together", modality: "visual" }, { text: "Ask someone who has made it to talk me through it", modality: "auditory" }, { text: "Get started and adjust as I go", modality: "kinesthetic" }] },
+  { prompt: "A friend offers to teach you a new card or board game. How do you usually get started?", choices: [{ text: "Look at an example of how a turn works", modality: "visual" }, { text: "Hear the rules and ask questions", modality: "auditory" }, { text: "Play a practice round", modality: "kinesthetic" }] },
+  { prompt: "You're setting up a new app on your phone. What do you try first?", choices: [{ text: "Look through the screens and follow the layout", modality: "visual" }, { text: "Ask someone to explain what the settings do", modality: "auditory" }, { text: "Tap through the options and see what happens", modality: "kinesthetic" }] },
+  { prompt: "You're choosing between a few places for a day out. What helps you decide?", choices: [{ text: "Compare a map or pictures of the places", modality: "visual" }, { text: "Talk with someone who has been there", modality: "auditory" }, { text: "Go and explore a place for myself", modality: "kinesthetic" }] },
+  { prompt: "You meet someone briefly at a gathering. What might help you remember their name later?", choices: [{ text: "Connect it with their face or something distinctive", modality: "visual" }, { text: "Say the name aloud or hear it again", modality: "auditory" }, { text: "Remember what we did or talked about together", modality: "kinesthetic" }] },
+  { prompt: "Your friends are deciding how to arrange a room. Where would you start?", choices: [{ text: "Sketch where things could go", modality: "visual" }, { text: "Talk through ideas with everyone", modality: "auditory" }, { text: "Move things around and see what works", modality: "kinesthetic" }] },
+  { prompt: "You have a few things to remember before leaving home. What do you tend to do?", choices: [{ text: "Put them in a list or picture them together", modality: "visual" }, { text: "Say them out loud or ask someone to remind me", modality: "auditory" }, { text: "Collect each thing and put it by the door", modality: "kinesthetic" }] },
+  { prompt: "A friend tells you about something funny that happened while you were away. What stays with you?", choices: [{ text: "The scene I picture from their description", modality: "visual" }, { text: "The way they tell the story", modality: "auditory" }, { text: "What it might have felt like to be there", modality: "kinesthetic" }] },
+  { prompt: "Plans change just before a group outing. What helps you get back on track?", choices: [{ text: "Check the updated plan or route", modality: "visual" }, { text: "Talk through what has changed with someone", modality: "auditory" }, { text: "Start with the next step and adapt as I go", modality: "kinesthetic" }] },
+  { prompt: "You want to find out how to look after an unfamiliar plant. What would you do?", choices: [{ text: "Look over a care guide or chart", modality: "visual" }, { text: "Ask someone who grows it to explain", modality: "auditory" }, { text: "Care for it and notice how it responds", modality: "kinesthetic" }] },
+  { prompt: "You're helping to organise a small event. What part feels natural to take on?", choices: [{ text: "Make a simple plan so I can see what goes where", modality: "visual" }, { text: "Talk through jobs and timing with everyone", modality: "auditory" }, { text: "Start setting things up and adjust as needed", modality: "kinesthetic" }] },
+  { prompt: "At a museum or gallery, what are you most likely to spend time with?", choices: [{ text: "Maps, displays or details I can look over", modality: "visual" }, { text: "A tour or conversation about the exhibits", modality: "auditory" }, { text: "An interactive exhibit I can try", modality: "kinesthetic" }] },
+  { prompt: "Someone gives you several steps to follow later in the week. How do you keep them straight?", choices: [{ text: "Check a written list or sequence", modality: "visual" }, { text: "Talk through the timing and order", modality: "auditory" }, { text: "Start with the first step and work through them", modality: "kinesthetic" }] },
+  { prompt: "You're comparing a few options for something you might buy. How do you decide?", choices: [{ text: "Put the differences side by side", modality: "visual" }, { text: "Talk the options over with someone", modality: "auditory" }, { text: "Try or handle the options where I can", modality: "kinesthetic" }] },
 ];
+
+type QuestionnaireAnswer = LearningModality[] | "depends" | undefined;
+const MIN_SCORED_QUESTIONS = 8;
+
+function shuffledQuestionChoices() {
+  return questions.map(({ choices }) => {
+    const shuffled = [...choices];
+    for (let index = shuffled.length - 1; index > 0; index -= 1) {
+      const swapIndex = Math.floor(Math.random() * (index + 1));
+      [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+    }
+    return shuffled;
+  });
+}
 
 function preferenceSummary(result: LearningPreferences) {
   const entries: [LearningModality, number][] = [
@@ -60,17 +59,17 @@ function preferenceSummary(result: LearningPreferences) {
   const high = Math.max(...entries.map(([, score]) => score));
   const low = Math.min(...entries.map(([, score]) => score));
   if (high - low <= 2) {
-    return { heading: "A mixed set of preferences", copy: "Your answers are close across all three approaches. You may enjoy a blend of seeing, hearing and trying things out." };
+    return { heading: "A mix of approaches", copy: "Your answers point to a blend. What helps may depend on the situation and the information you are receiving." };
   }
   const leaders = entries.filter(([, score]) => high - score <= 2);
   if (leaders.length > 1) {
-    return { heading: `A blend: ${leaders.map(([key]) => modalityMeta[key].label.toLowerCase()).join(" and ")}`, copy: "You may find that mixing these approaches helps you get comfortable with a new skill." };
+    return { heading: `A blend: ${leaders.map(([key]) => modalityMeta[key].label.toLowerCase()).join(" and ")}`, copy: "More than one approach may feel useful to you. You can let your coach know when one works better for a particular situation." };
   }
   const lead = leaders[0][0];
   const copy: Record<LearningModality, string> = {
-    visual: "Seeing a skill, shape or example may be a useful starting point. Pair it with a quick explanation and a chance to practise.",
-    auditory: "Talking through a skill or hearing a simple cue may be a useful starting point. Pair it with a demonstration and a chance to practise.",
-    kinesthetic: "Getting moving and trying a skill may be a useful starting point. Pair it with a clear demonstration and a simple cue.",
+    visual: "Seeing a diagram, layout or example may be a useful starting point. Other approaches may help too, depending on the situation.",
+    auditory: "Talking something through or asking questions may be a useful starting point. Other approaches may help too, depending on the situation.",
+    kinesthetic: "Trying an example or working through it hands-on may be a useful starting point. Other approaches may help too, depending on the situation.",
   };
   return { heading: `${modalityMeta[lead].label} stands out today`, copy: copy[lead] };
 }
@@ -83,9 +82,9 @@ export function LearningPreferenceResult({ result, coachView = false }: { result
     ["kinesthetic", result.kinestheticScore],
   ];
   const suggestions: Record<LearningModality, string> = {
-    visual: "Show a quick demonstration, field map or example.",
-    auditory: "Use a short cue, explain one step, then check understanding.",
-    kinesthetic: "Build in a safe, low-pressure chance to try the movement.",
+    visual: "Offer a simple diagram, layout or visual example.",
+    auditory: "Talk through the key point and leave room for questions.",
+    kinesthetic: "Include a safe, low-pressure chance to try an example.",
   };
   return (
     <div className="space-y-5">
@@ -103,7 +102,7 @@ export function LearningPreferenceResult({ result, coachView = false }: { result
             <div key={key}>
               <div className="mb-1.5 flex items-center justify-between gap-3">
                 <span className={`flex items-center gap-2 text-sm font-semibold ${meta.color}`}><Icon className="h-4 w-4" />{meta.label}</span>
-                <span className="font-mono text-xs text-muted-foreground">{score}/30</span>
+                <span className="font-mono text-xs text-muted-foreground">{Math.round((score / 30) * 100)}%</span>
               </div>
               <div className="h-2.5 overflow-hidden rounded-full bg-muted" role="meter" aria-label={`${meta.label} score`} aria-valuemin={0} aria-valuemax={30} aria-valuenow={score}>
                 <div className={`h-full rounded-full ${meta.bar} transition-[width] duration-500`} style={{ width: `${(score / 30) * 100}%` }} />
@@ -129,20 +128,29 @@ export function PlayerLearningPreferences() {
   const submit = useSubmitMyLearningPreferences();
   const [active, setActive] = useState(false);
   const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState<(LearningModality | undefined)[]>(() => Array(30).fill(undefined));
+  const [answers, setAnswers] = useState<QuestionnaireAnswer[]>(() => Array(questions.length).fill(undefined));
+  const [choiceOrder, setChoiceOrder] = useState(() => questions.map((question) => question.choices));
   const [submitError, setSubmitError] = useState("");
+  const scoredAnswerCount = answers.filter(Array.isArray).length;
 
   const begin = () => {
-    setAnswers(Array(30).fill(undefined));
+    setAnswers(Array(questions.length).fill(undefined));
+    setChoiceOrder(shuffledQuestionChoices());
     setStep(0);
     setSubmitError("");
     setActive(true);
   };
   const save = async () => {
-    if (answers.length !== 30 || answers.some((answer) => !answer)) return;
+    if (
+      answers.length !== questions.length ||
+      answers.some((answer) => answer === undefined) ||
+      scoredAnswerCount < MIN_SCORED_QUESTIONS
+    ) return;
     setSubmitError("");
     try {
-      const result = await submit.mutateAsync({ data: { answers: answers as LearningModality[] } });
+      const result = await submit.mutateAsync({
+        data: { answers: answers as (LearningModality[] | "depends")[] },
+      });
       queryClient.setQueryData(getGetMyLearningPreferencesQueryKey(), result);
       setActive(false);
     } catch (error) {
@@ -158,9 +166,9 @@ export function PlayerLearningPreferences() {
     <Card className="overflow-hidden rounded-3xl border shadow-sm">
       <div className="border-b bg-gradient-to-br from-primary/[0.08] via-transparent to-emerald-500/[0.07] p-6 md:p-8">
         <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Activity className="h-5 w-5" /></div>
-        <h2 className="text-xl font-bold tracking-tight">How I like to learn at practice</h2>
-        <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">A quick check-in about what helps you pick up new skills. Choose what sounds most like you — there are no right or wrong answers.</p>
-        <p className="mt-3 text-xs font-medium text-muted-foreground">30 questions · about 5 minutes · only you can answer for yourself</p>
+        <h2 className="text-xl font-bold tracking-tight">How I like to take in new information</h2>
+        <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">A short check-in about how you approach everyday situations. Choose any options that feel true for you, or choose “It depends.” There are no right or wrong answers; your responses help coaches find useful ways to explain new things.</p>
+        <p className="mt-3 text-xs font-medium text-muted-foreground">15 everyday questions · about 3 minutes · only you can answer for yourself</p>
       </div>
       <div className="p-6 md:p-8">
         {isError ? (
@@ -172,46 +180,75 @@ export function PlayerLearningPreferences() {
           <div>
             <div className="mb-6">
               <div className="mb-2 flex items-center justify-between text-xs font-semibold text-muted-foreground">
-                <span>Question {step + 1} of 30</span><span>{Math.round(((step + 1) / 30) * 100)}%</span>
+                <span>Question {step + 1} of {questions.length}</span><span>{Math.round(((step + 1) / questions.length) * 100)}%</span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-[width] duration-300" style={{ width: `${((step + 1) / 30) * 100}%` }} /></div>
+              <div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-[width] duration-300" style={{ width: `${((step + 1) / questions.length) * 100}%` }} /></div>
             </div>
             <fieldset>
-              <legend className="mb-4 text-lg font-bold leading-snug">{questions[step].prompt}</legend>
+              <legend className="mb-2 text-lg font-bold leading-snug">{questions[step].prompt}</legend>
+              <p className="mb-4 text-xs text-muted-foreground">Choose any that fit, or select “It depends.”</p>
               <div className="grid gap-3">
-                {[...questions[step].choices.slice(step % 3), ...questions[step].choices.slice(0, step % 3)].map((choice) => {
-                  const selected = answers[step] === choice.modality;
+                {choiceOrder[step].map((choice) => {
+                  const currentAnswer = answers[step];
+                  const selected = Array.isArray(currentAnswer) && currentAnswer.includes(choice.modality);
                   return (
-                    <button key={choice.text} type="button" aria-pressed={selected} onClick={() => setAnswers((current) => current.map((answer, answerIndex) => answerIndex === step ? choice.modality : answer))} className={`flex min-h-14 items-center gap-3 rounded-2xl border p-4 text-left text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${selected ? "border-primary bg-primary/5 ring-1 ring-primary/30" : "hover:border-primary/40 hover:bg-muted/50"}`}>
+                    <button
+                      key={choice.text}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => setAnswers((current) => current.map((answer, answerIndex) => {
+                        if (answerIndex !== step) return answer;
+                        const selectedNow = Array.isArray(answer) ? answer : [];
+                        const next = selectedNow.includes(choice.modality)
+                          ? selectedNow.filter((modality) => modality !== choice.modality)
+                          : [...selectedNow, choice.modality];
+                        return next.length ? next : undefined;
+                      }))}
+                      className={`flex min-h-14 items-center gap-3 rounded-2xl border p-4 text-left text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${selected ? "border-primary bg-primary/5 ring-1 ring-primary/30" : "hover:border-primary/40 hover:bg-muted/50"}`}
+                    >
                       <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${selected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30"}`}>{selected && <Check className="h-3.5 w-3.5" />}</span>{choice.text}
                     </button>
                   );
                 })}
+                <button
+                  type="button"
+                  aria-pressed={answers[step] === "depends"}
+                  onClick={() => setAnswers((current) => current.map((answer, answerIndex) => answerIndex === step ? (answer === "depends" ? undefined : "depends") : answer))}
+                  className={`flex min-h-14 items-center gap-3 rounded-2xl border p-4 text-left text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${answers[step] === "depends" ? "border-primary bg-primary/5 ring-1 ring-primary/30" : "hover:border-primary/40 hover:bg-muted/50"}`}
+                >
+                  <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${answers[step] === "depends" ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30"}`}>{answers[step] === "depends" && <Check className="h-3.5 w-3.5" />}</span>
+                  It depends on the situation, or none of these fit
+                </button>
               </div>
             </fieldset>
             <div className="mt-6 flex items-center justify-between gap-3 border-t pt-5">
               <Button variant="ghost" className="h-11 rounded-xl" onClick={() => setStep((current) => Math.max(0, current - 1))} disabled={step === 0}><ArrowLeft className="mr-2 h-4 w-4" />Back</Button>
               {step < questions.length - 1 ? (
-                <Button className="h-11 rounded-xl px-5" onClick={() => setStep((current) => Math.min(questions.length - 1, current + 1))} disabled={!answers[step]}>Next<ArrowRight className="ml-2 h-4 w-4" /></Button>
+                <Button className="h-11 rounded-xl px-5" onClick={() => setStep((current) => Math.min(questions.length - 1, current + 1))} disabled={answers[step] === undefined}>Next<ArrowRight className="ml-2 h-4 w-4" /></Button>
               ) : (
-                <Button className="h-11 rounded-xl px-5" onClick={() => void save()} disabled={answers.some((answer) => !answer) || submit.isPending}>
+                <Button className="h-11 rounded-xl px-5" onClick={() => void save()} disabled={answers.some((answer) => answer === undefined) || scoredAnswerCount < MIN_SCORED_QUESTIONS || submit.isPending}>
                   {submit.isPending ? "Saving your answers…" : "Finish check-in"}
                 </Button>
               )}
             </div>
+            {step === questions.length - 1 && scoredAnswerCount < MIN_SCORED_QUESTIONS && (
+              <p role="status" className="mt-3 text-center text-xs text-muted-foreground">
+                Choose at least one option for {MIN_SCORED_QUESTIONS} questions to create a useful snapshot. “It depends” is fine for the rest.
+              </p>
+            )}
             {submitError && <p role="alert" className="mt-3 text-sm font-medium text-destructive">{submitError}</p>}
-            <p className="mt-4 text-center text-xs text-muted-foreground">Your answers stay on this device during this visit. You can go back and change any answer.</p>
+            <p className="mt-4 text-center text-xs text-muted-foreground">You can go back and change any answer. Your choices are saved as a preference snapshot, not a fixed type.</p>
           </div>
         ) : data?.completed ? (
           <div>
-            <p className="mb-5 text-sm text-muted-foreground">Here is what you said works for you right now. Preferences can change with the skill, coach or moment.</p>
+            <p className="mb-5 text-sm text-muted-foreground">Here is what you said may help when you receive new information. Preferences can vary by situation and change over time.</p>
             <LearningPreferenceResult result={data} />
             <Button variant="outline" className="mt-5 min-h-11 rounded-xl" onClick={begin}><RotateCcw className="mr-2 h-4 w-4" />Retake check-in</Button>
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed bg-muted/20 p-5">
             <p className="font-semibold">Not filled in yet</p>
-            <p className="mt-1 text-sm text-muted-foreground">This is just for your own coaching context. No parent or guardian can answer it for you.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Your answers help coaches understand how to share new information with you. You need to complete it yourself; a parent or guardian cannot answer for you.</p>
             <Button className="mt-4 h-11 rounded-xl" onClick={begin}>Start check-in<ArrowRight className="ml-2 h-4 w-4" /></Button>
           </div>
         )}

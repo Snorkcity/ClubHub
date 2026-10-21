@@ -107,6 +107,7 @@ describe("player learning-preference API", () => {
           visualScore: 0,
           auditoryScore: 0,
           kinestheticScore: 0,
+          questionnaireVersion: 2,
         });
       });
 
@@ -131,6 +132,7 @@ describe("player learning-preference API", () => {
       visualScore: 12,
       auditoryScore: 10,
       kinestheticScore: 8,
+      questionnaireVersion: 1,
     });
 
     await request(app)
@@ -147,12 +149,73 @@ describe("player learning-preference API", () => {
       .set(as("non-player"))
       .expect(403);
 
+    await request(app)
+      .put("/api/me/learning-preferences")
+      .set(as("player"))
+      .send({
+        answers: [
+          ["visual", "auditory"],
+          ["visual"],
+          ["visual"],
+          ["visual"],
+          ["auditory"],
+          ["auditory"],
+          ["kinesthetic"],
+          ["kinesthetic"],
+          "depends",
+          "depends",
+          "depends",
+          "depends",
+          "depends",
+          "depends",
+          "depends",
+        ],
+      })
+      .expect(200);
+    await request(app)
+      .get("/api/me/learning-preferences")
+      .set(as("player"))
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          questionnaireVersion: 2,
+          visualScore: 13,
+          auditoryScore: 9,
+          kinestheticScore: 8,
+        });
+      });
+
+    await request(app)
+      .put("/api/me/learning-preferences")
+      .set(as("player"))
+      .send({
+        answers: [
+          ["visual"],
+          ["visual"],
+          ["visual"],
+          ["visual"],
+          ["visual"],
+          ["visual"],
+          ["visual"],
+          "depends",
+          "depends",
+          "depends",
+          "depends",
+          "depends",
+          "depends",
+          "depends",
+          "depends",
+        ],
+      })
+      .expect(400);
+
     const updated = await request(app)
       .put("/api/me/learning-preferences")
       .set(as("player"))
       .send({ answers: Array(30).fill("kinesthetic") })
       .expect(200);
     expect(updated.body).toMatchObject({
+      questionnaireVersion: 1,
       visualScore: 0,
       auditoryScore: 0,
       kinestheticScore: 30,
