@@ -1,6 +1,6 @@
 import { useParams, Link } from "wouter";
 import { Mail, Phone, ShieldCheck, Users, ArrowLeft, CalendarDays, Brain } from "lucide-react";
-import { useGetPerson, getGetPersonQueryKey, useGetMe, useListPlayerDevelopmentReports, getListPlayerDevelopmentReportsQueryKey, useGetPersonLearningPreferences, getGetPersonLearningPreferencesQueryKey } from "@workspace/api-client-react";
+import { useGetPerson, getGetPersonQueryKey, useGetMe, useListPlayerDevelopmentReports, getListPlayerDevelopmentReportsQueryKey, useGetPersonLearningPreferences, getGetPersonLearningPreferencesQueryKey, useGetCoachLearningPreferences, getGetCoachLearningPreferencesQueryKey } from "@workspace/api-client-react";
 import { format } from "date-fns";
 
 import { LoadingScreen, ErrorState } from "@/components/ui/states";
@@ -24,6 +24,8 @@ export default function PersonDetail() {
   const targetMemberships = data?.memberships ?? [];
   const playerTeamIds = targetMemberships.filter((membership) => membership.role === "player").map((membership) => membership.teamId);
   const targetIsPlayer = playerTeamIds.length > 0;
+  const targetIsCoach = targetMemberships.some((membership) => membership.role === "coach");
+  const isSelf = data?.person.id === me?.person.id;
   const sharesPlayerTeam = !!me?.memberships.some((membership) =>
     (membership.role === "coach" || membership.role === "manager") && playerTeamIds.includes(membership.teamId),
   );
@@ -37,6 +39,18 @@ export default function PersonDetail() {
     query: {
       enabled: !!personId && canViewLearningPreferences,
       queryKey: getGetPersonLearningPreferencesQueryKey(personId),
+    },
+  });
+  const canViewCoachLearningPreferences = targetIsCoach && (isAdmin || isSelf);
+  const {
+    data: coachLearningPreferences,
+    isLoading: isLoadingCoachLearningPreferences,
+    isError: isCoachLearningPreferencesError,
+    refetch: refetchCoachLearningPreferences,
+  } = useGetCoachLearningPreferences(personId, {
+    query: {
+      enabled: !!personId && canViewCoachLearningPreferences,
+      queryKey: getGetCoachLearningPreferencesQueryKey(personId),
     },
   });
 
@@ -190,6 +204,40 @@ export default function PersonDetail() {
                         A coaching context shared by the player. Use it as one helpful starting point, not as a label or a limit.
                       </p>
                       <LearningPreferenceResult result={learningPreferences} coachView />
+                    </>
+                  )}
+                </Card>
+              </section>
+            )}
+            {canViewCoachLearningPreferences && (
+              <section className="space-y-4" aria-labelledby="coach-learning-preferences-heading">
+                <h2 id="coach-learning-preferences-heading" className="text-xl font-display font-bold flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-primary" /> Coach communication preferences
+                </h2>
+                <Card className="rounded-3xl border p-5 shadow-sm md:p-6">
+                  {isLoadingCoachLearningPreferences ? (
+                    <div className="space-y-4" aria-label="Loading coach preferences">
+                      <div className="h-5 w-48 animate-pulse rounded bg-muted" />
+                      <div className="h-14 animate-pulse rounded-xl bg-muted" />
+                      <div className="h-14 animate-pulse rounded-xl bg-muted" />
+                    </div>
+                  ) : isCoachLearningPreferencesError ? (
+                    <div>
+                      <p className="font-semibold">Coach preferences could not be loaded.</p>
+                      <p className="mt-1 text-sm text-muted-foreground">Only the coach and club admins can view this snapshot.</p>
+                      <button type="button" onClick={() => void refetchCoachLearningPreferences()} className="mt-3 min-h-10 rounded-xl border px-4 text-sm font-semibold hover:bg-muted">Try again</button>
+                    </div>
+                  ) : !coachLearningPreferences?.completed ? (
+                    <div className="rounded-2xl border border-dashed bg-muted/20 p-5">
+                      <p className="font-semibold">No snapshot yet</p>
+                      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">This coach has not completed their private learning preferences check-in.</p>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="mb-5 text-sm leading-relaxed text-muted-foreground">
+                        A private, self-reported snapshot to help club admins understand how this coach may prefer to receive new information.
+                      </p>
+                      <LearningPreferenceResult result={coachLearningPreferences} coachView />
                     </>
                   )}
                 </Card>

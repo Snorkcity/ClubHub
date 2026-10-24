@@ -46,6 +46,31 @@ psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
 membership_count_after="$(psql "$DATABASE_URL" -X -Atc "SELECT COUNT(*) FROM club_members")"
 test "$membership_count_before" = "$membership_count_after"
 
+# Exercise the coach-scope migration from the legacy player-only schema.
+psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+  -c "ALTER TABLE player_learning_preferences DROP CONSTRAINT IF EXISTS player_learning_preferences_subject_role; DROP INDEX IF EXISTS player_learning_preferences_user_role_unique; ALTER TABLE player_learning_preferences DROP COLUMN IF EXISTS subject_role; CREATE UNIQUE INDEX player_learning_preferences_user_unique ON player_learning_preferences (user_id)" \
+  >/dev/null
+psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+  -f "$ARTIFACT_DIR/../../lib/db/migrations/20261025_learning_preferences_coach_scope.sql" \
+  >/dev/null
+# Apply the new schema while keeping the old user-only index so the currently
+# deployed API remains compatible until the new API is live.
+psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+  -f "$ARTIFACT_DIR/../../lib/db/migrations/20261025_learning_preferences_coach_scope.sql" \
+  >/dev/null
+learning_preferences_schema="$(psql "$DATABASE_URL" -X -Atc "SELECT (SELECT COUNT(*) FROM information_schema.columns WHERE table_name = 'player_learning_preferences' AND column_name = 'subject_role') || ':' || (SELECT COUNT(*) FROM pg_indexes WHERE tablename = 'player_learning_preferences' AND indexname = 'player_learning_preferences_user_role_unique') || ':' || (SELECT COUNT(*) FROM pg_constraint WHERE conname = 'player_learning_preferences_subject_role') || ':' || (SELECT COUNT(*) FROM pg_indexes WHERE tablename = 'player_learning_preferences' AND indexname = 'player_learning_preferences_user_unique')")"
+test "$learning_preferences_schema" = "1:1:1:1"
+# Once the new API is live, the post-deploy migration removes only the legacy
+# index that prevents separate player and coach records for dual-role users.
+psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+  -f "$ARTIFACT_DIR/../../lib/db/migrations/20261025_learning_preferences_drop_legacy_unique.sql" \
+  >/dev/null
+psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+  -f "$ARTIFACT_DIR/../../lib/db/migrations/20261025_learning_preferences_drop_legacy_unique.sql" \
+  >/dev/null
+learning_preferences_schema="$(psql "$DATABASE_URL" -X -Atc "SELECT (SELECT COUNT(*) FROM information_schema.columns WHERE table_name = 'player_learning_preferences' AND column_name = 'subject_role') || ':' || (SELECT COUNT(*) FROM pg_indexes WHERE tablename = 'player_learning_preferences' AND indexname = 'player_learning_preferences_user_role_unique') || ':' || (SELECT COUNT(*) FROM pg_constraint WHERE conname = 'player_learning_preferences_subject_role') || ':' || (SELECT COUNT(*) FROM pg_indexes WHERE tablename = 'player_learning_preferences' AND indexname = 'player_learning_preferences_user_unique')")"
+test "$learning_preferences_schema" = "1:1:1:0"
+
 # No `exec` here: the EXIT trap must run to stop and remove the cluster.
 cd "$ARTIFACT_DIR"
 pnpm exec vitest run "$@"

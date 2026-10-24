@@ -6,6 +6,7 @@ import {
   pgTable,
   serial,
   timestamp,
+  text,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { z } from "zod/v4";
@@ -23,6 +24,9 @@ export const learningPreferencesTable = pgTable(
     userId: integer("user_id")
       .notNull()
       .references(() => usersTable.id),
+    subjectRole: text("subject_role", { enum: ["player", "coach"] })
+      .notNull()
+      .default("player"),
     visualScore: integer("visual_score").notNull(),
     auditoryScore: integer("auditory_score").notNull(),
     kinestheticScore: integer("kinesthetic_score").notNull(),
@@ -32,7 +36,14 @@ export const learningPreferencesTable = pgTable(
       .defaultNow(),
   },
   (table) => [
-    uniqueIndex("player_learning_preferences_user_unique").on(table.userId),
+    uniqueIndex("player_learning_preferences_user_role_unique").on(
+      table.userId,
+      table.subjectRole,
+    ),
+    check(
+      "player_learning_preferences_subject_role",
+      sql`${table.subjectRole} IN ('player', 'coach')`,
+    ),
     check(
       "player_learning_preferences_score_range",
       sql`${table.visualScore} BETWEEN 0 AND 30 AND ${table.auditoryScore} BETWEEN 0 AND 30 AND ${table.kinestheticScore} BETWEEN 0 AND 30`,

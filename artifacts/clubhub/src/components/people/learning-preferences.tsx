@@ -4,6 +4,9 @@ import {
   useGetMyLearningPreferences,
   getGetMyLearningPreferencesQueryKey,
   useSubmitMyLearningPreferences,
+  useGetMyCoachLearningPreferences,
+  getGetMyCoachLearningPreferencesQueryKey,
+  useSubmitMyCoachLearningPreferences,
   type LearningPreferences,
 } from "@workspace/api-client-react";
 import { queryClient } from "@/lib/queryClient";
@@ -121,11 +124,73 @@ export function LearningPreferenceResult({ result, coachView = false }: { result
   );
 }
 
+type QuestionnaireAudience = "player" | "coach";
+
+type QuestionnaireProps = {
+  audience: QuestionnaireAudience;
+  data?: LearningPreferences;
+  isLoading: boolean;
+  isError: boolean;
+  isPending: boolean;
+  refetch: () => unknown;
+  saveAnswers: (answers: (LearningModality[] | "depends")[]) => Promise<LearningPreferences>;
+};
+
 export function PlayerLearningPreferences() {
   const { data, isLoading, isError, refetch } = useGetMyLearningPreferences({
     query: { queryKey: getGetMyLearningPreferencesQueryKey() },
   });
   const submit = useSubmitMyLearningPreferences();
+  const saveAnswers = async (answers: (LearningModality[] | "depends")[]) => {
+    const result = await submit.mutateAsync({ data: { answers } });
+    queryClient.setQueryData(getGetMyLearningPreferencesQueryKey(), result);
+    return result;
+  };
+  return (
+    <LearningPreferencesQuestionnaire
+      audience="player"
+      data={data}
+      isLoading={isLoading}
+      isError={isError}
+      isPending={submit.isPending}
+      refetch={refetch}
+      saveAnswers={saveAnswers}
+    />
+  );
+}
+
+export function CoachLearningPreferences() {
+  const { data, isLoading, isError, refetch } = useGetMyCoachLearningPreferences({
+    query: { queryKey: getGetMyCoachLearningPreferencesQueryKey() },
+  });
+  const submit = useSubmitMyCoachLearningPreferences();
+  const saveAnswers = async (answers: (LearningModality[] | "depends")[]) => {
+    const result = await submit.mutateAsync({ data: { answers } });
+    queryClient.setQueryData(getGetMyCoachLearningPreferencesQueryKey(), result);
+    return result;
+  };
+  return (
+    <LearningPreferencesQuestionnaire
+      audience="coach"
+      data={data}
+      isLoading={isLoading}
+      isError={isError}
+      isPending={submit.isPending}
+      refetch={refetch}
+      saveAnswers={saveAnswers}
+    />
+  );
+}
+
+function LearningPreferencesQuestionnaire({
+  audience,
+  data,
+  isLoading,
+  isError,
+  isPending,
+  refetch,
+  saveAnswers,
+}: QuestionnaireProps) {
   const [active, setActive] = useState(false);
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<QuestionnaireAnswer[]>(() => Array(questions.length).fill(undefined));
@@ -148,10 +213,7 @@ export function PlayerLearningPreferences() {
     ) return;
     setSubmitError("");
     try {
-      const result = await submit.mutateAsync({
-        data: { answers: answers as (LearningModality[] | "depends")[] },
-      });
-      queryClient.setQueryData(getGetMyLearningPreferencesQueryKey(), result);
+      await saveAnswers(answers as (LearningModality[] | "depends")[]);
       setActive(false);
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "We couldn't save your answers. Please try again.");
@@ -167,8 +229,13 @@ export function PlayerLearningPreferences() {
       <div className="border-b bg-gradient-to-br from-primary/[0.08] via-transparent to-emerald-500/[0.07] p-6 md:p-8">
         <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Activity className="h-5 w-5" /></div>
         <h2 className="text-xl font-bold tracking-tight">How I like to take in new information</h2>
-        <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">A short check-in about how you approach everyday situations. Choose any options that feel true for you, or choose “It depends.” There are no right or wrong answers; your responses help coaches find useful ways to explain new things.</p>
-        <p className="mt-3 text-xs font-medium text-muted-foreground">15 everyday questions · about 3 minutes · only you can answer for yourself</p>
+        <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
+          A short check-in about how you approach everyday situations. Choose any options that feel true for you, or choose “It depends.” There are no right or wrong answers; {audience === "player" ? "your responses help coaches find useful ways to explain new things." : "your responses help club admins find useful ways to support you as a coach."}
+        </p>
+        <p className="mt-3 text-xs font-medium text-muted-foreground">
+          15 everyday questions · about 3 minutes · only you can answer for yourself
+          {audience === "coach" ? " · only you and club admins can see your result" : ""}
+        </p>
       </div>
       <div className="p-6 md:p-8">
         {isError ? (
@@ -226,8 +293,8 @@ export function PlayerLearningPreferences() {
               {step < questions.length - 1 ? (
                 <Button className="h-11 rounded-xl px-5" onClick={() => setStep((current) => Math.min(questions.length - 1, current + 1))} disabled={answers[step] === undefined}>Next<ArrowRight className="ml-2 h-4 w-4" /></Button>
               ) : (
-                <Button className="h-11 rounded-xl px-5" onClick={() => void save()} disabled={answers.some((answer) => answer === undefined) || scoredAnswerCount < MIN_SCORED_QUESTIONS || submit.isPending}>
-                  {submit.isPending ? "Saving your answers…" : "Finish check-in"}
+                <Button className="h-11 rounded-xl px-5" onClick={() => void save()} disabled={answers.some((answer) => answer === undefined) || scoredAnswerCount < MIN_SCORED_QUESTIONS || isPending}>
+                  {isPending ? "Saving your answers…" : "Finish check-in"}
                 </Button>
               )}
             </div>
@@ -248,7 +315,11 @@ export function PlayerLearningPreferences() {
         ) : (
           <div className="rounded-2xl border border-dashed bg-muted/20 p-5">
             <p className="font-semibold">Not filled in yet</p>
-            <p className="mt-1 text-sm text-muted-foreground">Your answers help coaches understand how to share new information with you. You need to complete it yourself; a parent or guardian cannot answer for you.</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {audience === "player"
+                ? "Your answers help coaches understand how to share new information with you. You need to complete it yourself; a parent or guardian cannot answer for you."
+                : "Your answers help club admins understand how to support you as a coach. Only you and club admins can see this result."}
+            </p>
             <Button className="mt-4 h-11 rounded-xl" onClick={begin}>Start check-in<ArrowRight className="ml-2 h-4 w-4" /></Button>
           </div>
         )}

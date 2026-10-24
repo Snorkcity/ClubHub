@@ -641,6 +641,42 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
+  /me/coach-learning-preferences:
+    get:
+      operationId: getMyCoachLearningPreferences
+      tags: [people]
+      summary: Get the signed-in coach's saved learning preferences
+      responses:
+        "200":
+          description: Current coach learning-preference result, if completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearningPreferences"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    put:
+      operationId: submitMyCoachLearningPreferences
+      tags: [people]
+      summary: Submit or retake the signed-in coach's learning-preference questionnaire
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LearningPreferencesInput"
+      responses:
+        "200":
+          description: Saved coach learning-preference result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearningPreferences"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
   /people/{personId}/learning-preferences:
     get:
       operationId: getPersonLearningPreferences
@@ -651,6 +687,25 @@ paths:
       responses:
         "200":
           description: Player learning-preference result, if completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearningPreferences"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /people/{personId}/coach-learning-preferences:
+    get:
+      operationId: getCoachLearningPreferences
+      tags: [people]
+      summary: Get a coach's learning preferences for that coach or a club admin
+      parameters:
+        - $ref: "#/components/parameters/PersonId"
+      responses:
+        "200":
+          description: Coach learning-preference result, if completed
           content:
             application/json:
               schema:

@@ -986,6 +986,65 @@ export const SubmitMyLearningPreferencesResponse = zod.object({
 
 
 /**
+ * @summary Get the signed-in coach's saved learning preferences
+ */
+export const getMyCoachLearningPreferencesResponseVisualScoreMin = 0;
+export const getMyCoachLearningPreferencesResponseVisualScoreMax = 30;
+
+export const getMyCoachLearningPreferencesResponseAuditoryScoreMin = 0;
+export const getMyCoachLearningPreferencesResponseAuditoryScoreMax = 30;
+
+export const getMyCoachLearningPreferencesResponseKinestheticScoreMin = 0;
+export const getMyCoachLearningPreferencesResponseKinestheticScoreMax = 30;
+
+
+
+export const GetMyCoachLearningPreferencesResponse = zod.object({
+  "completed": zod.boolean(),
+  "visualScore": zod.number().min(getMyCoachLearningPreferencesResponseVisualScoreMin).max(getMyCoachLearningPreferencesResponseVisualScoreMax),
+  "auditoryScore": zod.number().min(getMyCoachLearningPreferencesResponseAuditoryScoreMin).max(getMyCoachLearningPreferencesResponseAuditoryScoreMax),
+  "kinestheticScore": zod.number().min(getMyCoachLearningPreferencesResponseKinestheticScoreMin).max(getMyCoachLearningPreferencesResponseKinestheticScoreMax),
+  "questionnaireVersion": zod.number(),
+  "completedAt": zod.coerce.date().nullable()
+})
+
+
+/**
+ * @summary Submit or retake the signed-in coach's learning-preference questionnaire
+ */
+export const submitMyCoachLearningPreferencesBodyAnswersItemTwoMax = 3;
+
+export const submitMyCoachLearningPreferencesBodyAnswersMin = 15;
+export const submitMyCoachLearningPreferencesBodyAnswersMax = 30;
+
+
+
+export const SubmitMyCoachLearningPreferencesBody = zod.object({
+  "answers": zod.array(zod.union([zod.enum(['visual', 'auditory', 'kinesthetic', 'depends']),zod.array(zod.enum(['visual', 'auditory', 'kinesthetic'])).min(1).max(submitMyCoachLearningPreferencesBodyAnswersItemTwoMax)])).min(submitMyCoachLearningPreferencesBodyAnswersMin).max(submitMyCoachLearningPreferencesBodyAnswersMax)
+})
+
+export const submitMyCoachLearningPreferencesResponseVisualScoreMin = 0;
+export const submitMyCoachLearningPreferencesResponseVisualScoreMax = 30;
+
+export const submitMyCoachLearningPreferencesResponseAuditoryScoreMin = 0;
+export const submitMyCoachLearningPreferencesResponseAuditoryScoreMax = 30;
+
+export const submitMyCoachLearningPreferencesResponseKinestheticScoreMin = 0;
+export const submitMyCoachLearningPreferencesResponseKinestheticScoreMax = 30;
+
+
+
+export const SubmitMyCoachLearningPreferencesResponse = zod.object({
+  "completed": zod.boolean(),
+  "visualScore": zod.number().min(submitMyCoachLearningPreferencesResponseVisualScoreMin).max(submitMyCoachLearningPreferencesResponseVisualScoreMax),
+  "auditoryScore": zod.number().min(submitMyCoachLearningPreferencesResponseAuditoryScoreMin).max(submitMyCoachLearningPreferencesResponseAuditoryScoreMax),
+  "kinestheticScore": zod.number().min(submitMyCoachLearningPreferencesResponseKinestheticScoreMin).max(submitMyCoachLearningPreferencesResponseKinestheticScoreMax),
+  "questionnaireVersion": zod.number(),
+  "completedAt": zod.coerce.date().nullable()
+})
+
+
+/**
  * @summary Get a player's learning preferences for authorized team staff
  */
 export const getPersonLearningPreferencesResponseVisualScoreMin = 0;
@@ -1004,6 +1063,30 @@ export const GetPersonLearningPreferencesResponse = zod.object({
   "visualScore": zod.number().min(getPersonLearningPreferencesResponseVisualScoreMin).max(getPersonLearningPreferencesResponseVisualScoreMax),
   "auditoryScore": zod.number().min(getPersonLearningPreferencesResponseAuditoryScoreMin).max(getPersonLearningPreferencesResponseAuditoryScoreMax),
   "kinestheticScore": zod.number().min(getPersonLearningPreferencesResponseKinestheticScoreMin).max(getPersonLearningPreferencesResponseKinestheticScoreMax),
+  "questionnaireVersion": zod.number(),
+  "completedAt": zod.coerce.date().nullable()
+})
+
+
+/**
+ * @summary Get a coach's learning preferences for that coach or a club admin
+ */
+export const getCoachLearningPreferencesResponseVisualScoreMin = 0;
+export const getCoachLearningPreferencesResponseVisualScoreMax = 30;
+
+export const getCoachLearningPreferencesResponseAuditoryScoreMin = 0;
+export const getCoachLearningPreferencesResponseAuditoryScoreMax = 30;
+
+export const getCoachLearningPreferencesResponseKinestheticScoreMin = 0;
+export const getCoachLearningPreferencesResponseKinestheticScoreMax = 30;
+
+
+
+export const GetCoachLearningPreferencesResponse = zod.object({
+  "completed": zod.boolean(),
+  "visualScore": zod.number().min(getCoachLearningPreferencesResponseVisualScoreMin).max(getCoachLearningPreferencesResponseVisualScoreMax),
+  "auditoryScore": zod.number().min(getCoachLearningPreferencesResponseAuditoryScoreMin).max(getCoachLearningPreferencesResponseAuditoryScoreMax),
+  "kinestheticScore": zod.number().min(getCoachLearningPreferencesResponseKinestheticScoreMin).max(getCoachLearningPreferencesResponseKinestheticScoreMax),
   "questionnaireVersion": zod.number(),
   "completedAt": zod.coerce.date().nullable()
 })

@@ -32,6 +32,8 @@ let playerId = 0;
 let coachId = 0;
 let unrelatedCoachId = 0;
 let nonPlayerId = 0;
+let adminId = 0;
+let dualRoleId = 0;
 let teamId = 0;
 
 async function createUser(name: string) {
@@ -60,6 +62,11 @@ beforeAll(async () => {
   coachId = await createUser("coach");
   unrelatedCoachId = await createUser("unrelated-coach");
   nonPlayerId = await createUser("non-player");
+  adminId = await createUser("admin");
+  dualRoleId = await createUser("dual-role");
+  await db.update(clubMembersTable)
+    .set({ role: "admin" })
+    .where(eq(clubMembersTable.userId, adminId));
   const [team] = await db.insert(teamsTable).values({
     clubId,
     name: `${PREFIX}team`,
@@ -77,6 +84,8 @@ beforeAll(async () => {
     { teamId, userId: playerId, role: "player" },
     { teamId, userId: coachId, role: "coach" },
     { teamId: otherTeam.id, userId: unrelatedCoachId, role: "coach" },
+    { teamId, userId: dualRoleId, role: "player" },
+    { teamId, userId: dualRoleId, role: "coach" },
   ]);
 });
 
@@ -148,6 +157,76 @@ describe("player learning-preference API", () => {
       .get("/api/me/learning-preferences")
       .set(as("non-player"))
       .expect(403);
+
+    await request(app)
+      .get("/api/me/coach-learning-preferences")
+      .set(as("coach"))
+      .expect(200)
+      .expect(({ body }) => expect(body.completed).toBe(false));
+
+    const coachAnswers = [
+      ...Array(8).fill(["visual"]),
+      ...Array(7).fill("depends"),
+    ];
+    await request(app)
+      .put("/api/me/coach-learning-preferences")
+      .set(as("coach"))
+      .send({ answers: coachAnswers })
+      .expect(200)
+      .expect(({ body }) => expect(body).toMatchObject({
+        completed: true,
+        visualScore: 30,
+        questionnaireVersion: 2,
+      }));
+
+    await request(app)
+      .get(`/api/people/${coachId}/coach-learning-preferences`)
+      .set(as("coach"))
+      .expect(200)
+      .expect(({ body }) => expect(body.visualScore).toBe(30));
+    await request(app)
+      .get(`/api/people/${coachId}/coach-learning-preferences`)
+      .set(as("admin"))
+      .expect(200);
+    await request(app)
+      .get(`/api/people/${coachId}/coach-learning-preferences`)
+      .set(as("unrelated-coach"))
+      .expect(403);
+    await request(app)
+      .get(`/api/people/${coachId}/coach-learning-preferences`)
+      .set(as("non-player"))
+      .expect(403);
+    await request(app)
+      .get("/api/me/coach-learning-preferences")
+      .set(as("non-player"))
+      .expect(403);
+
+    await request(app)
+      .put("/api/me/learning-preferences")
+      .set(as("dual-role"))
+      .send({ answers: Array(30).fill("visual") })
+      .expect(200);
+    await request(app)
+      .put("/api/me/coach-learning-preferences")
+      .set(as("dual-role"))
+      .send({ answers: Array(30).fill("kinesthetic") })
+      .expect(200);
+    await request(app)
+      .get("/api/me/learning-preferences")
+      .set(as("dual-role"))
+      .expect(200)
+      .expect(({ body }) => expect(body).toMatchObject({
+        visualScore: 30,
+        kinestheticScore: 0,
+      }));
+    await request(app)
+      .get("/api/me/coach-learning-preferences")
+      .set(as("dual-role"))
+      .expect(200)
+      .expect(({ body }) => expect(body).toMatchObject({
+        visualScore: 0,
+        kinestheticScore: 30,
+      }));
 
     await request(app)
       .put("/api/me/learning-preferences")

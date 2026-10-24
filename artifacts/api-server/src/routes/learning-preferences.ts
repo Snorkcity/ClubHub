@@ -9,9 +9,13 @@ import {
 } from "@workspace/db";
 import {
   GetMyLearningPreferencesResponse,
+  GetMyCoachLearningPreferencesResponse,
+  GetCoachLearningPreferencesResponse,
   GetPersonLearningPreferencesResponse,
   SubmitMyLearningPreferencesBody,
+  SubmitMyCoachLearningPreferencesBody,
   SubmitMyLearningPreferencesResponse,
+  SubmitMyCoachLearningPreferencesResponse,
 } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
 import { isTeamStaff } from "../lib/authz";
@@ -23,21 +27,26 @@ import {
 
 const router: IRouter = Router();
 const QUESTIONNAIRE_VERSION = 2;
+type SubjectRole = "player" | "coach";
 
-async function hasPlayerRole(userId: number): Promise<boolean> {
+async function hasRole(userId: number, role: SubjectRole): Promise<boolean> {
   const [membership] = await db
     .select({ id: teamMembersTable.id })
     .from(teamMembersTable)
     .where(
       and(
         eq(teamMembersTable.userId, userId),
-        eq(teamMembersTable.role, "player"),
+        eq(teamMembersTable.role, role),
       ),
     );
   return !!membership;
 }
 
-async function readPreferences(userId: number, clubId: number) {
+async function readPreferences(
+  userId: number,
+  clubId: number,
+  subjectRole: SubjectRole,
+) {
   const [row] = await db
     .select()
     .from(learningPreferencesTable)
@@ -45,6 +54,7 @@ async function readPreferences(userId: number, clubId: number) {
       and(
         eq(learningPreferencesTable.userId, userId),
         eq(learningPreferencesTable.clubId, clubId),
+        eq(learningPreferencesTable.subjectRole, subjectRole),
       ),
     );
 
@@ -60,18 +70,18 @@ async function readPreferences(userId: number, clubId: number) {
 
 router.get("/me/learning-preferences", requireAuth, async (req, res): Promise<void> => {
   const { localUser } = req as AuthedRequest;
-  if (!(await hasPlayerRole(localUser.id))) {
+  if (!(await hasRole(localUser.id, "player"))) {
     res.status(403).json({ error: "This questionnaire is available to players." });
     return;
   }
   res.json(GetMyLearningPreferencesResponse.parse(
-    await readPreferences(localUser.id, localUser.clubId),
+    await readPreferences(localUser.id, localUser.clubId, "player"),
   ));
 });
 
 router.put("/me/learning-preferences", requireAuth, async (req, res): Promise<void> => {
   const { localUser } = req as AuthedRequest;
-  if (!(await hasPlayerRole(localUser.id))) {
+  if (!(await hasRole(localUser.id, "player"))) {
     res.status(403).json({ error: "This questionnaire is available to players." });
     return;
   }
@@ -114,13 +124,17 @@ router.put("/me/learning-preferences", requireAuth, async (req, res): Promise<vo
     .values({
       clubId: localUser.clubId,
       userId: localUser.id,
+      subjectRole: "player",
       visualScore: scores.visual,
       auditoryScore: scores.auditory,
       kinestheticScore: scores.kinesthetic,
       questionnaireVersion,
     })
     .onConflictDoUpdate({
-      target: learningPreferencesTable.userId,
+      target: [
+        learningPreferencesTable.userId,
+        learningPreferencesTable.subjectRole,
+      ],
       set: {
         clubId: localUser.clubId,
         visualScore: scores.visual,
@@ -132,9 +146,98 @@ router.put("/me/learning-preferences", requireAuth, async (req, res): Promise<vo
     });
 
   res.json(SubmitMyLearningPreferencesResponse.parse(
-    await readPreferences(localUser.id, localUser.clubId),
+    await readPreferences(localUser.id, localUser.clubId, "player"),
   ));
 });
+
+router.get(
+  "/me/coach-learning-preferences",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const { localUser } = req as AuthedRequest;
+    if (!(await hasRole(localUser.id, "coach"))) {
+      res.status(403).json({ error: "This questionnaire is available to coaches." });
+      return;
+    }
+    res.json(GetMyCoachLearningPreferencesResponse.parse(
+      await readPreferences(localUser.id, localUser.clubId, "coach"),
+    ));
+  },
+);
+
+router.put(
+  "/me/coach-learning-preferences",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const { localUser } = req as AuthedRequest;
+    if (!(await hasRole(localUser.id, "coach"))) {
+      res.status(403).json({ error: "This questionnaire is available to coaches." });
+      return;
+    }
+
+    const parsed = SubmitMyCoachLearningPreferencesBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+
+    const answers = parsed.data.answers as LearningPreferenceAnswer[];
+    const isLegacyV1 =
+      answers.length === 30 &&
+      answers.every(
+        (answer): answer is LearningModality =>
+          typeof answer === "string" &&
+          (answer === "visual" || answer === "auditory" || answer === "kinesthetic"),
+      );
+    const isCurrentV2 =
+      answers.length === 15 &&
+      answers.every((answer) => Array.isArray(answer) || answer === "depends");
+    if (!isLegacyV1 && !isCurrentV2) {
+      res.status(400).json({ error: "Submit all 15 current answers or all 30 legacy answers." });
+      return;
+    }
+
+    const answeredPreferenceCount = isCurrentV2
+      ? answers.filter(Array.isArray).length
+      : 30;
+    if (isCurrentV2 && answeredPreferenceCount < 8) {
+      res.status(400).json({ error: "Choose at least one approach for 8 questions; use “It depends” for the rest." });
+      return;
+    }
+
+    const scores = scoreLearningPreferences(answers);
+    const questionnaireVersion = isLegacyV1 ? 1 : QUESTIONNAIRE_VERSION;
+    await db
+      .insert(learningPreferencesTable)
+      .values({
+        clubId: localUser.clubId,
+        userId: localUser.id,
+        subjectRole: "coach",
+        visualScore: scores.visual,
+        auditoryScore: scores.auditory,
+        kinestheticScore: scores.kinesthetic,
+        questionnaireVersion,
+      })
+      .onConflictDoUpdate({
+        target: [
+          learningPreferencesTable.userId,
+          learningPreferencesTable.subjectRole,
+        ],
+        set: {
+          clubId: localUser.clubId,
+          visualScore: scores.visual,
+          auditoryScore: scores.auditory,
+          kinestheticScore: scores.kinesthetic,
+          questionnaireVersion,
+          completedAt: new Date(),
+        },
+      });
+
+    res.json(SubmitMyCoachLearningPreferencesResponse.parse(
+      await readPreferences(localUser.id, localUser.clubId, "coach"),
+    ));
+  },
+);
 
 router.get(
   "/people/:personId/learning-preferences",
@@ -182,7 +285,37 @@ router.get(
     }
 
     res.json(GetPersonLearningPreferencesResponse.parse(
-      await readPreferences(personId, clubId),
+      await readPreferences(personId, clubId, "player"),
+    ));
+  },
+);
+
+router.get(
+  "/people/:personId/coach-learning-preferences",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const { localUser, clubId, isClubAdmin } = req as AuthedRequest;
+    const personId = Number(req.params.personId);
+    if (!Number.isInteger(personId) || personId <= 0) {
+      res.status(404).json({ error: "Coach not found." });
+      return;
+    }
+
+    const [coach] = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(and(eq(usersTable.id, personId), eq(usersTable.clubId, clubId)));
+    if (!coach || !(await hasRole(personId, "coach"))) {
+      res.status(404).json({ error: "Coach not found." });
+      return;
+    }
+    if (localUser.id !== personId && !isClubAdmin) {
+      res.status(403).json({ error: "Only this coach or a club admin can view this result." });
+      return;
+    }
+
+    res.json(GetCoachLearningPreferencesResponse.parse(
+      await readPreferences(personId, clubId, "coach"),
     ));
   },
 );

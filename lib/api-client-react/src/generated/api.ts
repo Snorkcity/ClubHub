@@ -2970,6 +2970,154 @@ export const useSubmitMyLearningPreferences = <TError = ErrorType<BadRequestResp
       return useMutation(getSubmitMyLearningPreferencesMutationOptions(options));
     }
 
+export const getGetMyCoachLearningPreferencesUrl = () => {
+
+
+
+
+  return `/api/me/coach-learning-preferences`
+}
+
+/**
+ * @summary Get the signed-in coach's saved learning preferences
+ */
+export const getMyCoachLearningPreferences = async ( options?: RequestInit): Promise<LearningPreferences> => {
+
+  return customFetch<LearningPreferences>(getGetMyCoachLearningPreferencesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyCoachLearningPreferencesQueryKey = () => {
+    return [
+    `/api/me/coach-learning-preferences`
+    ] as const;
+    }
+
+
+export const getGetMyCoachLearningPreferencesQueryOptions = <TData = Awaited<ReturnType<typeof getMyCoachLearningPreferences>>, TError = ErrorType<ForbiddenResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyCoachLearningPreferences>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyCoachLearningPreferencesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyCoachLearningPreferences>>> = ({ signal }) => getMyCoachLearningPreferences({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyCoachLearningPreferences>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyCoachLearningPreferencesQueryResult = NonNullable<Awaited<ReturnType<typeof getMyCoachLearningPreferences>>>
+export type GetMyCoachLearningPreferencesQueryError = ErrorType<ForbiddenResponse>
+
+
+/**
+ * @summary Get the signed-in coach's saved learning preferences
+ */
+
+export function useGetMyCoachLearningPreferences<TData = Awaited<ReturnType<typeof getMyCoachLearningPreferences>>, TError = ErrorType<ForbiddenResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyCoachLearningPreferences>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyCoachLearningPreferencesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSubmitMyCoachLearningPreferencesUrl = () => {
+
+
+
+
+  return `/api/me/coach-learning-preferences`
+}
+
+/**
+ * @summary Submit or retake the signed-in coach's learning-preference questionnaire
+ */
+export const submitMyCoachLearningPreferences = async (learningPreferencesInput: LearningPreferencesInput, options?: RequestInit): Promise<LearningPreferences> => {
+
+  return customFetch<LearningPreferences>(getSubmitMyCoachLearningPreferencesUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(learningPreferencesInput)
+  }
+);}
+
+
+
+
+
+export const getSubmitMyCoachLearningPreferencesMutationOptions = <TError = ErrorType<BadRequestResponse | ForbiddenResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitMyCoachLearningPreferences>>, TError,{data: BodyType<LearningPreferencesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitMyCoachLearningPreferences>>, TError,{data: BodyType<LearningPreferencesInput>}, TContext> => {
+
+const mutationKey = ['submitMyCoachLearningPreferences'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitMyCoachLearningPreferences>>, {data: BodyType<LearningPreferencesInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  submitMyCoachLearningPreferences(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitMyCoachLearningPreferencesMutationResult = NonNullable<Awaited<ReturnType<typeof submitMyCoachLearningPreferences>>>
+    export type SubmitMyCoachLearningPreferencesMutationBody = BodyType<LearningPreferencesInput>
+    export type SubmitMyCoachLearningPreferencesMutationError = ErrorType<BadRequestResponse | ForbiddenResponse>
+
+    /**
+ * @summary Submit or retake the signed-in coach's learning-preference questionnaire
+ */
+export const useSubmitMyCoachLearningPreferences = <TError = ErrorType<BadRequestResponse | ForbiddenResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitMyCoachLearningPreferences>>, TError,{data: BodyType<LearningPreferencesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitMyCoachLearningPreferences>>,
+        TError,
+        {data: BodyType<LearningPreferencesInput>},
+        TContext
+      > => {
+      return useMutation(getSubmitMyCoachLearningPreferencesMutationOptions(options));
+    }
+
 export const getGetPersonLearningPreferencesUrl = (personId: number,) => {
 
 
@@ -3035,6 +3183,83 @@ export function useGetPersonLearningPreferences<TData = Awaited<ReturnType<typeo
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetPersonLearningPreferencesQueryOptions(personId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetCoachLearningPreferencesUrl = (personId: number,) => {
+
+
+
+
+  return `/api/people/${personId}/coach-learning-preferences`
+}
+
+/**
+ * @summary Get a coach's learning preferences for that coach or a club admin
+ */
+export const getCoachLearningPreferences = async (personId: number, options?: RequestInit): Promise<LearningPreferences> => {
+
+  return customFetch<LearningPreferences>(getGetCoachLearningPreferencesUrl(personId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCoachLearningPreferencesQueryKey = (personId: number,) => {
+    return [
+    `/api/people/${personId}/coach-learning-preferences`
+    ] as const;
+    }
+
+
+export const getGetCoachLearningPreferencesQueryOptions = <TData = Awaited<ReturnType<typeof getCoachLearningPreferences>>, TError = ErrorType<ForbiddenResponse | NotFoundResponse>>(personId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCoachLearningPreferences>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCoachLearningPreferencesQueryKey(personId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCoachLearningPreferences>>> = ({ signal }) => getCoachLearningPreferences(personId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: personId !== null && personId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCoachLearningPreferences>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCoachLearningPreferencesQueryResult = NonNullable<Awaited<ReturnType<typeof getCoachLearningPreferences>>>
+export type GetCoachLearningPreferencesQueryError = ErrorType<ForbiddenResponse | NotFoundResponse>
+
+
+/**
+ * @summary Get a coach's learning preferences for that coach or a club admin
+ */
+
+export function useGetCoachLearningPreferences<TData = Awaited<ReturnType<typeof getCoachLearningPreferences>>, TError = ErrorType<ForbiddenResponse | NotFoundResponse>>(
+ personId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCoachLearningPreferences>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCoachLearningPreferencesQueryOptions(personId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

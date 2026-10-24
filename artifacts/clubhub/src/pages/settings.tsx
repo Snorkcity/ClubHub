@@ -25,7 +25,10 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { phonePlaceholder } from "@/lib/localisation";
 import { fileToAvatarDataUrl } from "@/lib/profile-photo";
-import { PlayerLearningPreferences } from "@/components/people/learning-preferences";
+import {
+  CoachLearningPreferences,
+  PlayerLearningPreferences,
+} from "@/components/people/learning-preferences";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -210,7 +213,12 @@ function NotificationsCard({ me }: { me: any }) {
             onCheckedChange={handleToggle}
             disabled={
               deviceSubscribed === null ||
-              isSubscribing
+              isSubscribing ||
+              (!localEnabled &&
+                (!pushSupport.isSupported ||
+                  !pushConfig?.enabled ||
+                  showIosWarning ||
+                  pushSupport.permission === "denied"))
             }
           />
         </div>
@@ -358,6 +366,7 @@ export default function Settings() {
     emailPrivacy !== (me.person.emailPrivacy || "everyone") ||
     bioPrivacy !== (me.person.bioPrivacy || "everyone");
   const isPlayer = me.memberships.some((membership) => membership.role === "player");
+  const isCoach = me.memberships.some((membership) => membership.role === "coach");
 
   return (
     <div className="flex-1 overflow-y-auto overflow-x-hidden bg-muted/10">
@@ -373,6 +382,7 @@ export default function Settings() {
           <NotificationsCard me={me} />
 
           {isPlayer && <PlayerLearningPreferences />}
+          {isCoach && <CoachLearningPreferences />}
 
           <Card className="p-6 md:p-8 rounded-3xl border shadow-sm">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2">

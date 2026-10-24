@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS player_learning_preferences_user_unique;
