@@ -28,6 +28,7 @@ import type {
   ChatInput,
   CheckinStatus,
   Club,
+  ClubLogoInput,
   ClubOverview,
   ClubPostInput,
   ClubStorage,
@@ -1251,6 +1252,148 @@ export function useGetClub<TData = Awaited<ReturnType<typeof getClub>>, TError =
 
 
 
+
+export const getSetClubLogoUrl = () => {
+
+
+
+
+  return `/api/club/logo`
+}
+
+/**
+ * @summary Upload the current club logo (club admins only)
+ */
+export const setClubLogo = async (clubLogoInput: ClubLogoInput, options?: RequestInit): Promise<Club> => {
+
+  return customFetch<Club>(getSetClubLogoUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(clubLogoInput)
+  }
+);}
+
+
+
+
+
+export const getSetClubLogoMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setClubLogo>>, TError,{data: BodyType<ClubLogoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setClubLogo>>, TError,{data: BodyType<ClubLogoInput>}, TContext> => {
+
+const mutationKey = ['setClubLogo'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setClubLogo>>, {data: BodyType<ClubLogoInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  setClubLogo(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetClubLogoMutationResult = NonNullable<Awaited<ReturnType<typeof setClubLogo>>>
+    export type SetClubLogoMutationBody = BodyType<ClubLogoInput>
+    export type SetClubLogoMutationError = ErrorType<void>
+
+    /**
+ * @summary Upload the current club logo (club admins only)
+ */
+export const useSetClubLogo = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setClubLogo>>, TError,{data: BodyType<ClubLogoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setClubLogo>>,
+        TError,
+        {data: BodyType<ClubLogoInput>},
+        TContext
+      > => {
+      return useMutation(getSetClubLogoMutationOptions(options));
+    }
+
+export const getDeleteClubLogoUrl = () => {
+
+
+
+
+  return `/api/club/logo`
+}
+
+/**
+ * @summary Remove the current club logo (club admins only)
+ */
+export const deleteClubLogo = async ( options?: RequestInit): Promise<Club> => {
+
+  return customFetch<Club>(getDeleteClubLogoUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteClubLogoMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteClubLogo>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteClubLogo>>, TError,void, TContext> => {
+
+const mutationKey = ['deleteClubLogo'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteClubLogo>>, void> = () => {
+
+
+          return  deleteClubLogo(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteClubLogoMutationResult = NonNullable<Awaited<ReturnType<typeof deleteClubLogo>>>
+
+    export type DeleteClubLogoMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove the current club logo (club admins only)
+ */
+export const useDeleteClubLogo = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteClubLogo>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteClubLogo>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDeleteClubLogoMutationOptions(options));
+    }
 
 export const getGetClubOverviewUrl = () => {
 

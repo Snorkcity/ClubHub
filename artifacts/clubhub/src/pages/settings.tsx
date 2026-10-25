@@ -25,6 +25,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { phonePlaceholder } from "@/lib/localisation";
 import { fileToAvatarDataUrl } from "@/lib/profile-photo";
+import { ClubLogoSettings } from "@/components/admin/club-logo-settings";
 import {
   CoachLearningPreferences,
   PlayerLearningPreferences,
@@ -377,6 +378,7 @@ export default function Settings() {
         </header>
 
         <div className="space-y-10">
+          {me.isClubAdmin && club && <ClubLogoSettings club={club} />}
           <AppearanceCard />
 
           <NotificationsCard me={me} />

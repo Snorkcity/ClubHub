@@ -19,6 +19,7 @@ export * from './checkinStatus';
 export * from './checkinSubject';
 export * from './club';
 export * from './clubCountryCode';
+export * from './clubLogoInput';
 export * from './clubOverview';
 export * from './clubPostInput';
 export * from './clubStorage';

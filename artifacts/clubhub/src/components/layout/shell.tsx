@@ -20,7 +20,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, 
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { NahreoMark } from "@/components/brand/nahreo-logo";
+import { ClubMark } from "@/components/brand/club-mark";
 
 const DESKTOP_NAV_COLLAPSED_KEY = "nahreo-desktop-nav-collapsed";
 
@@ -132,11 +132,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             title={isNavCollapsed ? club?.name || "Nahreo" : undefined}
             className={`flex min-w-0 items-center ${isNavCollapsed ? "h-8 w-8 justify-center" : "flex-1 gap-3"}`}
           >
-            {club?.logoUrl ? (
-              <img src={club.logoUrl} alt={club.name} className="h-8 w-8 object-contain" />
-            ) : (
-              <NahreoMark className="h-8 w-8 shrink-0" />
-            )}
+            <ClubMark logoUrl={club?.logoUrl} name={club?.name} />
             {!isNavCollapsed && (
               <span className="font-display font-bold text-lg truncate">
                 {club?.name || "Nahreo"}
@@ -249,8 +245,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       {location === "/home" && (
       <header className="md:hidden h-16 bg-background border-b flex items-center justify-between px-4 sticky top-0 z-40 gap-2">
         <div className="flex items-center gap-1 min-w-0">
-          <Link href="/home" className="flex items-center shrink-0">
-            <NahreoMark className="h-8 w-8" />
+          <Link href="/home" className="flex items-center shrink-0" aria-label={club?.name || "Nahreo"} title={club?.name || "Nahreo"}>
+            <ClubMark logoUrl={club?.logoUrl} name={club?.name} />
           </Link>
           <TeamSwitcher compact />
         </div>

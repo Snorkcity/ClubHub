@@ -201,6 +201,29 @@ describe("first-time club onboarding", () => {
     expect(chatMembership).toBeTruthy();
   });
 
+  it("stores an optional club logo in the same onboarding transaction", async () => {
+    const logo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==";
+    const response = await request(app).post("/api/onboarding")
+      .set(as(`${PREFIX}with_logo`))
+      .send({
+        firstName: "Club", lastName: "Admin", clubName: `${PREFIX}logo club`,
+        countryCode: "AU", teamName: "First team", ageGroup: "U14", logoImageData: logo,
+      }).expect(201);
+    createdClubIds.push(response.body.clubId);
+    const [club] = await db.select().from(clubsTable).where(eq(clubsTable.id, response.body.clubId));
+    expect(club.logoUrl).toBe(logo);
+  });
+
+  it("rejects an invalid onboarding logo before creating any club or account", async () => {
+    const identity = `${PREFIX}invalid_logo`;
+    await request(app).post("/api/onboarding").set(as(identity)).send({
+      firstName: "Club", lastName: "Admin", clubName: `${PREFIX}invalid logo`,
+      countryCode: "AU", teamName: "First team", ageGroup: "U14", logoImageData: "invalid",
+    }).expect(400);
+    expect(await db.select().from(usersTable).where(eq(usersTable.clerkUserId, identity))).toHaveLength(0);
+    expect(await db.select().from(clubsTable).where(eq(clubsTable.name, `${PREFIX}invalid logo`))).toHaveLength(0);
+  });
+
   it("cannot run setup twice for the same identity", async () => {
     await request(app)
       .post("/api/onboarding")

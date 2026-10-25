@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { NahreoBrand } from "@/components/brand/nahreo-logo";
+import { ClubLogoPicker } from "@/components/admin/club-logo-picker";
 import { ArrowLeft, ArrowRight, Loader2, Check } from "lucide-react";
 
 const formSchema = z.object({
@@ -34,6 +35,8 @@ export default function GetStarted() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [isReady, setIsReady] = useState(false);
+  const [clubLogo, setClubLogo] = useState<string | null>(null);
+  const [isProcessingLogo, setIsProcessingLogo] = useState(false);
 
   // Avoid hydration mismatch by waiting for mount
   useEffect(() => {
@@ -69,11 +72,13 @@ export default function GetStarted() {
   };
 
   const onSubmit = (data: FormValues) => {
+    if (isProcessingLogo || completeOnboarding.isPending) return;
     completeOnboarding.mutate({
       data: {
         firstName: data.firstName,
         lastName: data.lastName,
         clubName: data.clubName,
+        logoImageData: clubLogo ?? undefined,
         countryCode: data.countryCode,
         teamName: data.teamName,
         ageGroup: data.ageGroup,
@@ -205,6 +210,10 @@ export default function GetStarted() {
                               </FormItem>
                             )}
                           />
+                          <div className="space-y-2 pt-2">
+                            <p className="text-sm font-medium">Club logo <span className="font-normal text-muted-foreground">(optional)</span></p>
+                            <ClubLogoPicker value={clubLogo} onChange={setClubLogo} disabled={completeOnboarding.isPending} onBusyChange={setIsProcessingLogo} />
+                          </div>
                         </div>
                       )}
 
@@ -262,7 +271,7 @@ export default function GetStarted() {
                     type="button" 
                     variant="ghost" 
                     onClick={prevStep} 
-                    disabled={step === 0 || completeOnboarding.isPending}
+                    disabled={step === 0 || completeOnboarding.isPending || isProcessingLogo}
                     className={step === 0 ? "invisible" : ""}
                   >
                     <ArrowLeft className="mr-2 h-4 w-4" />
@@ -270,14 +279,14 @@ export default function GetStarted() {
                   </Button>
                   
                   {step < 2 ? (
-                    <Button type="button" onClick={nextStep} className="bg-primary hover:bg-primary/90 text-white rounded-xl shadow-sm hover-elevate">
+                    <Button type="button" onClick={nextStep} disabled={isProcessingLogo} className="bg-primary hover:bg-primary/90 text-white rounded-xl shadow-sm hover-elevate">
                       Continue
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   ) : (
                     <Button 
                       type="submit" 
-                      disabled={completeOnboarding.isPending}
+                      disabled={completeOnboarding.isPending || isProcessingLogo}
                       className="bg-primary hover:bg-primary/90 text-white rounded-xl shadow-sm hover-elevate"
                     >
                       {completeOnboarding.isPending ? (

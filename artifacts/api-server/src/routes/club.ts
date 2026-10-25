@@ -11,6 +11,8 @@ import {
 } from "@workspace/db";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
 import { buildEvents, buildPosts } from "../lib/build";
+import { SetClubLogoBody } from "@workspace/api-zod";
+import { clubLogoPath, clubLogoVersion, readClubLogo, verifyClubLogoToken } from "../lib/club-logo";
 
 const router: IRouter = Router();
 
@@ -24,10 +26,50 @@ router.get("/club", requireAuth, async (req, res) => {
   return res.json({
     id: club.id,
     name: club.name,
-    logoUrl: club.logoUrl ?? null,
+    logoUrl: clubLogoPath(club.id, club.logoUrl),
     primaryColor: club.primaryColor ?? null,
     countryCode: club.countryCode,
   });
+});
+
+router.put("/club/logo", requireAuth, async (req, res) => {
+  const { clubId, isClubAdmin } = req as AuthedRequest;
+  if (!isClubAdmin) return res.status(403).json({ error: "Only club admins can change the club logo" });
+  const body = SetClubLogoBody.parse(req.body);
+  try {
+    readClubLogo(body.imageData);
+  } catch (error) {
+    return res.status(400).json({ error: (error as Error).message });
+  }
+  const [club] = await db.update(clubsTable)
+    .set({ logoUrl: body.imageData })
+    .where(eq(clubsTable.id, clubId)).returning();
+  if (!club) return res.status(404).json({ error: "Club not found" });
+  return res.json({ ...club, logoUrl: clubLogoPath(club.id, club.logoUrl) });
+});
+
+router.delete("/club/logo", requireAuth, async (req, res) => {
+  const { clubId, isClubAdmin } = req as AuthedRequest;
+  if (!isClubAdmin) return res.status(403).json({ error: "Only club admins can change the club logo" });
+  const [club] = await db.update(clubsTable).set({ logoUrl: null })
+    .where(eq(clubsTable.id, clubId)).returning();
+  if (!club) return res.status(404).json({ error: "Club not found" });
+  return res.json({ ...club, logoUrl: null });
+});
+
+router.get("/clubs/:clubId/logo", async (req, res) => {
+  const clubId = Number(req.params.clubId);
+  if (!verifyClubLogoToken(clubId, req.query.v, req.query.e, req.query.s))
+    return res.status(403).send();
+  const [club] = await db.select({ logoUrl: clubsTable.logoUrl })
+    .from(clubsTable).where(eq(clubsTable.id, clubId));
+  if (!club?.logoUrl?.startsWith("data:") || clubLogoVersion(club.logoUrl) !== req.query.v)
+    return res.status(404).send();
+  const { bytes, contentType } = readClubLogo(club.logoUrl);
+  res.setHeader("Content-Type", contentType);
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Cache-Control", "private, max-age=300");
+  return res.send(bytes);
 });
 
 router.get("/club/overview", requireAuth, async (req, res) => {
@@ -90,7 +132,7 @@ router.get("/club/overview", requireAuth, async (req, res) => {
     club: {
       id: club.id,
       name: club.name,
-      logoUrl: club.logoUrl ?? null,
+      logoUrl: clubLogoPath(club.id, club.logoUrl),
       primaryColor: club.primaryColor ?? null,
       countryCode: club.countryCode,
     },

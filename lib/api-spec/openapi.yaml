@@ -226,6 +226,37 @@ paths:
               schema:
                 $ref: "#/components/schemas/Club"
 
+  /club/logo:
+    put:
+      operationId: setClubLogo
+      tags: [club]
+      summary: Upload the current club logo (club admins only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClubLogoInput"
+      responses:
+        "200":
+          description: Updated club
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Club" }
+        "400": { description: Invalid image }
+        "403": { description: Club administrator required }
+    delete:
+      operationId: deleteClubLogo
+      tags: [club]
+      summary: Remove the current club logo (club admins only)
+      responses:
+        "200":
+          description: Updated club without a logo
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Club" }
+        "403": { description: Club administrator required }
+
   /club/overview:
     get:
       operationId: getClubOverview
@@ -2050,6 +2081,15 @@ components:
       properties:
         needsOnboarding: { type: boolean }
 
+    ClubLogoInput:
+      type: object
+      required: [imageData]
+      properties:
+        imageData:
+          type: string
+          maxLength: 1400000
+          description: JPEG, PNG or WebP base64 data URL; maximum decoded size 1 MiB.
+
     OnboardingInput:
       type: object
       required: [firstName, lastName, clubName, countryCode, teamName, ageGroup]
@@ -2057,6 +2097,10 @@ components:
         firstName: { type: string, minLength: 1, maxLength: 100 }
         lastName: { type: string, minLength: 1, maxLength: 100 }
         clubName: { type: string, minLength: 1, maxLength: 160 }
+        logoImageData:
+          type: string
+          maxLength: 1400000
+          description: Optional club logo as a JPEG, PNG or WebP base64 data URL (maximum 1 MiB).
         countryCode:
           type: string
           enum: [AU, NZ, GB, US, CA]

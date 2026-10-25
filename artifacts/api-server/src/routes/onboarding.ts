@@ -17,6 +17,7 @@ import {
   GetOnboardingStatusResponse,
 } from "@workspace/api-zod";
 import { findOrClaimUser, loadClerkIdentity } from "../lib/auth";
+import { readClubLogo } from "../lib/club-logo";
 
 const router: IRouter = Router();
 
@@ -33,6 +34,13 @@ router.post("/onboarding", async (req, res) => {
   const clerkUserId = getAuth(req)?.userId;
   if (!clerkUserId) return res.status(401).json({ error: "Unauthorized" });
   const body = CompleteOnboardingBody.parse(req.body);
+  if (body.logoImageData) {
+    try {
+      readClubLogo(body.logoImageData);
+    } catch (error) {
+      return res.status(400).json({ error: (error as Error).message });
+    }
+  }
   const existing = await findOrClaimUser(req, clerkUserId);
   if (existing.user)
     return res.status(409).json({ error: "This account already belongs to a club" });
@@ -52,6 +60,7 @@ router.post("/onboarding", async (req, res) => {
         .insert(clubsTable)
         .values({
           name: body.clubName.trim(),
+          logoUrl: body.logoImageData ?? null,
           countryCode: body.countryCode,
         })
         .returning();

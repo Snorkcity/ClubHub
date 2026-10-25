@@ -580,6 +580,14 @@ export interface OnboardingStatus {
   needsOnboarding: boolean;
 }
 
+export interface ClubLogoInput {
+  /**
+     * JPEG, PNG or WebP base64 data URL; maximum decoded size 1 MiB.
+     * @maxLength 1400000
+     */
+  imageData: string;
+}
+
 export type OnboardingInputCountryCode = typeof OnboardingInputCountryCode[keyof typeof OnboardingInputCountryCode];
 
 
@@ -607,6 +615,11 @@ export interface OnboardingInput {
      * @maxLength 160
      */
   clubName: string;
+  /**
+     * Optional club logo as a JPEG, PNG or WebP base64 data URL (maximum 1 MiB).
+     * @maxLength 1400000
+     */
+  logoImageData?: string;
   countryCode: OnboardingInputCountryCode;
   /**
      * @minLength 1

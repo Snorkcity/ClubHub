@@ -151,6 +151,8 @@ export const completeOnboardingBodyLastNameMax = 100;
 
 export const completeOnboardingBodyClubNameMax = 160;
 
+export const completeOnboardingBodyLogoImageDataMax = 1400000;
+
 export const completeOnboardingBodyTeamNameMax = 160;
 
 export const completeOnboardingBodyAgeGroupMax = 80;
@@ -163,6 +165,7 @@ export const CompleteOnboardingBody = zod.object({
   "firstName": zod.string().min(1).max(completeOnboardingBodyFirstNameMax),
   "lastName": zod.string().min(1).max(completeOnboardingBodyLastNameMax),
   "clubName": zod.string().min(1).max(completeOnboardingBodyClubNameMax),
+  "logoImageData": zod.string().max(completeOnboardingBodyLogoImageDataMax).optional().describe('Optional club logo as a JPEG, PNG or WebP base64 data URL (maximum 1 MiB).'),
   "countryCode": zod.enum(['AU', 'NZ', 'GB', 'US', 'CA']),
   "teamName": zod.string().min(1).max(completeOnboardingBodyTeamNameMax),
   "ageGroup": zod.string().min(1).max(completeOnboardingBodyAgeGroupMax),
@@ -273,6 +276,38 @@ export const UpdateNotificationPreferencesResponse = zod.void()
  * @summary Get the current club
  */
 export const GetClubResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "logoUrl": zod.string().nullish(),
+  "primaryColor": zod.string().nullish(),
+  "countryCode": zod.enum(['AU', 'NZ', 'GB', 'US', 'CA'])
+})
+
+
+/**
+ * @summary Upload the current club logo (club admins only)
+ */
+export const setClubLogoBodyImageDataMax = 1400000;
+
+
+
+export const SetClubLogoBody = zod.object({
+  "imageData": zod.string().max(setClubLogoBodyImageDataMax).describe('JPEG, PNG or WebP base64 data URL; maximum decoded size 1 MiB.')
+})
+
+export const SetClubLogoResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "logoUrl": zod.string().nullish(),
+  "primaryColor": zod.string().nullish(),
+  "countryCode": zod.enum(['AU', 'NZ', 'GB', 'US', 'CA'])
+})
+
+
+/**
+ * @summary Remove the current club logo (club admins only)
+ */
+export const DeleteClubLogoResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "logoUrl": zod.string().nullish(),
