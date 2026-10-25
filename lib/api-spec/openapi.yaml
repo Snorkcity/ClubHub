@@ -652,10 +652,11 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [accepted, teamId]
+                required: [accepted, teamId, clubId]
                 properties:
                   accepted: { type: boolean }
                   teamId: { type: integer }
+                  clubId: { type: integer }
 
   /people/{personId}:
     get:

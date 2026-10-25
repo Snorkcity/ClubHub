@@ -1556,6 +1556,7 @@ token: string;
 export type AcceptTeamInvitation200 = {
   accepted: boolean;
   teamId: number;
+  clubId: number;
 };
 
 export type CreateClubPost201 = {

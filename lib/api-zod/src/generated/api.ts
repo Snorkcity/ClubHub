@@ -877,7 +877,8 @@ export const AcceptTeamInvitationBody = zod.object({
 
 export const AcceptTeamInvitationResponse = zod.object({
   "accepted": zod.boolean(),
-  "teamId": zod.number()
+  "teamId": zod.number(),
+  "clubId": zod.number()
 })
 
 

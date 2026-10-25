@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { createHash, randomBytes } from "node:crypto";
-import { and, eq, gt, isNull, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import {
   chatMembersTable,
   chatsTable,
@@ -15,8 +15,8 @@ import {
   AcceptTeamInvitationBody,
   CreateTeamInvitationBody,
 } from "@workspace/api-zod";
-import { requireAuth, type AuthedRequest } from "../lib/auth";
-import { personBelongsToClub } from "../lib/club-membership";
+import { requireAuth, loadClerkIdentity, type AuthedRequest } from "../lib/auth";
+import { reconcileInvitedPerson } from "../lib/reconcile-invited-person";
 import { isTeamStaff } from "../lib/authz";
 
 const router: IRouter = Router();
@@ -71,7 +71,7 @@ router.get("/team-invitations/preview", async (req, res) => {
     teamName: row.teamName,
     role: row.role,
     expiresAt: row.invitation.expiresAt.toISOString(),
-    accepted: !!row.invitation.acceptedAt || !!row.clerkUserId,
+    accepted: !!row.invitation.acceptedAt,
   });
 });
 
@@ -89,24 +89,18 @@ router.post("/team-invitations", requireAuth, async (req, res) => {
     .where(and(eq(teamsTable.id, body.teamId), eq(teamsTable.clubId, clubId)));
   if (!team) return res.status(404).json({ error: "Team not found" });
 
-  const existing = await db
-    .select({ id: usersTable.id })
-    .from(usersTable)
-    .where(
-      and(
-        personBelongsToClub(clubId),
-        sql`lower(${usersTable.email}) = ${email}`,
-      ),
-    );
-  if (existing.length)
-    return res.status(409).json({
-      error: "A person with this email already exists. Add them from the club directory instead.",
-    });
-
   const token = randomBytes(32).toString("base64url");
   const expiresAtDate = new Date(Date.now() + INVITE_LIFETIME_MS);
   const person = await db.transaction(async (tx) => {
-    const [created] = await tx
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${email}))`);
+    const existing = await tx.select().from(usersTable)
+      .where(sql`lower(${usersTable.email}) = ${email}`);
+    if (existing.length > 1) return null;
+    // A person keeps one identity across clubs. An invitation may add roles,
+    // but must never create a second profile for an existing account.
+    const created = existing[0]
+      ? existing[0]
+      : (await tx
       .insert(usersTable)
       .values({
         clubId,
@@ -114,17 +108,17 @@ router.post("/team-invitations", requireAuth, async (req, res) => {
         lastName: body.lastName.trim(),
         email,
       })
-      .returning();
+      .returning())[0];
     await tx.insert(clubMembersTable).values({
       clubId,
       userId: created.id,
       role: "member",
-    });
+    }).onConflictDoNothing();
     await tx.insert(teamMembersTable).values({
       teamId: team.id,
       userId: created.id,
       role: body.role,
-    });
+    }).onConflictDoNothing();
     const [teamChat] = await tx
       .select({ id: chatsTable.id })
       .from(chatsTable)
@@ -144,6 +138,10 @@ router.post("/team-invitations", requireAuth, async (req, res) => {
     });
     return created;
   });
+  if (!person)
+    return res.status(409).json({
+      error: "More than one roster entry uses this email. Ask the person to accept their existing invitation first, or contact your club administrator.",
+    });
 
   const expiresAt = expiresAtDate.toISOString();
   const inviteLink = `${APP_URL}/join?token=${encodeURIComponent(token)}`;
@@ -185,26 +183,37 @@ router.post("/team-invitations", requireAuth, async (req, res) => {
 router.post("/team-invitations/accept", requireAuth, async (req, res) => {
   const { localUser } = req as AuthedRequest;
   const body = AcceptTeamInvitationBody.parse(req.body);
-  const row = await findInvitation(body.token);
-  if (!row || row.invitation.expiresAt.getTime() <= Date.now())
-    return res.status(404).json({ error: "This invitation is invalid or has expired" });
-  if (row.invitation.personId !== localUser.id)
-    return res.status(403).json({
-      error: "Sign in with the email address this invitation was sent to",
-    });
-  if (!row.invitation.acceptedAt) {
-    await db
-      .update(teamInvitationsTable)
-      .set({ acceptedAt: new Date() })
-      .where(
-        and(
-          eq(teamInvitationsTable.id, row.invitation.id),
-          isNull(teamInvitationsTable.acceptedAt),
-          gt(teamInvitationsTable.expiresAt, new Date()),
-        ),
+  const identity = await loadClerkIdentity(req, localUser.clerkUserId!);
+  const result = await db.transaction(async (tx) => {
+    if (identity.email)
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${identity.email.toLowerCase()}))`);
+    const [invitation] = await tx.select().from(teamInvitationsTable)
+      .where(eq(teamInvitationsTable.tokenHash, tokenHash(body.token))).for("update");
+    if (!invitation || invitation.expiresAt.getTime() <= Date.now())
+      return { status: 404, error: "This invitation is invalid or has expired" };
+    const [person] = await tx.select().from(usersTable)
+      .where(eq(usersTable.id, invitation.personId)).for("update");
+    if (!person || !identity.emailVerified || !identity.email ||
+      identity.email.toLowerCase() !== person.email?.toLowerCase())
+      return { status: 403, error: "Sign in with the verified email address this invitation was sent to" };
+    if (person.id !== localUser.id) {
+      if (person.clerkUserId || invitation.acceptedAt)
+        return { status: 403, error: "This invitation belongs to another account" };
+      const reconciled = await reconcileInvitedPerson(
+        tx, person.id, localUser.id, invitation.clubId, invitation.teamId,
       );
-  }
-  return res.json({ accepted: true, teamId: row.invitation.teamId });
+      if (!reconciled)
+        return { status: 409, error: "This roster entry has existing history. Ask your club administrator to contact Nahreo so it can be safely linked to your existing account." };
+    }
+    await tx.update(teamInvitationsTable).set({ acceptedAt: invitation.acceptedAt ?? new Date() })
+      .where(eq(teamInvitationsTable.id, invitation.id));
+    return { status: 200, clubId: invitation.clubId, teamId: invitation.teamId };
+  });
+  if ("error" in result)
+    return res.status(result.status).json({ error: result.error });
+  return res.json({
+    accepted: true, clubId: result.clubId, teamId: result.teamId,
+    });
 });
 
 export default router;

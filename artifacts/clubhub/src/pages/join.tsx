@@ -1,5 +1,7 @@
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { Show } from "@clerk/react";
+import { switchClub } from "@/lib/active-club";
+import { clearTeamInvitation } from "@/lib/team-invitation";
 import {
   getPreviewTeamInvitationQueryKey,
   useAcceptTeamInvitation,
@@ -10,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { LoadingScreen } from "@/components/ui/states";
 
 export default function JoinTeam() {
-  const [, setLocation] = useLocation();
   const token = new URLSearchParams(window.location.search).get("token") ?? "";
   const preview = usePreviewTeamInvitation(
     { token },
@@ -57,22 +58,21 @@ export default function JoinTeam() {
           Hi {preview.data.firstName}, you’ve been invited as a{" "}
           <strong>{preview.data.role}</strong>.
         </p>
-        {preview.data.accepted ? (
-          <Button onClick={() => setLocation("/home")} className="mt-7 w-full rounded-xl">
-            Open Nahreo
-          </Button>
-        ) : (
           <>
             <Show when="signed-out">
               <div className="mt-7 space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Already use Nahreo—even with another club? Sign in with your existing account.
+                  You don’t need to register again.
+                </p>
                 <Button asChild className="w-full rounded-xl">
-                  <Link href={`/sign-up?redirect_url=${encodeURIComponent(redirect)}`}>
-                    Create account and join
+                  <Link href={`/sign-in?redirect_url=${encodeURIComponent(redirect)}`}>
+                    Sign in and join
                   </Link>
                 </Button>
                 <Button asChild variant="outline" className="w-full rounded-xl">
-                  <Link href={`/sign-in?redirect_url=${encodeURIComponent(redirect)}`}>
-                    I already have an account
+                  <Link href={`/sign-up?redirect_url=${encodeURIComponent(redirect)}`}>
+                    New to Nahreo? Create an account
                   </Link>
                 </Button>
               </div>
@@ -84,11 +84,14 @@ export default function JoinTeam() {
                 onClick={() =>
                   accept.mutate(
                     { data: { token } },
-                    { onSuccess: (data) => setLocation(`/teams/${data.teamId}`) },
+                    { onSuccess: (data) => {
+                      clearTeamInvitation();
+                      switchClub(data.clubId);
+                    } },
                   )
                 }
               >
-                {accept.isPending ? "Joining…" : "Complete invitation"}
+                {accept.isPending ? "Joining…" : preview.data.accepted ? "Open this team’s club" : "Complete invitation"}
               </Button>
               {accept.error && (
                 <p className="mt-3 text-sm text-destructive">
@@ -98,7 +101,6 @@ export default function JoinTeam() {
               )}
             </Show>
           </>
-        )}
       </div>
     </main>
   );
