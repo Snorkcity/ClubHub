@@ -111,8 +111,11 @@ const clerkAppearance = {
 
 function SignInPage() {
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-gray-50 dark:bg-zinc-950 px-4 pattern-grid-lg text-gray-200 dark:text-zinc-900/20">
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-5 bg-gray-50 dark:bg-zinc-950 px-4 py-8 pattern-grid-lg text-gray-200 dark:text-zinc-900/20">
       <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} forceRedirectUrl={getSetupInvitation() ? `${basePath}/get-started?newClub=1` : undefined} />
+      <p className="max-w-sm text-center text-sm leading-relaxed text-muted-foreground">
+        Club setup is invitation-only. Signing in or creating an account does not create a club or team. To join, use your invitation link.
+      </p>
     </div>
   );
 }
@@ -301,7 +304,7 @@ function ClerkProviderWithRoutes() {
         signUp: {
           start: {
             title: "Join Nahreo",
-            subtitle: "Get started with your club",
+            subtitle: "Create your account, then use your invitation to access a club or team",
           },
         },
       }}

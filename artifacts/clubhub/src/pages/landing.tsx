@@ -11,11 +11,8 @@ export default function Landing() {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <NahreoBrand wordmarkClassName="text-xl" />
           <div className="flex items-center gap-4">
-            <Link href="/sign-in" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              Sign In
-            </Link>
             <Button asChild className="rounded-full px-6 font-semibold shadow-sm">
-              <Link href="/sign-up">Get Started</Link>
+              <Link href="/sign-in">Sign In</Link>
             </Button>
           </div>
         </div>
@@ -38,14 +35,14 @@ export default function Landing() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-10 duration-700 delay-300">
               <Button asChild size="lg" className="rounded-full px-8 h-14 text-base font-bold shadow-lg shadow-primary/20 w-full sm:w-auto">
-                <Link href="/sign-up">
-                  Start your club <ArrowRight className="ml-2 h-5 w-5" />
+                <Link href="/sign-in">
+                  Sign In <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="rounded-full px-8 h-14 text-base font-semibold w-full sm:w-auto">
-                <Link href="/sign-in">Sign In</Link>
-              </Button>
             </div>
+            <p className="mt-6 text-sm leading-relaxed text-muted-foreground">
+              New clubs are invitation-only. To set up a club or join a team, open the invitation link you received.
+            </p>
           </div>
         </section>
 
@@ -86,11 +83,11 @@ export default function Landing() {
           <div className="container mx-auto px-4 text-center max-w-3xl">
             <h2 className="text-4xl lg:text-5xl font-display font-bold tracking-tight mb-6">Ready to elevate your club?</h2>
             <p className="text-xl text-muted-foreground mb-10">
-              Join the ambitious clubs already using Nahreo to bring calm coordination to every team.
+              Already part of Nahreo? Sign in to your club. New club and team members should use their invitation link.
             </p>
             <Button asChild size="lg" className="rounded-full px-10 h-16 text-lg font-bold shadow-xl shadow-primary/20">
-              <Link href="/sign-up">
-                Get Started Today
+              <Link href="/sign-in">
+                Sign In to Nahreo
               </Link>
             </Button>
           </div>
