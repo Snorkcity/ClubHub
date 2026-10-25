@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Check, Copy, Link2, Mail, MailPlus } from "lucide-react";
-import { useCreateTeamInvitation } from "@workspace/api-client-react";
+import { useCreateTeamInvitation, getListPeopleQueryKey } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,8 +22,17 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 
-export function InvitePersonDialog({ teamId }: { teamId?: number }) {
+export function InvitePersonDialog({
+  teamId,
+  teams,
+}: {
+  teamId?: number;
+  teams: { id: number; name: string }[];
+}) {
   const [open, setOpen] = useState(false);
+  const [selectedTeamId, setSelectedTeamId] = useState<number | undefined>();
+  const invitationTeamId = selectedTeamId ?? teamId;
+  const queryClient = useQueryClient();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -38,6 +48,7 @@ export function InvitePersonDialog({ teamId }: { teamId?: number }) {
   const { toast } = useToast();
 
   function reset() {
+    setSelectedTeamId(undefined);
     setFirstName("");
     setLastName("");
     setEmail("");
@@ -49,11 +60,14 @@ export function InvitePersonDialog({ teamId }: { teamId?: number }) {
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (!teamId) return;
+    if (!invitationTeamId || !teams.some((team) => team.id === invitationTeamId)) return;
     createInvite.mutate(
-      { data: { teamId, firstName, lastName, email, role, deliveryMethod } },
+      { data: { teamId: invitationTeamId, firstName, lastName, email, role, deliveryMethod } },
       {
-        onSuccess: (data) => setResult(data),
+        onSuccess: (data) => {
+          setResult(data);
+          void queryClient.invalidateQueries({ queryKey: getListPeopleQueryKey() });
+        },
         onError: (error: any) =>
           toast({
             title: "Could not create invitation",
@@ -84,9 +98,7 @@ export function InvitePersonDialog({ teamId }: { teamId?: number }) {
     >
       <DialogTrigger asChild>
         <Button
-          disabled={!teamId}
           className="w-full sm:w-auto rounded-xl"
-          title={!teamId ? "Choose a team first" : undefined}
         >
           <MailPlus className="mr-2 h-4 w-4" />
           Invite someone
@@ -139,6 +151,24 @@ export function InvitePersonDialog({ teamId }: { teamId?: number }) {
                 Add them to this team and send a secure Nahreo invitation.
               </DialogDescription>
             </DialogHeader>
+            <div className="space-y-2">
+              <Label htmlFor="invite-team">Team</Label>
+              <Select
+                value={invitationTeamId?.toString() ?? ""}
+                onValueChange={(value) => setSelectedTeamId(Number(value))}
+              >
+                <SelectTrigger id="invite-team">
+                  <SelectValue placeholder="Choose a team" />
+                </SelectTrigger>
+                <SelectContent>
+                  {teams.map((team) => (
+                    <SelectItem key={team.id} value={String(team.id)}>
+                      {team.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label htmlFor="invite-first-name">First name</Label>
@@ -217,7 +247,7 @@ export function InvitePersonDialog({ teamId }: { teamId?: number }) {
             </div>
             <Button
               type="submit"
-              disabled={createInvite.isPending}
+              disabled={createInvite.isPending || !invitationTeamId}
               className="w-full rounded-xl"
             >
               {createInvite.isPending

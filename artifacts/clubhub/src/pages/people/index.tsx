@@ -5,6 +5,8 @@ import {
   getGetMeQueryKey,
   useListPeople,
   getListPeopleQueryKey,
+  useListTeams,
+  getListTeamsQueryKey,
 } from "@workspace/api-client-react";
 
 import { LoadingScreen, ErrorState, EmptyState } from "@/components/ui/states";
@@ -18,18 +20,26 @@ export default function PeopleList() {
   const { data: me, isLoading: meLoading } = useGetMe({
     query: { queryKey: getGetMeQueryKey() },
   });
+  const { data: clubTeams } = useListTeams({
+    query: { enabled: !!me?.isClubAdmin, queryKey: getListTeamsQueryKey() },
+  });
+  const inviteTeams = me?.isClubAdmin
+    ? (clubTeams ?? []).map((team) => ({ id: team.id, name: team.name }))
+    : (me?.memberships ?? [])
+        .filter((membership) => membership.role === "coach" || membership.role === "manager")
+        .map((membership) => ({ id: membership.teamId, name: membership.teamName }));
   const staffedTeamIds = new Set(
     (me?.memberships ?? [])
       .filter((membership) => membership.role === "coach" || membership.role === "manager")
       .map((membership) => membership.teamId),
   );
   const teamId = me?.isClubAdmin
-    ? activeTeamId ?? undefined
+    ? inviteTeams.find((team) => team.id === activeTeamId)?.id ??
+      (inviteTeams.length === 1 ? inviteTeams[0].id : undefined)
     : activeTeamId && staffedTeamIds.has(activeTeamId)
       ? activeTeamId
       : staffedTeamIds.values().next().value;
-  const canInvite =
-    !!teamId && (!!me?.isClubAdmin || staffedTeamIds.has(teamId));
+  const canInvite = inviteTeams.length > 0;
   const params = { teamId };
 
   const { data: people, isLoading, isFetching, error, refetch } = useListPeople(params, {
@@ -69,7 +79,7 @@ export default function PeopleList() {
             <h1 className="text-3xl font-display font-bold tracking-tight">Team Members</h1>
             <p className="text-muted-foreground mt-1">Coaches, players, and parents connected to this team.</p>
           </div>
-          {canInvite && <InvitePersonDialog teamId={teamId} />}
+          {canInvite && <InvitePersonDialog teamId={teamId} teams={inviteTeams} />}
         </header>
 
         <div className="flex-1 overflow-y-auto overflow-x-hidden pb-8">
