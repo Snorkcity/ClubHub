@@ -91,18 +91,24 @@ router.get("/club/overview", requireAuth, async (req, res) => {
         .from(teamMembersTable)
         .where(inArray(teamMembersTable.teamId, teamIds))
     : [];
-  const playerCount = new Set(
+  const playerIds = [...new Set(
     members.filter((m) => m.role === "player").map((m) => m.userId),
-  ).size;
+  )];
+  const playerCount = playerIds.length;
   const coachCount = new Set(
     members
       .filter((m) => m.role === "coach" || m.role === "manager")
       .map((m) => m.userId),
   ).size;
 
-  const guardians = await db
-    .select({ id: guardianshipsTable.guardianId })
-    .from(guardianshipsTable);
+  // Scope through this club's players, not the guardian's home club: a
+  // lifelong account can have children playing at more than one club.
+  const guardians = playerIds.length
+    ? await db
+        .selectDistinct({ id: guardianshipsTable.guardianId })
+        .from(guardianshipsTable)
+        .where(inArray(guardianshipsTable.playerId, playerIds))
+    : [];
   const parentCount = new Set(guardians.map((g) => g.id)).size;
 
   const upcoming = teamIds.length
