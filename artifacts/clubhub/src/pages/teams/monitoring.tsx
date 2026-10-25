@@ -1,17 +1,20 @@
 import { useState } from "react";
 import { Link, useParams } from "wouter";
 import { format } from "date-fns";
-import { Activity, AlertTriangle, ArrowLeft, ChevronDown, Eye } from "lucide-react";
+import { Activity, AlertTriangle, ArrowLeft, Brain, ChevronDown, Eye } from "lucide-react";
 import {
   useGetTeamMonitoring,
   getGetTeamMonitoringQueryKey,
   useGetTeam,
   getGetTeamQueryKey,
+  useGetPersonLearningPreferences,
+  getGetPersonLearningPreferencesQueryKey,
   type PlayerMonitoring,
 } from "@workspace/api-client-react";
 import { LoadingScreen, ErrorState, EmptyState } from "@/components/ui/states";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { LearningPreferenceResult } from "@/components/people/learning-preferences";
 import {
   Tooltip,
   TooltipContent,
@@ -343,6 +346,45 @@ function ExternalSessionsList({
   );
 }
 
+function PlayerLearningPreferencesSummary({ personId }: { personId: number }) {
+  const { data, isLoading, isError, refetch } = useGetPersonLearningPreferences(personId, {
+    query: {
+      enabled: personId > 0,
+      queryKey: getGetPersonLearningPreferencesQueryKey(personId),
+    },
+  });
+
+  return (
+    <section className="border-t pt-4">
+      <h4 className="mb-3 flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-muted-foreground">
+        <Brain className="h-4 w-4" /> Learning preferences
+      </h4>
+      {isLoading ? (
+        <div className="space-y-2" aria-label="Loading learning preferences">
+          <div className="h-5 w-44 animate-pulse rounded bg-muted" />
+          <div className="h-12 animate-pulse rounded-xl bg-muted" />
+        </div>
+      ) : isError ? (
+        <div>
+          <p className="text-xs text-muted-foreground">Learning preferences could not be loaded.</p>
+          <button type="button" onClick={() => void refetch()} className="mt-2 min-h-9 rounded-lg border px-3 text-xs font-semibold hover:bg-muted">
+            Try again
+          </button>
+        </div>
+      ) : !data?.completed ? (
+        <p className="text-xs text-muted-foreground">This player has not completed the check-in yet.</p>
+      ) : (
+        <>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Player-reported guidance to help start a conversation, not a fixed learner label.
+          </p>
+          <LearningPreferenceResult result={data} coachView compact />
+        </>
+      )}
+    </section>
+  );
+}
+
 function PlayerCard({ p, windowDays, squadNote }: { p: PlayerMonitoring; windowDays: number; squadNote: string | null }) {
   const [open, setOpen] = useState<"wellness" | "acwr" | null>(null);
   const toggle = (which: "wellness" | "acwr") => setOpen((o) => (o === which ? null : which));
@@ -614,7 +656,7 @@ export default function TeamMonitoring() {
 
           {/* Player detail dialog (desktop tile click) */}
           <Dialog open={selected != null} onOpenChange={(o) => { if (!o) setSelected(null); }}>
-            <DialogContent className="sm:max-w-xl">
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
               {selected && (
                 <>
                   <DialogHeader>
@@ -711,6 +753,8 @@ export default function TeamMonitoring() {
                       </h4>
                       <p className="text-xs leading-relaxed">{conversationGuide(selected)}</p>
                     </div>
+
+                    <PlayerLearningPreferencesSummary personId={selected.person.id} />
                   </div>
                 </>
               )}

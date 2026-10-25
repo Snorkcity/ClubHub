@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { addDays, format, startOfWeek } from "date-fns";
 import { Link } from "wouter";
-import { CalendarDays, Check, ChevronDown, MapPin, Users, X } from "lucide-react";
+import { CalendarDays, Check, ChevronDown, MapPin, X } from "lucide-react";
 import { 
   useListUpcomingEvents, getListUpcomingEventsQueryKey,
   useSetRsvp, getGetEventQueryKey, getGetTeamSummaryQueryKey
@@ -200,15 +200,14 @@ function ScheduleCard({ event }: { event: any }) {
             )}
           </div>
           <h3 className={`font-bold text-[15px] leading-tight group-hover:text-primary transition-colors truncate mt-0.5 ${event.cancelledAt ? "line-through text-muted-foreground" : ""}`}>
-            {event.title}
+            {event.type === "game" && event.opponent?.trim()
+              ? `vs ${event.opponent}`
+              : event.title}
           </h3>
           <div className="flex flex-wrap items-center gap-x-2.5 text-xs text-muted-foreground mt-1">
             <span className="font-semibold text-foreground/80">{format(new Date(event.startsAt), "h:mm a")}</span>
             {event.location && (
               <span className="flex items-center truncate"><MapPin className="h-3 w-3 mr-1 opacity-70" /> {locationName(event.location)}</span>
-            )}
-            {event.opponent && (
-              <span className="flex items-center"><Users className="h-3 w-3 mr-1 opacity-70" /> vs {event.opponent}</span>
             )}
           </div>
         </Link>

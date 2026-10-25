@@ -16,9 +16,9 @@ import { Card } from "@/components/ui/card";
 type LearningModality = "visual" | "auditory" | "kinesthetic";
 
 const modalityMeta: Record<LearningModality, { label: string; detail: string; icon: typeof Eye; color: string; bar: string }> = {
-  visual: { label: "Seeing examples", detail: "Diagrams, maps, layouts and visual examples", icon: Eye, color: "text-sky-800", bar: "bg-sky-600" },
-  auditory: { label: "Talking it through", detail: "Clear explanations, conversation and questions", icon: Headphones, color: "text-amber-800", bar: "bg-amber-500" },
-  kinesthetic: { label: "Trying it out", detail: "Examples, hands-on practice and real situations", icon: Activity, color: "text-emerald-800", bar: "bg-emerald-600" },
+  visual: { label: "Visual", detail: "Diagrams, maps, layouts and visual examples", icon: Eye, color: "text-sky-800", bar: "bg-sky-600" },
+  auditory: { label: "Auditory", detail: "Clear spoken explanations, conversation and questions", icon: Headphones, color: "text-amber-800", bar: "bg-amber-500" },
+  kinesthetic: { label: "Kinaesthetic", detail: "Hands-on practice and trying things out", icon: Activity, color: "text-emerald-800", bar: "bg-emerald-600" },
 };
 
 const questions: { prompt: string; choices: { text: string; modality: LearningModality }[] }[] = [
@@ -66,7 +66,7 @@ function preferenceSummary(result: LearningPreferences) {
   }
   const leaders = entries.filter(([, score]) => high - score <= 2);
   if (leaders.length > 1) {
-    return { heading: `A blend: ${leaders.map(([key]) => modalityMeta[key].label.toLowerCase()).join(" and ")}`, copy: "More than one approach may feel useful to you. You can let your coach know when one works better for a particular situation." };
+    return { heading: `A blend: ${leaders.map(([key]) => modalityMeta[key].label).join(" and ")}`, copy: "More than one approach may feel useful to you. You can let your coach know when one works better for a particular situation." };
   }
   const lead = leaders[0][0];
   const copy: Record<LearningModality, string> = {
@@ -77,7 +77,7 @@ function preferenceSummary(result: LearningPreferences) {
   return { heading: `${modalityMeta[lead].label} stands out today`, copy: copy[lead] };
 }
 
-export function LearningPreferenceResult({ result, coachView = false }: { result: LearningPreferences; coachView?: boolean }) {
+export function LearningPreferenceResult({ result, coachView = false, compact = false }: { result: LearningPreferences; coachView?: boolean; compact?: boolean }) {
   const summary = preferenceSummary(result);
   const scores: [LearningModality, number][] = [
     ["visual", result.visualScore],
@@ -90,14 +90,14 @@ export function LearningPreferenceResult({ result, coachView = false }: { result
     kinesthetic: "Include a safe, low-pressure chance to try an example.",
   };
   return (
-    <div className="space-y-5">
-      <div className="rounded-2xl border border-primary/15 bg-primary/[0.045] p-5">
+    <div className={compact ? "space-y-3" : "space-y-5"}>
+      <div className={`rounded-2xl border border-primary/15 bg-primary/[0.045] ${compact ? "p-3" : "p-5"}`}>
         <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Preference snapshot</p>
-        <h3 className="mt-2 text-xl font-bold tracking-tight">{summary.heading}</h3>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{summary.copy}</p>
-        {coachView && <p className="mt-3 text-xs text-muted-foreground">Self-reported on {result.completedAt ? new Date(result.completedAt).toLocaleDateString() : "a previous visit"}.</p>}
+        <h3 className={`${compact ? "mt-1 text-base" : "mt-2 text-xl"} font-bold tracking-tight`}>{summary.heading}</h3>
+        <p className={`${compact ? "mt-1 text-xs" : "mt-2 text-sm"} leading-relaxed text-muted-foreground`}>{summary.copy}</p>
+        {coachView && <p className={`${compact ? "mt-2" : "mt-3"} text-xs text-muted-foreground`}>Self-reported on {result.completedAt ? new Date(result.completedAt).toLocaleDateString() : "a previous visit"}.</p>}
       </div>
-      <div className="space-y-4" aria-label="Preference scores">
+      <div className={compact ? "space-y-3" : "space-y-4"} aria-label="Preference scores">
         {scores.map(([key, score]) => {
           const meta = modalityMeta[key];
           const Icon = meta.icon;
@@ -107,7 +107,7 @@ export function LearningPreferenceResult({ result, coachView = false }: { result
                 <span className={`flex items-center gap-2 text-sm font-semibold ${meta.color}`}><Icon className="h-4 w-4" />{meta.label}</span>
                 <span className="font-mono text-xs text-muted-foreground">{Math.round((score / 30) * 100)}%</span>
               </div>
-              <div className="h-2.5 overflow-hidden rounded-full bg-muted" role="meter" aria-label={`${meta.label} score`} aria-valuemin={0} aria-valuemax={30} aria-valuenow={score}>
+              <div className={`${compact ? "h-2" : "h-2.5"} overflow-hidden rounded-full bg-muted`} role="meter" aria-label={`${meta.label} score`} aria-valuemin={0} aria-valuemax={30} aria-valuenow={score}>
                 <div className={`h-full rounded-full ${meta.bar} transition-[width] duration-500`} style={{ width: `${(score / 30) * 100}%` }} />
               </div>
               <p className="mt-1.5 text-xs text-muted-foreground">{coachView ? suggestions[key] : meta.detail}</p>

@@ -175,40 +175,6 @@ export default function PersonDetail() {
           </div>
 
           <div className="space-y-8">
-            {canViewLearningPreferences && (
-              <section className="space-y-4" aria-labelledby="learning-preferences-heading">
-                <h2 id="learning-preferences-heading" className="text-xl font-display font-bold flex items-center gap-2">
-                  <Brain className="h-5 w-5 text-primary" /> Learning preferences
-                </h2>
-                <Card className="rounded-3xl border p-5 shadow-sm md:p-6">
-                  {isLoadingLearningPreferences ? (
-                    <div className="space-y-4" aria-label="Loading learning preferences">
-                      <div className="h-5 w-48 animate-pulse rounded bg-muted" />
-                      <div className="h-14 animate-pulse rounded-xl bg-muted" />
-                      <div className="h-14 animate-pulse rounded-xl bg-muted" />
-                    </div>
-                  ) : isLearningPreferencesError ? (
-                    <div>
-                      <p className="font-semibold">Learning preferences could not be loaded.</p>
-                      <p className="mt-1 text-sm text-muted-foreground">You may no longer have access to this player summary.</p>
-                      <button type="button" onClick={() => void refetchLearningPreferences()} className="mt-3 min-h-10 rounded-xl border px-4 text-sm font-semibold hover:bg-muted">Try again</button>
-                    </div>
-                  ) : !learningPreferences?.completed ? (
-                    <div className="rounded-2xl border border-dashed bg-muted/20 p-5">
-                      <p className="font-semibold">No snapshot yet</p>
-                      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">This player has not completed the learning preferences check-in.</p>
-                    </div>
-                  ) : (
-                    <>
-                      <p className="mb-5 text-sm leading-relaxed text-muted-foreground">
-                        A coaching context shared by the player. Use it as one helpful starting point, not as a label or a limit.
-                      </p>
-                      <LearningPreferenceResult result={learningPreferences} coachView />
-                    </>
-                  )}
-                </Card>
-              </section>
-            )}
             {canViewCoachLearningPreferences && (
               <section className="space-y-4" aria-labelledby="coach-learning-preferences-heading">
                 <h2 id="coach-learning-preferences-heading" className="text-xl font-display font-bold flex items-center gap-2">
@@ -317,6 +283,40 @@ export default function PersonDetail() {
                 </Card>
               )}
             </div>
+            {canViewLearningPreferences && (
+              <section className="space-y-4" aria-labelledby="learning-preferences-heading">
+                <h2 id="learning-preferences-heading" className="text-xl font-display font-bold flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-primary" /> Learning preferences
+                </h2>
+                <Card className="rounded-3xl border p-5 shadow-sm md:p-6">
+                  {isLoadingLearningPreferences ? (
+                    <div className="space-y-4" aria-label="Loading learning preferences">
+                      <div className="h-5 w-48 animate-pulse rounded bg-muted" />
+                      <div className="h-14 animate-pulse rounded-xl bg-muted" />
+                      <div className="h-14 animate-pulse rounded-xl bg-muted" />
+                    </div>
+                  ) : isLearningPreferencesError ? (
+                    <div>
+                      <p className="font-semibold">Learning preferences could not be loaded.</p>
+                      <p className="mt-1 text-sm text-muted-foreground">You may no longer have access to this player summary.</p>
+                      <button type="button" onClick={() => void refetchLearningPreferences()} className="mt-3 min-h-10 rounded-xl border px-4 text-sm font-semibold hover:bg-muted">Try again</button>
+                    </div>
+                  ) : !learningPreferences?.completed ? (
+                    <div className="rounded-2xl border border-dashed bg-muted/20 p-5">
+                      <p className="font-semibold">No snapshot yet</p>
+                      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">This player has not completed the learning preferences check-in.</p>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="mb-5 text-sm leading-relaxed text-muted-foreground">
+                        A coaching context shared by the player. Use it as one helpful starting point, not as a label or a limit.
+                      </p>
+                      <LearningPreferenceResult result={learningPreferences} coachView />
+                    </>
+                  )}
+                </Card>
+              </section>
+            )}
           </div>
         </div>
       </div>

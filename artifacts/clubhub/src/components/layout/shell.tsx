@@ -107,7 +107,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     ...(isStaff && staffTeamId != null
       ? [
           { label: "Monitoring", href: `/teams/${staffTeamId}/monitoring`, icon: Activity },
-          { label: "Development", href: `/teams/${staffTeamId}/development`, icon: TrendingUp }
+          { label: "Player Feedback", href: `/teams/${staffTeamId}/development`, icon: TrendingUp }
         ]
       : []),
   ];
@@ -117,8 +117,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   // Parents: Home/Schedule/Messages. Staff: Home/Schedule/Messages/Monitoring.
   const tabItems = navItems.filter((i) =>
     isStaff
-      ? i.label !== "Check-in" && i.label !== "Team Members" && i.label !== "Development"
-      : i.label !== "Monitoring" && i.label !== "Team Members" && i.label !== "Development",
+      ? i.label !== "Check-in" && i.label !== "Team Members" && i.label !== "Player Feedback"
+      : i.label !== "Monitoring" && i.label !== "Team Members" && i.label !== "Player Feedback",
   );
 
   return (
@@ -376,13 +376,13 @@ function UserMenu({ me, clerkUser, onSignOut, avatarOnly = false, isStaff = fals
               Family Accounts
             </div>
             {me.guardianOf.map((ward: any) => (
-              <DropdownMenuItem key={ward.id} className="rounded-xl py-2 cursor-pointer">
+              <DropdownMenuItem key={ward.id} className="min-h-11 rounded-xl py-2.5 cursor-pointer text-base">
                 <Avatar className="h-6 w-6 mr-2 shrink-0">
                   <AvatarImage src={ward.avatarUrl} />
                   <AvatarFallback className="text-[10px]">{ward.firstName?.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col flex-1">
-                  <span className="text-sm">{ward.fullName}</span>
+                   <span className="text-base">{ward.fullName}</span>
                 </div>
               </DropdownMenuItem>
             ))}
@@ -390,7 +390,7 @@ function UserMenu({ me, clerkUser, onSignOut, avatarOnly = false, isStaff = fals
           </>
         )}
 
-        <DropdownMenuItem asChild className="rounded-xl py-2 cursor-pointer md:hidden">
+        <DropdownMenuItem asChild className="min-h-11 rounded-xl py-2.5 cursor-pointer text-base md:hidden">
           <Link href="/notifications" className="flex items-center w-full justify-between">
             <div className="flex items-center">
               <Bell className="mr-2 h-4 w-4 text-muted-foreground" />
@@ -405,21 +405,21 @@ function UserMenu({ me, clerkUser, onSignOut, avatarOnly = false, isStaff = fals
         </DropdownMenuItem>
 
         {isStaff && staffTeamId != null && (
-          <DropdownMenuItem asChild className="rounded-xl py-2 cursor-pointer md:hidden">
+          <DropdownMenuItem asChild className="min-h-11 rounded-xl py-2.5 cursor-pointer text-base md:hidden">
             <Link href={`/teams/${staffTeamId}/development`} className="flex items-center w-full">
               <TrendingUp className="mr-2 h-4 w-4 text-muted-foreground" />
-              <span>Player Reports</span>
+              <span>Player Feedback</span>
             </Link>
           </DropdownMenuItem>
         )}
 
-        <DropdownMenuItem asChild className="rounded-xl py-2 cursor-pointer">
+        <DropdownMenuItem asChild className="min-h-11 rounded-xl py-2.5 cursor-pointer text-base">
           <Link href="/settings" className="flex items-center w-full">
             <Settings className="mr-2 h-4 w-4 text-muted-foreground" />
             <span>Profile & Settings</span>
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={onSignOut} className="rounded-xl py-2 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10">
+        <DropdownMenuItem onClick={onSignOut} className="min-h-11 rounded-xl py-2.5 cursor-pointer text-base text-destructive focus:text-destructive focus:bg-destructive/10">
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>
         </DropdownMenuItem>
