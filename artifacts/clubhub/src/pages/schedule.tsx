@@ -200,8 +200,8 @@ function ScheduleCard({ event }: { event: any }) {
             )}
           </div>
           <h3 className={`font-bold text-[15px] leading-tight group-hover:text-primary transition-colors truncate mt-0.5 ${event.cancelledAt ? "line-through text-muted-foreground" : ""}`}>
-            {event.type === "game" && event.opponent?.trim()
-              ? `vs ${event.opponent}`
+            {event.type === "game"
+              ? [event.title?.trim(), event.opponent?.trim()].filter(Boolean).join(" - ") || "Game"
               : event.title}
           </h3>
           <div className="flex flex-wrap items-center gap-x-2.5 text-xs text-muted-foreground mt-1">

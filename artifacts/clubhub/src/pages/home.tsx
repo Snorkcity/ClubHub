@@ -501,8 +501,8 @@ function EventCard({ event, compact = false }: { event: any, compact?: boolean }
             <span className="text-xs text-muted-foreground truncate">{event.teamName}</span>
           </div>
           <h4 className="font-bold text-sm truncate pr-4 mt-0.5">
-            {event.type === "game" && event.opponent?.trim()
-              ? `vs ${event.opponent}`
+            {event.type === "game"
+              ? [event.title?.trim(), event.opponent?.trim()].filter(Boolean).join(" - ") || "Game"
               : event.title}
           </h4>
           <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
