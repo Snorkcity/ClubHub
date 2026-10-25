@@ -574,6 +574,15 @@ export const UpdateTeamResponse = zod.object({
 
 
 /**
+ * @summary Leave your own team without deleting your account or history
+ */
+export const LeaveTeamResponse = zod.object({
+  "leftTeamId": zod.number(),
+  "leftClub": zod.boolean()
+})
+
+
+/**
  * @summary Set the team photo banner (staff only)
  */
 

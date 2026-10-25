@@ -87,6 +87,7 @@ export * from './healthStatus';
 export * from './learningPreferenceAnswer';
 export * from './learningPreferences';
 export * from './learningPreferencesInput';
+export * from './leaveTeam200';
 export * from './listNotificationsParams';
 export * from './listPeopleParams';
 export * from './listPeopleRole';

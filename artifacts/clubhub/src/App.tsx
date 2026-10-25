@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { ClerkProvider, SignIn, SignUp, SignOutButton, Show, useClerk, useAuth } from '@clerk/react';
 import { setAuthTokenGetter, setBaseUrl, setClubIdGetter } from '@workspace/api-client-react';
-import { bindClubAccount, selectedClubId } from "@/lib/active-club";
+import { bindClubAccount, selectedClubId, switchClub } from "@/lib/active-club";
 import { captureSetupInvitation, getSetupInvitation } from "@/lib/setup-invitation";
 import { captureTeamInvitation, getTeamInvitationRedirect } from "@/lib/team-invitation";
 import { ActiveTeamProvider } from '@/lib/active-team';
@@ -37,7 +37,7 @@ import DevelopmentCycle from "@/pages/development/cycle";
 import DevelopmentReport from "@/pages/development/report";
 import Shell from "@/components/layout/shell";
 import GetStarted from "@/pages/get-started";
-import { useGetOnboardingStatus } from "@workspace/api-client-react";
+import { useGetOnboardingStatus, useGetPlatformAccess, getGetPlatformAccessQueryKey } from "@workspace/api-client-react";
 import { Loader2 } from "lucide-react";
 
 const clerkPubKey = publishableKeyFromHost(
@@ -192,6 +192,16 @@ function HomeRedirect() {
 function ProtectedRouteInner({ component: Component }: { component: any }) {
   const { data: status, isLoading, isError, refetch } =
     useGetOnboardingStatus();
+  const access = useGetPlatformAccess({
+    query: { queryKey: getGetPlatformAccessQueryKey(), enabled: status?.needsOnboarding === false, staleTime: 30_000, refetchOnWindowFocus: true },
+  });
+  const clubs = access.data?.clubs;
+  const selected = selectedClubId();
+  const replacement = clubs?.length && selected && !clubs.some((club) => String(club.id) === selected)
+    ? clubs[0] : undefined;
+  useEffect(() => {
+    if (replacement) switchClub(replacement.id);
+  }, [replacement?.id]);
 
   if (isLoading) {
     return (
@@ -218,6 +228,26 @@ function ProtectedRouteInner({ component: Component }: { component: any }) {
 
   if (status?.needsOnboarding) {
     return <Redirect to="/get-started" />;
+  }
+
+  if (access.isLoading || replacement) {
+    return <div className="flex min-h-[100dvh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  }
+  if (access.isError) {
+    return <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 p-6">
+      <p>We couldn&apos;t check your club access.</p>
+      <button className="min-h-12 rounded-xl border px-5" onClick={() => void access.refetch()}>Try again</button>
+    </div>;
+  }
+  if (clubs?.length === 0) {
+    return <div className="flex min-h-[100dvh] items-center justify-center bg-background p-6">
+      <div className="w-full max-w-md space-y-5 rounded-3xl border bg-card p-6 text-center shadow-sm">
+        <h1 className="text-2xl font-bold">You&apos;re not in a team right now</h1>
+        <p className="leading-relaxed text-muted-foreground">Your Nahreo account and past records are safe. To join or rejoin a team, ask its coach or admin for a new invitation and use your existing account.</p>
+        {access.data?.isPlatformOwner && <a className="block rounded-xl border p-3 font-semibold" href={`${basePath}/get-started?newClub=1`}>Create a club</a>}
+        <SignOutButton><button className="min-h-12 rounded-xl border px-5 font-semibold">Sign out</button></SignOutButton>
+      </div>
+    </div>;
   }
 
   return (

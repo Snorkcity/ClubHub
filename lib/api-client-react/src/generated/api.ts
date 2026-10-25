@@ -50,6 +50,7 @@ import type {
   DevelopmentReleaseResult,
   DevelopmentReportDraft,
   DevelopmentReportDraftInput,
+  Error,
   Event,
   EventCancelInput,
   EventDetail,
@@ -66,6 +67,7 @@ import type {
   HealthStatus,
   LearningPreferences,
   LearningPreferencesInput,
+  LeaveTeam200,
   ListNotificationsParams,
   ListPeopleParams,
   Message,
@@ -2205,6 +2207,77 @@ export const useUpdateTeam = <TError = ErrorType<NotFoundResponse>,
         TContext
       > => {
       return useMutation(getUpdateTeamMutationOptions(options));
+    }
+
+export const getLeaveTeamUrl = (teamId: number,) => {
+
+
+
+
+  return `/api/teams/${teamId}/leave`
+}
+
+/**
+ * @summary Leave your own team without deleting your account or history
+ */
+export const leaveTeam = async (teamId: number, options?: RequestInit): Promise<LeaveTeam200> => {
+
+  return customFetch<LeaveTeam200>(getLeaveTeamUrl(teamId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getLeaveTeamMutationOptions = <TError = ErrorType<BadRequestResponse | ForbiddenResponse | NotFoundResponse | Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof leaveTeam>>, TError,{teamId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof leaveTeam>>, TError,{teamId: number}, TContext> => {
+
+const mutationKey = ['leaveTeam'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof leaveTeam>>, {teamId: number}> = (props) => {
+          const {teamId} = props ?? {};
+
+          return  leaveTeam(teamId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LeaveTeamMutationResult = NonNullable<Awaited<ReturnType<typeof leaveTeam>>>
+
+    export type LeaveTeamMutationError = ErrorType<BadRequestResponse | ForbiddenResponse | NotFoundResponse | Error>
+
+    /**
+ * @summary Leave your own team without deleting your account or history
+ */
+export const useLeaveTeam = <TError = ErrorType<BadRequestResponse | ForbiddenResponse | NotFoundResponse | Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof leaveTeam>>, TError,{teamId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof leaveTeam>>,
+        TError,
+        {teamId: number},
+        TContext
+      > => {
+      return useMutation(getLeaveTeamMutationOptions(options));
     }
 
 export const getSetTeamBannerUrl = (teamId: number,) => {

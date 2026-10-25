@@ -60,10 +60,8 @@ export async function findOrClaimUser(
       .where(eq(usersTable.clerkUserId, clerkUserId))
   )[0];
   if (user) {
-    await db
-      .insert(clubMembersTable)
-      .values({ clubId: user.clubId, userId: user.id, role: "member" })
-      .onConflictDoNothing();
+    // Existing accounts may have deliberately left their original club.
+    // Only claiming/onboarding/inviting grants membership, never signing in.
     return { user };
   }
 
@@ -105,6 +103,23 @@ export async function findOrClaimUser(
   return { user, identity };
 }
 
+/** Account identity without club access, for accepting an invitation after
+ * leaving every team. This must not grant access to tenant-scoped endpoints. */
+export const requireAccount: RequestHandler = async (req, res, next) => {
+  const clerkUserId = getAuth(req)?.userId;
+  if (!clerkUserId) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const { user } = await findOrClaimUser(req, clerkUserId);
+  if (!user) {
+    res.status(409).json({ error: "Complete first-time setup before using the app", code: "ONBOARDING_REQUIRED" });
+    return;
+  }
+  const authed = req as AuthedRequest;
+  authed.localUser = user;
+  authed.clubId = user.clubId;
+  authed.isClubAdmin = false;
+  next();
+};
+
 /** Requires an authenticated Clerk session already linked to a club. */
 export const requireAuth: RequestHandler = async (req, res, next) => {
   try {
@@ -125,7 +140,10 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
     }
 
     const requestedClub = req.header("X-Nahreo-Club");
-    const clubId = requestedClub === undefined ? user.clubId : Number(requestedClub);
+    const memberships = await db.select().from(clubMembersTable)
+      .where(eq(clubMembersTable.userId, user.id));
+    const defaultClub = memberships.find((m) => m.clubId === user.clubId) ?? memberships[0];
+    const clubId = requestedClub === undefined ? (defaultClub?.clubId ?? user.clubId) : Number(requestedClub);
     if (!Number.isSafeInteger(clubId) || clubId <= 0) {
       res.status(400).json({ error: "Invalid active club" }); return;
     }

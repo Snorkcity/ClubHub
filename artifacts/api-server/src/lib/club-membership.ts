@@ -5,7 +5,7 @@ import { usersTable, clubMembersTable } from "@workspace/db";
  * also have explicitly granted memberships in other clubs. Never infer a
  * membership from an email, club name, or the selected request header. */
 export function personBelongsToClub(clubId: number) {
-  return sql`(${usersTable.clubId} = ${clubId} OR EXISTS (
+  return sql`((${usersTable.clerkUserId} IS NULL AND ${usersTable.clubId} = ${clubId}) OR EXISTS (
     SELECT 1 FROM ${clubMembersTable}
     WHERE ${clubMembersTable.userId} = ${usersTable.id}
       AND ${clubMembersTable.clubId} = ${clubId}

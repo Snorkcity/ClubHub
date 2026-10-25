@@ -1530,6 +1530,11 @@ cursor?: number;
 limit?: number;
 };
 
+export type LeaveTeam200 = {
+  leftTeamId: number;
+  leftClub: boolean;
+};
+
 export type ListPeopleParams = {
 /**
  * Restrict to members of this team plus guardians of its players

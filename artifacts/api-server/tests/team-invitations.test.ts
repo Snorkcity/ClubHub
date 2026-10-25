@@ -61,10 +61,12 @@ beforeAll(async () => {
 afterAll(() => pool.end());
 
 async function account(login: string) {
-  return (await db.insert(usersTable).values({
+  const person = (await db.insert(usersTable).values({
     clubId: homeClub, clerkUserId: login, email: `${login}@example.test`,
     firstName: "Existing", lastName: "Coach",
   }).returning())[0];
+  await db.insert(clubMembersTable).values({ clubId: homeClub, userId: person.id, role: "member" });
+  return person;
 }
 
 async function legacyInvitation(login: string) {

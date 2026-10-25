@@ -15,7 +15,7 @@ import {
   AcceptTeamInvitationBody,
   CreateTeamInvitationBody,
 } from "@workspace/api-zod";
-import { requireAuth, loadClerkIdentity, type AuthedRequest } from "../lib/auth";
+import { requireAuth, requireAccount, loadClerkIdentity, type AuthedRequest } from "../lib/auth";
 import { reconcileInvitedPerson } from "../lib/reconcile-invited-person";
 import { isTeamStaff } from "../lib/authz";
 
@@ -180,7 +180,7 @@ router.post("/team-invitations", requireAuth, async (req, res) => {
   return res.status(201).json({ inviteLink, expiresAt, emailSent, warning });
 });
 
-router.post("/team-invitations/accept", requireAuth, async (req, res) => {
+router.post("/team-invitations/accept", requireAccount, async (req, res) => {
   const { localUser } = req as AuthedRequest;
   const body = AcceptTeamInvitationBody.parse(req.body);
   const identity = await loadClerkIdentity(req, localUser.clerkUserId!);
@@ -205,6 +205,10 @@ router.post("/team-invitations/accept", requireAuth, async (req, res) => {
       if (!reconciled)
         return { status: 409, error: "This roster entry has existing history. Ask your club administrator to contact Nahreo so it can be safely linked to your existing account." };
     }
+    const [membership] = await tx.select({ id: teamMembersTable.id }).from(teamMembersTable)
+      .where(and(eq(teamMembersTable.teamId, invitation.teamId), eq(teamMembersTable.userId, localUser.id)));
+    if (!membership)
+      return { status: 403, error: "You are no longer a member of this team. Ask for a new invitation to rejoin." };
     await tx.update(teamInvitationsTable).set({ acceptedAt: invitation.acceptedAt ?? new Date() })
       .where(eq(teamInvitationsTable.id, invitation.id));
     return { status: 200, clubId: invitation.clubId, teamId: invitation.teamId };

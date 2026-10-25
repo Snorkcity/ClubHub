@@ -427,6 +427,37 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /teams/{teamId}/leave:
+    post:
+      operationId: leaveTeam
+      tags: [teams]
+      summary: Leave your own team without deleting your account or history
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      responses:
+        "200":
+          description: Membership removed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [leftTeamId, leftClub]
+                properties:
+                  leftTeamId: { type: integer }
+                  leftClub: { type: boolean }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Another club admin must be appointed before leaving
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /teams/{teamId}/banner:
     put:
       operationId: setTeamBanner

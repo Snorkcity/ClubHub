@@ -16,6 +16,7 @@ import onboardingRouter from "./onboarding";
 import developmentRouter from "./development";
 import learningPreferencesRouter from "./learning-preferences";
 import platformRouter from "./platform";
+import leaveTeamRouter from "./leave-team";
 
 const router: IRouter = Router();
 
@@ -26,6 +27,7 @@ router.use(meRouter);
 router.use(clubRouter);
 router.use(seasonsRouter);
 router.use(teamsRouter);
+router.use(leaveTeamRouter);
 router.use(peopleRouter);
 router.use(feedRouter);
 router.use(eventsRouter);
