@@ -16,7 +16,7 @@ export function NahreoMark({
 
   return (
     <svg
-      viewBox="0 0 100 100"
+      viewBox="0 0 80 80"
       fill="none"
       className={className}
       aria-hidden={title ? undefined : true}
@@ -24,32 +24,31 @@ export function NahreoMark({
     >
       {title ? <title>{title}</title> : null}
       <path
-        d="M20 57.5C20 36.5 35.8 21 56 21c9.5 0 17.9 3.4 24.4 9.5"
+        d="M17 59.5V28.8C17 22.3 22.3 17 28.8 17h27.8"
         stroke={orbit}
-        strokeWidth="12"
+        strokeWidth="10"
         strokeLinecap="round"
       />
       <path
-        d="M80 42.5C80 63.5 64.2 79 44 79c-9.5 0-17.9-3.4-24.4-9.5"
+        d="M29.5 63h21.7C58.3 63 64 57.3 64 50.2V34"
         stroke={orbit}
-        strokeWidth="12"
+        strokeWidth="10"
         strokeLinecap="round"
       />
       <path
-        d="M72.7 26.2 79.9 31.5 76.2 39.2"
+        d="M47.5 17H63.5V33"
         stroke={coral}
-        strokeWidth="8"
+        strokeWidth="10"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
-        d="m27.3 73.8-7.2-5.3 3.7-7.7"
-        stroke={coral}
+        d="M33 45.5L46 32.5"
+        stroke={orbit}
         strokeWidth="8"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <circle cx="50" cy="50" r="7" fill={coral} />
     </svg>
   );
 }

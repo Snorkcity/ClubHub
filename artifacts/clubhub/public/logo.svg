@@ -1,8 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none">
   <title>Nahreo</title>
-  <path d="M20 57.5C20 36.5 35.8 21 56 21c9.5 0 17.9 3.4 24.4 9.5" stroke="#173F8A" stroke-width="12" stroke-linecap="round"/>
-  <path d="M80 42.5C80 63.5 64.2 79 44 79c-9.5 0-17.9-3.4-24.4-9.5" stroke="#173F8A" stroke-width="12" stroke-linecap="round"/>
-  <path d="M72.7 26.2 79.9 31.5 76.2 39.2" stroke="#FF6B5E" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="m27.3 73.8-7.2-5.3 3.7-7.7" stroke="#FF6B5E" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="50" cy="50" r="7" fill="#FF6B5E"/>
+  <path d="M17 59.5V28.8C17 22.3 22.3 17 28.8 17h27.8" stroke="#173F8A" stroke-width="10" stroke-linecap="round"/>
+  <path d="M29.5 63h21.7C58.3 63 64 57.3 64 50.2V34" stroke="#173F8A" stroke-width="10" stroke-linecap="round"/>
+  <path d="M47.5 17H63.5V33" stroke="#FF6B5E" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M33 45.5L46 32.5" stroke="#173F8A" stroke-width="8" stroke-linecap="round"/>
 </svg>
