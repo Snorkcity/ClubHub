@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
-import { ClerkProvider, SignIn, SignUp, Show, useClerk, useAuth } from '@clerk/react';
-import { setAuthTokenGetter, setBaseUrl } from '@workspace/api-client-react';
+import { ClerkProvider, SignIn, SignUp, SignOutButton, Show, useClerk, useAuth } from '@clerk/react';
+import { setAuthTokenGetter, setBaseUrl, setClubIdGetter } from '@workspace/api-client-react';
+import { bindClubAccount, selectedClubId } from "@/lib/active-club";
+import { captureSetupInvitation, getSetupInvitation } from "@/lib/setup-invitation";
 import { ActiveTeamProvider } from '@/lib/active-team';
 import { ThemeProvider } from '@/lib/theme';
 import { publishableKeyFromHost } from '@clerk/react/internal';
@@ -110,7 +112,7 @@ const clerkAppearance = {
 function SignInPage() {
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-gray-50 dark:bg-zinc-950 px-4 pattern-grid-lg text-gray-200 dark:text-zinc-900/20">
-      <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
+      <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} forceRedirectUrl={getSetupInvitation() ? `${basePath}/get-started?newClub=1` : undefined} />
     </div>
   );
 }
@@ -118,7 +120,7 @@ function SignInPage() {
 function SignUpPage() {
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-gray-50 dark:bg-zinc-950 px-4 pattern-grid-lg text-gray-200 dark:text-zinc-900/20">
-      <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
+      <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} forceRedirectUrl={getSetupInvitation() ? `${basePath}/get-started?newClub=1` : undefined} />
     </div>
   );
 }
@@ -128,10 +130,12 @@ function SignUpPage() {
 // (previously caused the API to answer as the old user after a switch).
 let latestGetToken: (() => Promise<string | null>) | null = null;
 setAuthTokenGetter(() => (latestGetToken ? latestGetToken() : null));
+setClubIdGetter(selectedClubId);
 
 function ApiAuthBinder() {
-  const { getToken } = useAuth();
+  const { getToken, userId } = useAuth();
   latestGetToken = getToken;
+  bindClubAccount(userId ?? null);
   useEffect(() => {
     return () => {
       latestGetToken = null;
@@ -232,7 +236,7 @@ function ProtectedRoute({ component: Component, ...rest }: any) {
 
 function GetStartedRoute() {
   const { data: status, isLoading, isError, refetch } =
-    useGetOnboardingStatus();
+    useGetOnboardingStatus({ invitation: getSetupInvitation() });
 
   if (isLoading) {
     return (
@@ -257,10 +261,23 @@ function GetStartedRoute() {
     );
   }
 
-  if (status && !status.needsOnboarding) {
+  const explicitlyCreating = new URLSearchParams(window.location.search).get("newClub") === "1" || !!getSetupInvitation();
+  if (status && !status.needsOnboarding && !explicitlyCreating) {
     return <Redirect to="/home" />;
   }
 
+  if (!status?.canCreateClub) {
+    return <div className="flex min-h-[100dvh] items-center justify-center bg-background p-6">
+      <div className="w-full max-w-md space-y-5 rounded-2xl border bg-card p-6 shadow-sm">
+        <h1 className="text-2xl font-bold">Club setup is invitation-only</h1>
+        <p className="leading-relaxed text-muted-foreground">{status?.accessMessage || "Ask the Nahreo owner for a club setup invitation."}</p>
+        <p className="text-sm text-muted-foreground">Already invited to a team? Open your team invitation link instead. Your existing team access has not changed.</p>
+        <button className="min-h-12 rounded-xl border px-5 font-semibold" onClick={() => void refetch()}>Check again</button>
+        {!status?.needsOnboarding && <a className="ml-4 inline-flex min-h-12 items-center font-semibold text-primary" href={`${import.meta.env.BASE_URL}home`}>Back to my club</a>}
+        <SignOutButton><button className="block min-h-12 font-semibold text-primary">Sign out to use another account</button></SignOutButton>
+      </div>
+    </div>;
+  }
   return <GetStarted />;
 }
 
@@ -302,7 +319,9 @@ function ClerkProviderWithRoutes() {
           <Route path="/join" component={JoinTeam} />
 
           <Route path="/get-started">
-            {() => (
+            {() => {
+              captureSetupInvitation();
+              return (
               <>
                 <Show when="signed-in">
                   <GetStartedRoute />
@@ -311,7 +330,7 @@ function ClerkProviderWithRoutes() {
                   <Redirect to="/sign-in" />
                 </Show>
               </>
-            )}
+            ); }}
           </Route>
 
           <ProtectedRoute path="/home" component={Home} />

@@ -26,6 +26,7 @@ import { Switch } from "@/components/ui/switch";
 import { phonePlaceholder } from "@/lib/localisation";
 import { fileToAvatarDataUrl } from "@/lib/profile-photo";
 import { ClubLogoSettings } from "@/components/admin/club-logo-settings";
+import { ClubAccessSettings } from "@/components/admin/club-access-settings";
 import {
   CoachLearningPreferences,
   PlayerLearningPreferences,
@@ -378,6 +379,7 @@ export default function Settings() {
         </header>
 
         <div className="space-y-10">
+          <ClubAccessSettings />
           {me.isClubAdmin && club && <ClubLogoSettings club={club} />}
           <AppearanceCard />
 

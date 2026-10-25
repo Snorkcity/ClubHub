@@ -8,6 +8,8 @@
 import type { OnboardingInputCountryCode } from './onboardingInputCountryCode';
 
 export interface OnboardingInput {
+  /** @maxLength 128 */
+  invitation?: string;
   /**
      * @minLength 1
      * @maxLength 100

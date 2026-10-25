@@ -8,4 +8,7 @@
 
 export interface OnboardingStatus {
   needsOnboarding: boolean;
+  canCreateClub?: boolean;
+  isPlatformOwner?: boolean;
+  accessMessage?: string;
 }

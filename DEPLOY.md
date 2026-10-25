@@ -2,6 +2,20 @@
 
 Two services from this repo plus a Postgres database.
 
+## Invitation-only club setup
+
+The API build packages the additive `20261025_club_setup_access.sql` migration
+and `config/nahreo-owner.json`. Startup applies the migration transactionally
+and seeds the explicitly configured owner email with `ON CONFLICT DO NOTHING`.
+Each environment resolves its own verified Clerk identity; no Clerk IDs or
+development role records are copied into production. A revoked owner record
+is never re-enabled by restarting or redeploying.
+
+Nahreo-owner access is separate from club-admin access. Only the verified
+owner can issue or revoke single-use, email-bound, seven-day club-setup links.
+Links are created for manual sharing, not automatically emailed. Ordinary
+club admins can still create teams within their own club.
+
 ## 1. Postgres
 Add a PostgreSQL database to the Railway project. Note its `DATABASE_URL`.
 

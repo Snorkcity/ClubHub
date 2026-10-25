@@ -18,6 +18,7 @@ import { canActFor } from "../lib/queries";
 import { toPerson } from "../lib/serialize";
 import { formatPhoneForCountry } from "../lib/phone";
 import { isTeamStaff } from "../lib/authz";
+import { personBelongsToClub } from "../lib/club-membership";
 
 const router: IRouter = Router();
 
@@ -26,7 +27,7 @@ async function getPersonInClub(personId: number, clubId: number) {
   const [person] = await db
     .select()
     .from(usersTable)
-    .where(and(eq(usersTable.id, personId), eq(usersTable.clubId, clubId)));
+    .where(and(eq(usersTable.id, personId), personBelongsToClub(clubId)));
   return person ?? null;
 }
 
@@ -95,7 +96,7 @@ router.get("/people", requireAuth, async (req, res) => {
   let people = await db
     .select()
     .from(usersTable)
-    .where(eq(usersTable.clubId, clubId))
+    .where(personBelongsToClub(clubId))
     .orderBy(asc(usersTable.firstName));
 
   const members = await db
@@ -283,7 +284,7 @@ router.post("/guardianships", requireAuth, async (req, res) => {
     .from(usersTable)
     .where(
       and(
-        eq(usersTable.clubId, clubId),
+        personBelongsToClub(clubId),
         inArray(usersTable.id, [body.guardianId, body.playerId]),
       ),
     );
@@ -328,7 +329,7 @@ router.delete("/guardianships/:guardianshipId", requireAuth, async (req, res) =>
     .from(usersTable)
     .where(
       and(
-        eq(usersTable.clubId, clubId),
+        personBelongsToClub(clubId),
         inArray(usersTable.id, [link.guardianId, link.playerId]),
       ),
     );

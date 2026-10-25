@@ -578,6 +578,51 @@ export interface CurrentUser {
 
 export interface OnboardingStatus {
   needsOnboarding: boolean;
+  canCreateClub?: boolean;
+  isPlatformOwner?: boolean;
+  accessMessage?: string;
+}
+
+export type PlatformAccessClubsItem = {
+  id: number;
+  name: string;
+  role: string;
+};
+
+export interface PlatformAccess {
+  isPlatformOwner: boolean;
+  clubs: PlatformAccessClubsItem[];
+}
+
+export type ClubSetupInvitationStatus = typeof ClubSetupInvitationStatus[keyof typeof ClubSetupInvitationStatus];
+
+
+export const ClubSetupInvitationStatus = {
+  pending: 'pending',
+  used: 'used',
+  revoked: 'revoked',
+  expired: 'expired',
+} as const;
+
+export interface ClubSetupInvitation {
+  id: number;
+  email: string;
+  createdAt: string;
+  expiresAt: string;
+  status: ClubSetupInvitationStatus;
+}
+
+export interface ClubSetupInvitationInput {
+  /**
+     * @maxLength 254
+     * @pattern ^[^\s@]+@[^\s@]+\.[^\s@]+$
+     */
+  email: string;
+}
+
+export interface ClubSetupInvitationCreated {
+  invitation: ClubSetupInvitation;
+  setupUrl: string;
 }
 
 export interface ClubLogoInput {
@@ -600,6 +645,8 @@ export const OnboardingInputCountryCode = {
 } as const;
 
 export interface OnboardingInput {
+  /** @maxLength 128 */
+  invitation?: string;
   /**
      * @minLength 1
      * @maxLength 100
@@ -1461,6 +1508,13 @@ export type ForbiddenResponse = Error;
  * Resource not found
  */
 export type NotFoundResponse = Error;
+
+export type GetOnboardingStatusParams = {
+/**
+ * @maxLength 128
+ */
+invitation?: string;
+};
 
 export type ListNotificationsParams = {
 /**

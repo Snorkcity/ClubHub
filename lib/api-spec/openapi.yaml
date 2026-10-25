@@ -111,6 +111,10 @@ paths:
       operationId: getOnboardingStatus
       tags: [me]
       summary: Check whether the signed-in identity needs first-time club setup
+      parameters:
+        - name: invitation
+          in: query
+          schema: { type: string, maxLength: 128 }
       responses:
         "200":
           description: Onboarding status
@@ -139,6 +143,59 @@ paths:
                 $ref: "#/components/schemas/OnboardingResult"
         "409":
           description: This identity already belongs to a club
+        "403":
+          description: A valid invitation and verified recipient email are required
+
+  /platform/access:
+    get:
+      operationId: getPlatformAccess
+      tags: [me]
+      responses:
+        "200":
+          description: Owner access and clubs the current account belongs to
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformAccess"
+  /platform/club-invitations:
+    get:
+      operationId: listClubSetupInvitations
+      tags: [me]
+      responses:
+        "200":
+          description: New-club invitations (Nahreo owner only)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ClubSetupInvitation" }
+    post:
+      operationId: createClubSetupInvitation
+      tags: [me]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ClubSetupInvitationInput" }
+      responses:
+        "201":
+          description: Created invitation; share URL returned only at creation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubSetupInvitationCreated"
+  /platform/club-invitations/{invitationId}:
+    delete:
+      operationId: revokeClubSetupInvitation
+      tags: [me]
+      parameters:
+        - name: invitationId
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        "204":
+          description: Unused invitation revoked
 
   /notifications:
     get:
@@ -2080,6 +2137,44 @@ components:
       required: [needsOnboarding]
       properties:
         needsOnboarding: { type: boolean }
+        canCreateClub: { type: boolean }
+        isPlatformOwner: { type: boolean }
+        accessMessage: { type: string }
+
+    PlatformAccess:
+      type: object
+      required: [isPlatformOwner, clubs]
+      properties:
+        isPlatformOwner: { type: boolean }
+        clubs:
+          type: array
+          items:
+            type: object
+            required: [id, name, role]
+            properties:
+              id: { type: integer }
+              name: { type: string }
+              role: { type: string }
+    ClubSetupInvitation:
+      type: object
+      required: [id, email, createdAt, expiresAt, status]
+      properties:
+        id: { type: integer }
+        email: { type: string }
+        createdAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+        status: { type: string, enum: [pending, used, revoked, expired] }
+    ClubSetupInvitationInput:
+      type: object
+      required: [email]
+      properties:
+        email: { type: string, pattern: '^[^\s@]+@[^\s@]+\.[^\s@]+$', maxLength: 254 }
+    ClubSetupInvitationCreated:
+      type: object
+      required: [invitation, setupUrl]
+      properties:
+        invitation: { $ref: "#/components/schemas/ClubSetupInvitation" }
+        setupUrl: { type: string }
 
     ClubLogoInput:
       type: object
@@ -2094,6 +2189,7 @@ components:
       type: object
       required: [firstName, lastName, clubName, countryCode, teamName, ageGroup]
       properties:
+        invitation: { type: string, maxLength: 128 }
         firstName: { type: string, minLength: 1, maxLength: 100 }
         lastName: { type: string, minLength: 1, maxLength: 100 }
         clubName: { type: string, minLength: 1, maxLength: 160 }

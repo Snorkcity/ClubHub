@@ -21,6 +21,7 @@ import {
   SaveDevelopmentAssessmentBody,
 } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
+import { personBelongsToClub } from "../lib/club-membership";
 import { getTeamInClub, isTeamStaff } from "../lib/authz";
 import { createNotification } from "../lib/notifications";
 import {
@@ -76,7 +77,7 @@ async function isEligibleInternalRecipient(userId: number, clubId: number) {
   const [staff] = await db.select({ id: teamMembersTable.id }).from(teamMembersTable)
     .innerJoin(teamsTable, eq(teamMembersTable.teamId, teamsTable.id))
     .innerJoin(usersTable, eq(teamMembersTable.userId, usersTable.id))
-    .where(and(eq(teamMembersTable.userId, userId), eq(teamsTable.clubId, clubId), eq(usersTable.clubId, clubId), inArray(teamMembersTable.role, ["coach", "manager"])));
+    .where(and(eq(teamMembersTable.userId, userId), eq(teamsTable.clubId, clubId), personBelongsToClub(clubId), inArray(teamMembersTable.role, ["coach", "manager"])));
   return !!staff;
 }
 
@@ -111,13 +112,13 @@ async function buildDetail(cycle: DevelopmentCycle, assessorIds: number[], actor
     .innerJoin(usersTable, eq(teamMembersTable.userId, usersTable.id))
     .where(and(eq(teamMembersTable.teamId, cycle.teamId), inArray(teamMembersTable.role, ["coach", "manager"])));
   const allUserIds = [...new Set([cycle.createdById, ...assessorIds, ...(cycle.internalRecipientId ? [cycle.internalRecipientId] : [])])];
-  const named = await db.select().from(usersTable).where(and(eq(usersTable.clubId, cycle.clubId), inArray(usersTable.id, allUserIds)));
+  const named = await db.select().from(usersTable).where(and(personBelongsToClub(cycle.clubId), inArray(usersTable.id, allUserIds)));
   const byId = new Map(named.map((u) => [u.id, u]));
   const assessments = await db.select().from(developmentAssessmentsTable)
     .where(eq(developmentAssessmentsTable.cycleId, cycle.id));
   const editors = [...new Set(assessments.map((a) => a.updatedById))];
   if (editors.length) {
-    const users = await db.select().from(usersTable).where(and(eq(usersTable.clubId, cycle.clubId), inArray(usersTable.id, editors)));
+    const users = await db.select().from(usersTable).where(and(personBelongsToClub(cycle.clubId), inArray(usersTable.id, editors)));
     for (const user of users) byId.set(user.id, user);
   }
   const assessmentByPlayer = new Map(assessments.map((a) => [a.playerId, a]));
@@ -214,7 +215,7 @@ router.post("/teams/:teamId/development-cycles", requireAuth, async (req, res): 
   if (!team) { res.status(404).json({ error: "Team not found" }); return; }
   const assessors = await db.select({ userId: teamMembersTable.userId }).from(teamMembersTable)
     .innerJoin(usersTable, eq(teamMembersTable.userId, usersTable.id))
-    .where(and(eq(teamMembersTable.teamId, teamId), inArray(teamMembersTable.role, ["coach", "manager"]), inArray(teamMembersTable.userId, parsed.data.assessorIds), eq(usersTable.clubId, clubId)));
+    .where(and(eq(teamMembersTable.teamId, teamId), inArray(teamMembersTable.role, ["coach", "manager"]), inArray(teamMembersTable.userId, parsed.data.assessorIds), personBelongsToClub(clubId)));
   if (new Set(assessors.map((x) => x.userId)).size !== parsed.data.assessorIds.length) {
     res.status(400).json({ error: "Every assessor must be a coach or manager on this team" }); return;
   }
@@ -248,13 +249,13 @@ router.get("/teams/:teamId/development-recipient-candidates", requireAuth, async
     .innerJoin(usersTable, eq(teamMembersTable.userId, usersTable.id))
     .where(and(
       eq(teamsTable.clubId, clubId),
-      eq(usersTable.clubId, clubId),
+      personBelongsToClub(clubId),
       inArray(teamMembersTable.role, ["coach", "manager"]),
     ));
   const candidateIds = [...new Set([...admins.map((row) => row.userId), ...staff.map((row) => row.userId)])];
   const candidates = candidateIds.length
     ? await db.select().from(usersTable)
-      .where(and(eq(usersTable.clubId, clubId), inArray(usersTable.id, candidateIds)))
+      .where(and(personBelongsToClub(clubId), inArray(usersTable.id, candidateIds)))
       .orderBy(usersTable.lastName, usersTable.firstName)
     : [];
   res.json(candidates.map(person));
@@ -289,7 +290,7 @@ router.put("/development-cycles/:cycleId/players/:playerId/assessment", requireA
       return { kind: row.cycle.status === "active" ? "forbidden" as const : "locked" as const };
     const [player] = await tx.select({ user: usersTable }).from(teamMembersTable)
       .innerJoin(usersTable, eq(teamMembersTable.userId, usersTable.id))
-      .where(and(eq(teamMembersTable.teamId, row.cycle.teamId), eq(teamMembersTable.userId, playerId), eq(teamMembersTable.role, "player"), eq(usersTable.clubId, clubId)));
+      .where(and(eq(teamMembersTable.teamId, row.cycle.teamId), eq(teamMembersTable.userId, playerId), eq(teamMembersTable.role, "player"), personBelongsToClub(clubId)));
     if (!player) return { kind: "player" as const };
     const [saved] = await tx.insert(developmentAssessmentsTable).values({
       cycleId, playerId, ...parsed.data, internalNotes: parsed.data.internalNotes ?? null, updatedById: localUser.id,
@@ -336,7 +337,7 @@ router.put("/development-cycles/:cycleId/players/:playerId/report-draft", requir
       return { kind: row.cycle.status === "submitted" ? "forbidden" as const : "locked" as const };
     const [assessment] = await tx.select().from(developmentAssessmentsTable)
       .where(and(eq(developmentAssessmentsTable.cycleId, cycleId), eq(developmentAssessmentsTable.playerId, playerId))).for("update");
-    const [player] = await tx.select().from(usersTable).where(and(eq(usersTable.id, playerId), eq(usersTable.clubId, clubId)));
+    const [player] = await tx.select().from(usersTable).where(and(eq(usersTable.id, playerId), personBelongsToClub(clubId)));
     if (!assessment || !player || !assessment.familyDraftCategories) return { kind: "missingAssessment" as const };
     const narratives = new Map(body.categories!.map((c) => [c.key!, c.narrative!.trim()]));
     const categories = assessment.familyDraftCategories.map((category) => ({ ...category, narrative: narratives.get(category.key)! }));
@@ -470,7 +471,7 @@ router.post("/development-cycles/:cycleId/release", requireAuth, async (req, res
     if (locked.cycle.status !== "submitted") return { kind: "notSubmitted" as const };
     const assessments = await tx.select({ assessment: developmentAssessmentsTable, player: usersTable })
       .from(developmentAssessmentsTable).innerJoin(usersTable, eq(developmentAssessmentsTable.playerId, usersTable.id))
-      .where(and(eq(developmentAssessmentsTable.cycleId, cycleId), eq(usersTable.clubId, clubId)));
+      .where(and(eq(developmentAssessmentsTable.cycleId, cycleId), personBelongsToClub(clubId)));
     const remaining = assessments.filter(({ assessment }) =>
       !assessment.reviewedAt || !assessment.familyDraftCategories || !assessment.familyStrength || !assessment.familyFocus,
     ).length;
@@ -511,8 +512,8 @@ router.post("/development-cycles/:cycleId/release", requireAuth, async (req, res
   for (const report of reports) {
     const guardians = await db.select({ user: usersTable }).from(guardianshipsTable)
       .innerJoin(usersTable, eq(guardianshipsTable.guardianId, usersTable.id))
-      .where(and(eq(guardianshipsTable.playerId, report.playerId), eq(guardianshipsTable.canManage, true), eq(usersTable.clubId, clubId)));
-    const [playerRow] = await db.select().from(usersTable).where(and(eq(usersTable.id, report.playerId), eq(usersTable.clubId, clubId)));
+      .where(and(eq(guardianshipsTable.playerId, report.playerId), eq(guardianshipsTable.canManage, true), personBelongsToClub(clubId)));
+    const [playerRow] = await db.select().from(usersTable).where(and(eq(usersTable.id, report.playerId), personBelongsToClub(clubId)));
     const recipients = [playerRow, ...guardians.map((g) => g.user)].filter(Boolean) as User[];
     const recipientIds = [...new Set(recipients.map((u) => u.id))];
     const deepLink = `/development/reports/${report.id}`;
@@ -534,7 +535,7 @@ router.post("/development-cycles/:cycleId/release", requireAuth, async (req, res
     await createNotification({ clubId, actorId: localUser.id, kind: "development", title: "Team development report submitted", body: `${cycle.reportingPeriod} team report is ready.`, deepLink, recipientIds: [cycle.internalRecipientId] });
     const [recipient] = await db.select().from(usersTable).where(and(
       eq(usersTable.id, cycle.internalRecipientId),
-      eq(usersTable.clubId, clubId),
+      personBelongsToClub(clubId),
     ));
     if (recipient?.email) {
       const link = `${APP_URL}${deepLink}`;
@@ -579,7 +580,7 @@ router.get("/development-cycles/:cycleId/internal-summary", requireAuth, async (
   }
   const current = await db.select({ assessment: developmentAssessmentsTable, player: usersTable })
     .from(developmentAssessmentsTable).innerJoin(usersTable, eq(developmentAssessmentsTable.playerId, usersTable.id))
-    .where(and(eq(developmentAssessmentsTable.cycleId, context.cycle.id), eq(usersTable.clubId, clubId)));
+    .where(and(eq(developmentAssessmentsTable.cycleId, context.cycle.id), personBelongsToClub(clubId)));
   const priorCycles = context.cycle.submittedAt
     ? await db.select().from(developmentCyclesTable)
       .where(and(
@@ -638,7 +639,7 @@ router.get("/players/:playerId/development-reports", requireAuth, async (req, re
   const allowed = [];
   for (const { report } of reports) if (await canReadReport(report, localUser.id, clubId, isClubAdmin)) allowed.push(await reportJson(report));
   if (!allowed.length && playerId !== localUser.id) {
-    const [target] = await db.select({ id: usersTable.id }).from(usersTable).where(and(eq(usersTable.id, playerId), eq(usersTable.clubId, clubId)));
+    const [target] = await db.select({ id: usersTable.id }).from(usersTable).where(and(eq(usersTable.id, playerId), personBelongsToClub(clubId)));
     if (!target) { res.status(404).json({ error: "Player not found" }); return; }
     const [guardian] = await db.select({ id: guardianshipsTable.id }).from(guardianshipsTable)
       .where(and(eq(guardianshipsTable.guardianId, localUser.id), eq(guardianshipsTable.playerId, playerId), eq(guardianshipsTable.canManage, true)));

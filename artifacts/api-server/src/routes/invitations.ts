@@ -16,6 +16,7 @@ import {
   CreateTeamInvitationBody,
 } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
+import { personBelongsToClub } from "../lib/club-membership";
 import { isTeamStaff } from "../lib/authz";
 
 const router: IRouter = Router();
@@ -93,7 +94,7 @@ router.post("/team-invitations", requireAuth, async (req, res) => {
     .from(usersTable)
     .where(
       and(
-        eq(usersTable.clubId, clubId),
+        personBelongsToClub(clubId),
         sql`lower(${usersTable.email}) = ${email}`,
       ),
     );

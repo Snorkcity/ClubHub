@@ -18,6 +18,7 @@ import {
   SubmitMyCoachLearningPreferencesResponse,
 } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
+import { personBelongsToClub } from "../lib/club-membership";
 import { isTeamStaff } from "../lib/authz";
 import {
   scoreLearningPreferences,
@@ -254,7 +255,7 @@ router.get(
       .select({ id: usersTable.id })
       .from(usersTable)
       .where(
-        and(eq(usersTable.id, personId), eq(usersTable.clubId, clubId)),
+        and(eq(usersTable.id, personId), personBelongsToClub(clubId)),
       );
     if (!player) {
       res.status(404).json({ error: "Player not found." });
@@ -304,7 +305,7 @@ router.get(
     const [coach] = await db
       .select({ id: usersTable.id })
       .from(usersTable)
-      .where(and(eq(usersTable.id, personId), eq(usersTable.clubId, clubId)));
+      .where(and(eq(usersTable.id, personId), personBelongsToClub(clubId)));
     if (!coach || !(await hasRole(personId, "coach"))) {
       res.status(404).json({ error: "Coach not found." });
       return;

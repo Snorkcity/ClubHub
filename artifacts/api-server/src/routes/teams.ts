@@ -19,6 +19,7 @@ import {
   UpdateTeamMemberBody,
 } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
+import { personBelongsToClub } from "../lib/club-membership";
 import { buildTeams, buildEvents } from "../lib/build";
 import { getVisibleTeamIds } from "../lib/queries";
 import { canAccessTeam, isTeamStaff, getTeamInClub } from "../lib/authz";
@@ -247,7 +248,7 @@ router.post("/teams/:teamId/members", requireAuth, async (req, res) => {
   const [target] = await db
     .select()
     .from(usersTable)
-    .where(and(eq(usersTable.id, body.personId), eq(usersTable.clubId, clubId)));
+    .where(and(eq(usersTable.id, body.personId), personBelongsToClub(clubId)));
   if (!target) return res.status(404).json({ error: "Person not found" });
 
   const [member] = await db

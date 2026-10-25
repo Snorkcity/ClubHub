@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build as esbuild } from "esbuild";
 import esbuildPluginPino from "esbuild-plugin-pino";
-import { rm } from "node:fs/promises";
+import { rm, copyFile } from "node:fs/promises";
 
 // Plugins (e.g. 'esbuild-plugin-pino') may use `require` to resolve dependencies
 globalThis.require = createRequire(import.meta.url);
@@ -118,6 +118,8 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
     `,
     },
   });
+  await copyFile(path.resolve(artifactDir, "../../lib/db/migrations/20261025_club_setup_access.sql"), path.join(distDir, "club-setup-access.sql"));
+  await copyFile(path.resolve(artifactDir, "../../config/nahreo-owner.json"), path.join(distDir, "nahreo-owner.json"));
 }
 
 buildAll().catch((err) => {

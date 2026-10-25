@@ -31,6 +31,9 @@ import type {
   ClubLogoInput,
   ClubOverview,
   ClubPostInput,
+  ClubSetupInvitation,
+  ClubSetupInvitationCreated,
+  ClubSetupInvitationInput,
   ClubStorage,
   Comment,
   CommentInput,
@@ -56,6 +59,7 @@ import type {
   ExtraSessionInput,
   ForbiddenResponse,
   GetCheckinStatusParams,
+  GetOnboardingStatusParams,
   GetTeamMonitoringParams,
   Guardianship,
   GuardianshipInput,
@@ -76,6 +80,7 @@ import type {
   PersonDetail,
   PersonInput,
   PersonUpdate,
+  PlatformAccess,
   Post,
   PostDetail,
   PostInput,
@@ -512,20 +517,27 @@ export function useListMyEventLocations<TData = Awaited<ReturnType<typeof listMy
 
 
 
-export const getGetOnboardingStatusUrl = () => {
+export const getGetOnboardingStatusUrl = (params?: GetOnboardingStatusParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/onboarding/status`
+  return stringifiedParams.length > 0 ? `/api/onboarding/status?${stringifiedParams}` : `/api/onboarding/status`
 }
 
 /**
  * @summary Check whether the signed-in identity needs first-time club setup
  */
-export const getOnboardingStatus = async ( options?: RequestInit): Promise<OnboardingStatus> => {
+export const getOnboardingStatus = async (params?: GetOnboardingStatusParams, options?: RequestInit): Promise<OnboardingStatus> => {
 
-  return customFetch<OnboardingStatus>(getGetOnboardingStatusUrl(),
+  return customFetch<OnboardingStatus>(getGetOnboardingStatusUrl(params),
   {
     ...options,
     method: 'GET'
@@ -538,23 +550,23 @@ export const getOnboardingStatus = async ( options?: RequestInit): Promise<Onboa
 
 
 
-export const getGetOnboardingStatusQueryKey = () => {
+export const getGetOnboardingStatusQueryKey = (params?: GetOnboardingStatusParams,) => {
     return [
-    `/api/onboarding/status`
+    `/api/onboarding/status`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetOnboardingStatusQueryOptions = <TData = Awaited<ReturnType<typeof getOnboardingStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOnboardingStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetOnboardingStatusQueryOptions = <TData = Awaited<ReturnType<typeof getOnboardingStatus>>, TError = ErrorType<unknown>>(params?: GetOnboardingStatusParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOnboardingStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetOnboardingStatusQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetOnboardingStatusQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOnboardingStatus>>> = ({ signal }) => getOnboardingStatus({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOnboardingStatus>>> = ({ signal }) => getOnboardingStatus(params, { signal, ...requestOptions });
 
 
 
@@ -572,11 +584,11 @@ export type GetOnboardingStatusQueryError = ErrorType<unknown>
  */
 
 export function useGetOnboardingStatus<TData = Awaited<ReturnType<typeof getOnboardingStatus>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOnboardingStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: GetOnboardingStatusParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOnboardingStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetOnboardingStatusQueryOptions(options)
+  const queryOptions = getGetOnboardingStatusQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -658,6 +670,278 @@ export const useCompleteOnboarding = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getCompleteOnboardingMutationOptions(options));
+    }
+
+export const getGetPlatformAccessUrl = () => {
+
+
+
+
+  return `/api/platform/access`
+}
+
+export const getPlatformAccess = async ( options?: RequestInit): Promise<PlatformAccess> => {
+
+  return customFetch<PlatformAccess>(getGetPlatformAccessUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPlatformAccessQueryKey = () => {
+    return [
+    `/api/platform/access`
+    ] as const;
+    }
+
+
+export const getGetPlatformAccessQueryOptions = <TData = Awaited<ReturnType<typeof getPlatformAccess>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlatformAccess>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPlatformAccessQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlatformAccess>>> = ({ signal }) => getPlatformAccess({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPlatformAccess>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPlatformAccessQueryResult = NonNullable<Awaited<ReturnType<typeof getPlatformAccess>>>
+export type GetPlatformAccessQueryError = ErrorType<unknown>
+
+
+
+export function useGetPlatformAccess<TData = Awaited<ReturnType<typeof getPlatformAccess>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlatformAccess>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPlatformAccessQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListClubSetupInvitationsUrl = () => {
+
+
+
+
+  return `/api/platform/club-invitations`
+}
+
+export const listClubSetupInvitations = async ( options?: RequestInit): Promise<ClubSetupInvitation[]> => {
+
+  return customFetch<ClubSetupInvitation[]>(getListClubSetupInvitationsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListClubSetupInvitationsQueryKey = () => {
+    return [
+    `/api/platform/club-invitations`
+    ] as const;
+    }
+
+
+export const getListClubSetupInvitationsQueryOptions = <TData = Awaited<ReturnType<typeof listClubSetupInvitations>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubSetupInvitations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListClubSetupInvitationsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listClubSetupInvitations>>> = ({ signal }) => listClubSetupInvitations({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listClubSetupInvitations>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListClubSetupInvitationsQueryResult = NonNullable<Awaited<ReturnType<typeof listClubSetupInvitations>>>
+export type ListClubSetupInvitationsQueryError = ErrorType<unknown>
+
+
+
+export function useListClubSetupInvitations<TData = Awaited<ReturnType<typeof listClubSetupInvitations>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubSetupInvitations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListClubSetupInvitationsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateClubSetupInvitationUrl = () => {
+
+
+
+
+  return `/api/platform/club-invitations`
+}
+
+export const createClubSetupInvitation = async (clubSetupInvitationInput: ClubSetupInvitationInput, options?: RequestInit): Promise<ClubSetupInvitationCreated> => {
+
+  return customFetch<ClubSetupInvitationCreated>(getCreateClubSetupInvitationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(clubSetupInvitationInput)
+  }
+);}
+
+
+
+
+
+export const getCreateClubSetupInvitationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createClubSetupInvitation>>, TError,{data: BodyType<ClubSetupInvitationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createClubSetupInvitation>>, TError,{data: BodyType<ClubSetupInvitationInput>}, TContext> => {
+
+const mutationKey = ['createClubSetupInvitation'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createClubSetupInvitation>>, {data: BodyType<ClubSetupInvitationInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createClubSetupInvitation(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateClubSetupInvitationMutationResult = NonNullable<Awaited<ReturnType<typeof createClubSetupInvitation>>>
+    export type CreateClubSetupInvitationMutationBody = BodyType<ClubSetupInvitationInput>
+    export type CreateClubSetupInvitationMutationError = ErrorType<unknown>
+
+    export const useCreateClubSetupInvitation = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createClubSetupInvitation>>, TError,{data: BodyType<ClubSetupInvitationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createClubSetupInvitation>>,
+        TError,
+        {data: BodyType<ClubSetupInvitationInput>},
+        TContext
+      > => {
+      return useMutation(getCreateClubSetupInvitationMutationOptions(options));
+    }
+
+export const getRevokeClubSetupInvitationUrl = (invitationId: number,) => {
+
+
+
+
+  return `/api/platform/club-invitations/${invitationId}`
+}
+
+export const revokeClubSetupInvitation = async (invitationId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRevokeClubSetupInvitationUrl(invitationId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRevokeClubSetupInvitationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeClubSetupInvitation>>, TError,{invitationId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeClubSetupInvitation>>, TError,{invitationId: number}, TContext> => {
+
+const mutationKey = ['revokeClubSetupInvitation'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeClubSetupInvitation>>, {invitationId: number}> = (props) => {
+          const {invitationId} = props ?? {};
+
+          return  revokeClubSetupInvitation(invitationId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeClubSetupInvitationMutationResult = NonNullable<Awaited<ReturnType<typeof revokeClubSetupInvitation>>>
+
+    export type RevokeClubSetupInvitationMutationError = ErrorType<unknown>
+
+    export const useRevokeClubSetupInvitation = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeClubSetupInvitation>>, TError,{invitationId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revokeClubSetupInvitation>>,
+        TError,
+        {invitationId: number},
+        TContext
+      > => {
+      return useMutation(getRevokeClubSetupInvitationMutationOptions(options));
     }
 
 export const getListNotificationsUrl = (params?: ListNotificationsParams,) => {

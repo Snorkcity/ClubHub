@@ -14,24 +14,25 @@ import { requireAuth, type AuthedRequest } from "../lib/auth";
 import { toPerson } from "../lib/serialize";
 import { formatPhoneForCountry } from "../lib/phone";
 import { verifyAvatarToken } from "../lib/avatarToken";
+import { personBelongsToClub } from "../lib/club-membership";
 
 const router: IRouter = Router();
 const AVATAR_DATA_URL_RE = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/;
 
 router.get("/me", requireAuth, async (req, res) => {
-  const { localUser, isClubAdmin } = req as AuthedRequest;
+  const { localUser, isClubAdmin, clubId } = req as AuthedRequest;
 
   const memberships = await db
     .select({ m: teamMembersTable, t: teamsTable })
     .from(teamMembersTable)
     .innerJoin(teamsTable, eq(teamMembersTable.teamId, teamsTable.id))
-    .where(eq(teamMembersTable.userId, localUser.id));
+    .where(and(eq(teamMembersTable.userId, localUser.id), eq(teamsTable.clubId, clubId)));
 
   const wards = await db
     .select({ u: usersTable })
     .from(guardianshipsTable)
     .innerJoin(usersTable, eq(guardianshipsTable.playerId, usersTable.id))
-    .where(eq(guardianshipsTable.guardianId, localUser.id));
+    .where(and(eq(guardianshipsTable.guardianId, localUser.id), personBelongsToClub(clubId)));
 
   return res.json({
     person: toPerson(localUser, undefined, { full: true }),

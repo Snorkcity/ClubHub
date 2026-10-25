@@ -12,6 +12,7 @@ import {
 } from "@workspace/db";
 import { CreateChatBody, SendMessageBody } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
+import { personBelongsToClub } from "../lib/club-membership";
 import { canAccessTeam, isChatMember } from "../lib/authz";
 import { toPerson, iso } from "../lib/serialize";
 
@@ -111,7 +112,7 @@ router.post("/chats", requireAuth, async (req, res) => {
   const validMembers = await db
     .select({ id: usersTable.id })
     .from(usersTable)
-    .where(and(eq(usersTable.clubId, clubId), inArray(usersTable.id, requestedIds)));
+    .where(and(personBelongsToClub(clubId), inArray(usersTable.id, requestedIds)));
   const memberIds = validMembers.map((m) => m.id);
 
   // Non-admins can only chat with people who share a team with them.

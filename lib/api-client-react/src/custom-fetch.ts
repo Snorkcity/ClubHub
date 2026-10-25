@@ -17,6 +17,12 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
 let _baseUrl: string | null = null;
 let _authTokenGetter: AuthTokenGetter | null = null;
+let _clubIdGetter: (() => string | null) | null = null;
+
+/** An optional browser-selected club; the server must verify membership. */
+export function setClubIdGetter(getter: (() => string | null) | null): void {
+  _clubIdGetter = getter;
+}
 
 /**
  * Set a base URL that is prepended to every relative request URL
@@ -337,6 +343,8 @@ export async function customFetch<T = unknown>(
   }
 
   const headers = mergeHeaders(isRequest(input) ? input.headers : undefined, headersInit);
+  const clubId = _clubIdGetter?.();
+  if (clubId) headers.set("X-Nahreo-Club", clubId);
 
   if (
     typeof init.body === "string" &&

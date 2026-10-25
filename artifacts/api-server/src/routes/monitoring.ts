@@ -24,14 +24,15 @@ import { buildEvents } from "../lib/build";
 import { getWardIds, canActFor } from "../lib/queries";
 import { isTeamStaff, isTeamMember, getTeamInClub } from "../lib/authz";
 import { toPerson } from "../lib/serialize";
+import { personBelongsToClub } from "../lib/club-membership";
 
 /** Tenant guard: is this user a member of the given club? */
 async function isInClub(userId: number, clubId: number): Promise<boolean> {
   const [u] = await db
     .select({ clubId: usersTable.clubId })
     .from(usersTable)
-    .where(eq(usersTable.id, userId));
-  return !!u && u.clubId === clubId;
+    .where(and(eq(usersTable.id, userId), personBelongsToClub(clubId)));
+  return !!u;
 }
 
 const router: IRouter = Router();

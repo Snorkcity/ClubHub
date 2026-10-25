@@ -13,6 +13,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { NahreoBrand } from "@/components/brand/nahreo-logo";
 import { ClubLogoPicker } from "@/components/admin/club-logo-picker";
+import { getSetupInvitation, clearSetupInvitation } from "@/lib/setup-invitation";
+import { switchClub } from "@/lib/active-club";
 import { ArrowLeft, ArrowRight, Loader2, Check } from "lucide-react";
 
 const formSchema = z.object({
@@ -75,6 +77,7 @@ export default function GetStarted() {
     if (isProcessingLogo || completeOnboarding.isPending) return;
     completeOnboarding.mutate({
       data: {
+        invitation: getSetupInvitation(),
         firstName: data.firstName,
         lastName: data.lastName,
         clubName: data.clubName,
@@ -85,7 +88,8 @@ export default function GetStarted() {
         gender: data.gender || undefined,
       }
     }, {
-      onSuccess: () => {
+      onSuccess: (result) => {
+        clearSetupInvitation();
         // Clear all queries to force refetching fresh user/club/team data
         queryClient.clear();
         
@@ -93,13 +97,13 @@ export default function GetStarted() {
           title: "Welcome to Nahreo",
           description: "Your club is ready to go.",
         });
-        setLocation("/home");
+        switchClub(result.clubId);
       },
-      onError: () => {
+      onError: (error) => {
         toast({
           variant: "destructive",
           title: "Something went wrong",
-          description: "Please try again or contact support if the problem persists.",
+          description: error.message || "Please reload and check your club setup invitation.",
         });
       }
     });

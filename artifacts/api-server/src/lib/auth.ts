@@ -124,24 +124,32 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
       return;
     }
 
+    const requestedClub = req.header("X-Nahreo-Club");
+    const clubId = requestedClub === undefined ? user.clubId : Number(requestedClub);
+    if (!Number.isSafeInteger(clubId) || clubId <= 0) {
+      res.status(400).json({ error: "Invalid active club" }); return;
+    }
     const membership = (
       await db
         .select()
         .from(clubMembersTable)
         .where(
           and(
-            eq(clubMembersTable.clubId, user.clubId),
+            eq(clubMembersTable.clubId, clubId),
             eq(clubMembersTable.userId, user.id),
           ),
         )
     )[0];
 
-    if (!membership)
-      throw new Error("Authenticated user club membership reconciliation failed");
+    if (!membership) {
+      res.status(403).json({ error: "You do not belong to this club" }); return;
+    }
 
     const authed = req as AuthedRequest;
-    authed.localUser = user;
-    authed.clubId = user.clubId;
+    // Preserve the permanent account/home club in the database. Only this
+    // authorised request's context changes when the person switches clubs.
+    authed.localUser = { ...user, clubId };
+    authed.clubId = clubId;
     authed.isClubAdmin = membership.role === "admin";
     next();
   } catch (err) {

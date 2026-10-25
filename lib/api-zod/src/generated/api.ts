@@ -137,14 +137,27 @@ export const ListMyEventLocationsResponse = zod.array(ListMyEventLocationsRespon
 /**
  * @summary Check whether the signed-in identity needs first-time club setup
  */
+export const getOnboardingStatusQueryInvitationMax = 128;
+
+
+
+export const GetOnboardingStatusQueryParams = zod.object({
+  "invitation": zod.coerce.string().max(getOnboardingStatusQueryInvitationMax).optional()
+})
+
 export const GetOnboardingStatusResponse = zod.object({
-  "needsOnboarding": zod.boolean()
+  "needsOnboarding": zod.boolean(),
+  "canCreateClub": zod.boolean().optional(),
+  "isPlatformOwner": zod.boolean().optional(),
+  "accessMessage": zod.string().optional()
 })
 
 
 /**
  * @summary Create a new club, its first team, and the signed-in administrator
  */
+export const completeOnboardingBodyInvitationMax = 128;
+
 export const completeOnboardingBodyFirstNameMax = 100;
 
 export const completeOnboardingBodyLastNameMax = 100;
@@ -162,6 +175,7 @@ export const completeOnboardingBodyGenderMax = 80;
 
 
 export const CompleteOnboardingBody = zod.object({
+  "invitation": zod.string().max(completeOnboardingBodyInvitationMax).optional(),
   "firstName": zod.string().min(1).max(completeOnboardingBodyFirstNameMax),
   "lastName": zod.string().min(1).max(completeOnboardingBodyLastNameMax),
   "clubName": zod.string().min(1).max(completeOnboardingBodyClubNameMax),
@@ -176,6 +190,51 @@ export const CompleteOnboardingResponse = zod.object({
   "clubId": zod.number(),
   "teamId": zod.number()
 })
+
+
+export const GetPlatformAccessResponse = zod.object({
+  "isPlatformOwner": zod.boolean(),
+  "clubs": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "role": zod.string()
+}))
+})
+
+
+export const ListClubSetupInvitationsResponseItem = zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "expiresAt": zod.coerce.date(),
+  "status": zod.enum(['pending', 'used', 'revoked', 'expired'])
+})
+export const ListClubSetupInvitationsResponse = zod.array(ListClubSetupInvitationsResponseItem)
+
+
+export const createClubSetupInvitationBodyEmailMax = 254;
+
+
+export const createClubSetupInvitationBodyEmailRegExp = new RegExp('^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$');
+
+
+export const CreateClubSetupInvitationBody = zod.object({
+  "email": zod.string().max(createClubSetupInvitationBodyEmailMax).regex(createClubSetupInvitationBodyEmailRegExp)
+})
+
+export const CreateClubSetupInvitationResponse = zod.object({
+  "invitation": zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "expiresAt": zod.coerce.date(),
+  "status": zod.enum(['pending', 'used', 'revoked', 'expired'])
+}),
+  "setupUrl": zod.string()
+})
+
+
+export const RevokeClubSetupInvitationResponse = zod.void()
 
 
 /**

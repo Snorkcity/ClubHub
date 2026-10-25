@@ -1,5 +1,6 @@
 import { and, eq, inArray } from "drizzle-orm";
 import webpush from "web-push";
+import { personBelongsToClub } from "./club-membership";
 import {
   db, guardianshipsTable, notificationRecipientsTable, notificationsTable,
   pushSubscriptionsTable, teamMembersTable, teamsTable, usersTable,
@@ -20,7 +21,7 @@ export async function resolveTeamRecipients(
   const ids = new Set<number>();
   const members = await db.select({ userId: teamMembersTable.userId, role: teamMembersTable.role })
     .from(teamMembersTable).innerJoin(usersTable, eq(teamMembersTable.userId, usersTable.id))
-    .where(and(eq(teamMembersTable.teamId, teamId), eq(usersTable.clubId, clubId)));
+    .where(and(eq(teamMembersTable.teamId, teamId), personBelongsToClub(clubId)));
   if (roles.includes("coaches")) {
     for (const member of members)
       if (member.role === "coach" || member.role === "manager") ids.add(member.userId);
@@ -35,7 +36,7 @@ export async function resolveTeamRecipients(
     if (players.length) {
       const guardians = await db.select({ guardianId: guardianshipsTable.guardianId })
         .from(guardianshipsTable).innerJoin(usersTable, eq(guardianshipsTable.guardianId, usersTable.id))
-        .where(and(inArray(guardianshipsTable.playerId, players), eq(usersTable.clubId, clubId)));
+        .where(and(inArray(guardianshipsTable.playerId, players), personBelongsToClub(clubId)));
       for (const guardian of guardians) ids.add(guardian.guardianId);
     }
   }

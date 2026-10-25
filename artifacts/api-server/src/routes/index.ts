@@ -15,11 +15,13 @@ import invitationsRouter from "./invitations";
 import onboardingRouter from "./onboarding";
 import developmentRouter from "./development";
 import learningPreferencesRouter from "./learning-preferences";
+import platformRouter from "./platform";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(onboardingRouter);
+router.use(platformRouter);
 router.use(meRouter);
 router.use(clubRouter);
 router.use(seasonsRouter);
