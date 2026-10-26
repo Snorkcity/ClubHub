@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { ArrowRight, Activity, CalendarDays, ShieldCheck, Users, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NahreoBrand } from "@/components/brand/nahreo-logo";
+import { LEGAL_CONTACT } from "@/components/legal/legal-layout";
 
 export default function Landing() {
   return (
@@ -97,6 +98,11 @@ export default function Landing() {
       <footer className="bg-zinc-950 text-zinc-400 py-12 text-center border-t border-zinc-900">
         <div className="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
           <NahreoBrand inverse className="text-zinc-100" markClassName="h-7 w-7" wordmarkClassName="text-base" />
+          <nav aria-label="Legal and contact" className="flex flex-wrap justify-center gap-x-6 text-sm">
+            <Link href="/privacy" className="inline-flex min-h-12 items-center text-zinc-200 underline-offset-4 hover:underline">Privacy Policy</Link>
+            <Link href="/terms" className="inline-flex min-h-12 items-center text-zinc-200 underline-offset-4 hover:underline">Terms of Use</Link>
+            <a href={`mailto:${LEGAL_CONTACT}`} className="inline-flex min-h-12 items-center text-zinc-200 underline-offset-4 hover:underline">Contact</a>
+          </nav>
           <p className="text-sm">&copy; {new Date().getFullYear()} Nahreo. All rights reserved.</p>
         </div>
       </footer>

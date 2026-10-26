@@ -16,6 +16,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 
 import Landing from "@/pages/landing";
+import Privacy from "@/pages/privacy";
+import Terms from "@/pages/terms";
 import Home from "@/pages/home";
 import TeamsList from "@/pages/teams/index";
 import TeamDetail from "@/pages/teams/detail";
@@ -406,7 +408,12 @@ function App() {
     <ThemeProvider>
     <TooltipProvider>
       <WouterRouter base={basePath}>
-        <ClerkProviderWithRoutes />
+        <Switch>
+          {/* Legal information must remain accessible without loading or signing in to Clerk. */}
+          <Route path="/privacy" component={Privacy} />
+          <Route path="/terms" component={Terms} />
+          <Route><ClerkProviderWithRoutes /></Route>
+        </Switch>
       </WouterRouter>
       <Toaster />
     </TooltipProvider>
