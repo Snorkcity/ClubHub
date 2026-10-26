@@ -231,7 +231,7 @@ export default function GetStarted() {
                               <FormItem>
                                 <FormLabel>Team name</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="e.g. Eagles" {...field} autoFocus />
+                                  <Input placeholder="e.g. U14 Blue, Firsts or Reserves" {...field} autoFocus />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>

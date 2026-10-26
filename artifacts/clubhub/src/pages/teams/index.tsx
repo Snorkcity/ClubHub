@@ -243,7 +243,7 @@ function CreateTeamDialog({
                 <FormItem>
                   <FormLabel>Team Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g. Falcons, Select Red, etc." className="rounded-xl" {...field} />
+                    <Input placeholder="e.g. U14 Blue, Firsts or Reserves" className="rounded-xl" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

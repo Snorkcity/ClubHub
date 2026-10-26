@@ -22,6 +22,7 @@ export function teamFeatures(ageGroup: string | null | undefined) {
 }
 
 export const TEAM_AGE_GROUP_OPTIONS = [
-  ...Array.from({ length: 23 }, (_, i) => `U${i + 1}`),
+  ...Array.from({ length: 20 }, (_, i) => `U${i + 1}`),
+  "U23",
   "Seniors",
 ];

@@ -23,6 +23,9 @@ export function AgeGroupSelect({
         {value && !normalized && <option value={value}>Unclassified: {value}</option>}
         {options.map(option => <option key={option} value={option}>{option}</option>)}
       </select>
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        Choose the team's age group here. Use the separate team name for Firsts, Reserves or your squad's name.
+      </p>
       {features.classified && (
         <p className="text-xs leading-relaxed text-muted-foreground">
           {features.monitoring
