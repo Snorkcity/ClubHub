@@ -20,6 +20,7 @@ import {
 import { requireAuth, type AuthedRequest } from "../lib/auth";
 import { personBelongsToClub } from "../lib/club-membership";
 import { isTeamStaff } from "../lib/authz";
+import { hasEligiblePlayerTeam, featureTeamContext, teamFeatures } from "../lib/team-features";
 import {
   scoreLearningPreferences,
   type LearningModality,
@@ -70,20 +71,20 @@ async function readPreferences(
 }
 
 router.get("/me/learning-preferences", requireAuth, async (req, res): Promise<void> => {
-  const { localUser } = req as AuthedRequest;
-  if (!(await hasRole(localUser.id, "player"))) {
-    res.status(403).json({ error: "This questionnaire is available to players." });
+  const { localUser, clubId } = req as AuthedRequest;
+  if (!(await hasEligiblePlayerTeam(localUser.id, clubId, req))) {
+    res.status(403).json({ error: "The player questionnaire is available to U14 and older teams." });
     return;
   }
   res.json(GetMyLearningPreferencesResponse.parse(
-    await readPreferences(localUser.id, localUser.clubId, "player"),
+    await readPreferences(localUser.id, clubId, "player"),
   ));
 });
 
 router.put("/me/learning-preferences", requireAuth, async (req, res): Promise<void> => {
-  const { localUser } = req as AuthedRequest;
-  if (!(await hasRole(localUser.id, "player"))) {
-    res.status(403).json({ error: "This questionnaire is available to players." });
+  const { localUser, clubId } = req as AuthedRequest;
+  if (!(await hasEligiblePlayerTeam(localUser.id, clubId, req))) {
+    res.status(403).json({ error: "The player questionnaire is available to U14 and older teams." });
     return;
   }
 
@@ -123,7 +124,7 @@ router.put("/me/learning-preferences", requireAuth, async (req, res): Promise<vo
   await db
     .insert(learningPreferencesTable)
     .values({
-      clubId: localUser.clubId,
+      clubId,
       userId: localUser.id,
       subjectRole: "player",
       visualScore: scores.visual,
@@ -137,7 +138,7 @@ router.put("/me/learning-preferences", requireAuth, async (req, res): Promise<vo
         learningPreferencesTable.subjectRole,
       ],
       set: {
-        clubId: localUser.clubId,
+        clubId,
         visualScore: scores.visual,
         auditoryScore: scores.auditory,
         kinestheticScore: scores.kinesthetic,
@@ -147,7 +148,7 @@ router.put("/me/learning-preferences", requireAuth, async (req, res): Promise<vo
     });
 
   res.json(SubmitMyLearningPreferencesResponse.parse(
-    await readPreferences(localUser.id, localUser.clubId, "player"),
+    await readPreferences(localUser.id, clubId, "player"),
   ));
 });
 
@@ -263,7 +264,7 @@ router.get(
     }
 
     const playerTeams = await db
-      .select({ teamId: teamMembersTable.teamId })
+      .select({ teamId: teamMembersTable.teamId, ageGroup: teamsTable.ageGroup })
       .from(teamMembersTable)
       .innerJoin(teamsTable, eq(teamMembersTable.teamId, teamsTable.id))
       .where(
@@ -274,7 +275,9 @@ router.get(
         ),
       );
     let staffCanView = false;
-    for (const { teamId } of playerTeams) {
+    const context = featureTeamContext(req);
+    for (const { teamId, ageGroup } of playerTeams) {
+      if (!teamFeatures(ageGroup).learningPreferences || (context !== null && context !== teamId)) continue;
       if (await isTeamStaff(localUser.id, teamId, clubId, isClubAdmin)) {
         staffCanView = true;
         break;

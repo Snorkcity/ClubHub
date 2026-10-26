@@ -70,7 +70,7 @@ beforeAll(async () => {
   const [team] = await db.insert(teamsTable).values({
     clubId,
     name: `${PREFIX}team`,
-    ageGroup: "U13",
+    ageGroup: "U14",
   }).returning();
   teamId = team.id;
   ids.teams.push(team.id);

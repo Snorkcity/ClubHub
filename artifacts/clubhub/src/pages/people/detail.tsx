@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { LinkGuardianDialog, RemoveGuardianButton } from "@/components/admin/family-admin";
 import { TrendingUp } from "lucide-react";
 import { LearningPreferenceResult } from "@/components/people/learning-preferences";
+import { useTeamFeatures } from "@/lib/team-features";
 
 export default function PersonDetail() {
   const params = useParams();
@@ -19,10 +20,15 @@ export default function PersonDetail() {
     query: { enabled: !!personId, queryKey: getGetPersonQueryKey(personId) }
   });
   const { data: me } = useGetMe();
+  const { featuresFor, activeTeamId } = useTeamFeatures();
 
   const isAdmin = !!me?.isClubAdmin;
   const targetMemberships = data?.memberships ?? [];
-  const playerTeamIds = targetMemberships.filter((membership) => membership.role === "player").map((membership) => membership.teamId);
+  const playerTeamIds = targetMemberships.filter((membership) =>
+    membership.role === "player" &&
+    (activeTeamId === null || activeTeamId === membership.teamId) &&
+    featuresFor(membership.teamId).learningPreferences,
+  ).map((membership) => membership.teamId);
   const targetIsPlayer = playerTeamIds.length > 0;
   const targetIsCoach = targetMemberships.some((membership) => membership.role === "coach");
   const isSelf = data?.person.id === me?.person.id;
@@ -38,7 +44,7 @@ export default function PersonDetail() {
   } = useGetPersonLearningPreferences(personId, {
     query: {
       enabled: !!personId && canViewLearningPreferences,
-      queryKey: getGetPersonLearningPreferencesQueryKey(personId),
+      queryKey: [...getGetPersonLearningPreferencesQueryKey(personId), { activeTeamId }],
     },
   });
   const canViewCoachLearningPreferences = targetIsCoach && (isAdmin || isSelf);

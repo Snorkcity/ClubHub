@@ -1,3 +1,4 @@
+import { teamHasFeature } from "../lib/team-features";
 import { Router, type IRouter } from "express";
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { StartPeriodBody } from "@workspace/api-zod";
@@ -60,6 +61,8 @@ async function loadStaffEvent(
     req.isClubAdmin,
   );
   if (!ok) return { error: 403 as const };
+  if (!(await teamHasFeature(event.teamId, req.clubId, "timekeeping")))
+    return { error: 403 as const };
   return { event };
 }
 
@@ -263,6 +266,8 @@ router.get(
     const teamId = Number(req.params.teamId);
     if (!(await isTeamStaff(localUser.id, teamId, clubId, isClubAdmin)))
       return res.status(403).json({ error: "Staff only" });
+    if (!(await teamHasFeature(teamId, clubId, "timekeeping")))
+      return res.status(403).json({ error: "Match timekeeping is available through U17 only." });
 
     const now = new Date();
     const games = await db

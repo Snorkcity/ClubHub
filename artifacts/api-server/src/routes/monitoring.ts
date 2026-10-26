@@ -4,6 +4,7 @@ import {
   db,
   eventsTable,
   teamMembersTable,
+  teamsTable,
   usersTable,
   rsvpsTable,
   rpeEntriesTable,
@@ -25,6 +26,7 @@ import { getWardIds, canActFor } from "../lib/queries";
 import { isTeamStaff, isTeamMember, getTeamInClub } from "../lib/authz";
 import { toPerson } from "../lib/serialize";
 import { personBelongsToClub } from "../lib/club-membership";
+import { featureTeamContext, hasEligiblePlayerTeam, teamHasFeature, teamFeatures } from "../lib/team-features";
 
 /** Tenant guard: is this user a member of the given club? */
 async function isInClub(userId: number, clubId: number): Promise<boolean> {
@@ -121,7 +123,8 @@ const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Check-in status for the current user and any linked players they manage. */
 router.get("/monitoring/checkin", requireAuth, async (req, res) => {
-  const { localUser } = req as AuthedRequest;
+  const { localUser, clubId } = req as AuthedRequest;
+  const context = featureTeamContext(req);
   const date = String(req.query.date ?? "");
   if (!ISO_DATE.test(date))
     return res.status(400).json({ error: "date must be YYYY-MM-DD" });
@@ -130,18 +133,23 @@ router.get("/monitoring/checkin", requireAuth, async (req, res) => {
   const candidateIds = [localUser.id, ...wardIds];
 
   // Only people who are players on at least one team check in.
-  const playerRows = await db
+  const candidateRows = await db
     .select({
       userId: teamMembersTable.userId,
       teamId: teamMembersTable.teamId,
+      ageGroup: teamsTable.ageGroup,
     })
     .from(teamMembersTable)
+    .innerJoin(teamsTable, eq(teamsTable.id, teamMembersTable.teamId))
     .where(
       and(
         inArray(teamMembersTable.userId, candidateIds),
         eq(teamMembersTable.role, "player"),
+        eq(teamsTable.clubId, clubId),
+        context === null ? undefined : eq(teamsTable.id, context),
       ),
     );
+  const playerRows = candidateRows.filter(row => teamFeatures(row.ageGroup).monitoring);
   const playerTeams = new Map<number, number[]>();
   for (const row of playerRows) {
     const list = playerTeams.get(row.userId) ?? [];
@@ -288,6 +296,8 @@ router.put("/wellness", requireAuth, async (req, res) => {
     return res
       .status(403)
       .json({ error: "You cannot submit for this person" });
+  if (!(await hasEligiblePlayerTeam(targetId, clubId, req)))
+    return res.status(403).json({ error: "Wellness is available to players on U14 and older teams." });
 
   const [entry] = await db
     .insert(wellnessEntriesTable)
@@ -330,6 +340,11 @@ router.put("/events/:eventId/rpe", requireAuth, async (req, res) => {
   // Tenant guard: the event's team must belong to the requester's club.
   if (!(await getTeamInClub(event.teamId, clubId)))
     return res.status(404).json({ error: "Event not found" });
+  if (!(await teamHasFeature(event.teamId, clubId, "monitoring")))
+    return res.status(403).json({ error: "RPE is available for U14 and older teams." });
+  const context = featureTeamContext(req);
+  if (context !== null && context !== event.teamId)
+    return res.status(403).json({ error: "Choose this event's team to submit its RPE." });
   if (event.type !== "training" && event.type !== "game")
     return res
       .status(400)
@@ -386,6 +401,9 @@ router.post("/extra-sessions", requireAuth, async (req, res) => {
   )
     return res.status(403).json({ error: "You cannot submit for this person" });
 
+  if (!(await hasEligiblePlayerTeam(targetId, clubId, req)))
+    return res.status(403).json({ error: "Session check-ins are available to players on U14 and older teams." });
+
   const [entry] = await db
     .insert(extraSessionsTable)
     .values({
@@ -416,6 +434,8 @@ router.delete("/extra-sessions/:extraSessionId", requireAuth, async (req, res) =
     !(await isInClub(entry.userId, clubId))
   )
     return res.status(403).json({ error: "You cannot delete this entry" });
+  if (!(await hasEligiblePlayerTeam(entry.userId, clubId, req)))
+    return res.status(403).json({ error: "Session check-ins are available to players on U14 and older teams." });
   await db.delete(extraSessionsTable).where(eq(extraSessionsTable.id, id));
   return res.status(204).end();
 });
@@ -428,6 +448,8 @@ router.get("/teams/:teamId/monitoring", requireAuth, async (req, res) => {
     return res
       .status(403)
       .json({ error: "Only team staff can view monitoring" });
+  if (!(await teamHasFeature(teamId, clubId, "monitoring")))
+    return res.status(403).json({ error: "Monitoring is available for U14 and older teams." });
 
   const windowRaw = Number(req.query.window ?? 7);
   const windowDays = [1, 7, 14, 28].includes(windowRaw) ? windowRaw : 7;

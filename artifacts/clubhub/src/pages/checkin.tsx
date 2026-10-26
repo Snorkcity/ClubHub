@@ -1,3 +1,4 @@
+import { useActiveTeam } from "@/lib/active-team";
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { CheckCircle2, ClipboardCheck, Flame, Pencil, Plus, Trash2, Dumbbell } from "lucide-react";
@@ -459,10 +460,11 @@ function WeekStrip({ subject }: { subject: CheckinSubject }) {
 }
 
 export default function Checkin() {
+  const { activeTeamId } = useActiveTeam();
   const date = todayStr();
   const { data, isLoading, error, refetch } = useGetCheckinStatus(
     { date },
-    { query: { queryKey: getGetCheckinStatusQueryKey({ date }) } },
+    { query: { queryKey: [...getGetCheckinStatusQueryKey({ date }), { activeTeamId }] } },
   );
   const [activeIdx, setActiveIdx] = useState(0);
 
@@ -476,7 +478,7 @@ export default function Checkin() {
         <div className="container mx-auto p-4 md:p-8 lg:max-w-2xl">
           <EmptyState
             title="No check-in needed"
-            message="Daily check-ins are for players. If you're a parent, they'll appear here once your player is on a team roster."
+            message="RPE and wellness are available for players on U14 and older teams. Choose an eligible team to check in."
             icon={ClipboardCheck}
           />
         </div>

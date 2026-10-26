@@ -16,6 +16,7 @@ import {
   CompleteOnboardingBody,
   CompleteOnboardingResponse,
   GetOnboardingStatusResponse,
+  normalizeTeamAgeGroup,
 } from "@workspace/api-zod";
 import { findOrClaimUser, loadClerkIdentity } from "../lib/auth";
 import { readClubLogo } from "../lib/club-logo";
@@ -42,6 +43,8 @@ router.post("/onboarding", async (req, res) => {
   const clerkUserId = getAuth(req)?.userId;
   if (!clerkUserId) return res.status(401).json({ error: "Unauthorized" });
   const body = CompleteOnboardingBody.parse(req.body);
+  if (!normalizeTeamAgeGroup(body.ageGroup))
+    return res.status(400).json({ error: "Choose an age group such as U14 or Seniors." });
   if (body.logoImageData) {
     try {
       readClubLogo(body.logoImageData);
@@ -101,7 +104,7 @@ router.post("/onboarding", async (req, res) => {
         .values({
           clubId: club.id,
           name: body.teamName.trim(),
-          ageGroup: body.ageGroup.trim(),
+          ageGroup: normalizeTeamAgeGroup(body.ageGroup)!,
           gender: body.gender?.trim() || null,
         })
         .returning();

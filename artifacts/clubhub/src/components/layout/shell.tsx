@@ -21,6 +21,7 @@ import {
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { ClubMark } from "@/components/brand/club-mark";
+import { useTeamFeatures } from "@/lib/team-features";
 
 const DESKTOP_NAV_COLLAPSED_KEY = "nahreo-desktop-nav-collapsed";
 
@@ -60,6 +61,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   // Unread badge on the Home tab: unread in the ACTIVE team (or any team
   // when viewing "All teams").
   const { activeTeamId } = useActiveTeam();
+  const { featuresFor, playerEligible } = useTeamFeatures();
   const { data: unreads } = useTeamUnreads();
   const homeUnread = (unreads ?? [])
     .filter((t) => (activeTeamId == null ? true : t.teamId === activeTeamId))
@@ -101,12 +103,13 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const navItems = [
     { label: "Home", href: "/home", icon: Home },
     { label: "Schedule", href: "/schedule", icon: CalendarDays },
-    ...(isPlayer ? [{ label: "Check-in", href: "/checkin", icon: ClipboardCheck }] : []),
+    ...(isPlayer && playerEligible ? [{ label: "Check-in", href: "/checkin", icon: ClipboardCheck }] : []),
     { label: "Messages", href: "/messages", icon: MessageSquare },
     ...(isStaff ? [{ label: "Team Members", href: "/people", icon: UserSquare2 }] : []),
     ...(isStaff && staffTeamId != null
       ? [
-          { label: "Monitoring", href: `/teams/${staffTeamId}/monitoring`, icon: Activity },
+          ...(featuresFor(staffTeamId).monitoring && (activeTeamId === null || activeTeamId === staffTeamId)
+            ? [{ label: "Monitoring", href: `/teams/${staffTeamId}/monitoring`, icon: Activity }] : []),
           { label: "Player Feedback", href: `/teams/${staffTeamId}/development`, icon: TrendingUp }
         ]
       : []),

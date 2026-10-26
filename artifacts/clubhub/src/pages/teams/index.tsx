@@ -23,6 +23,7 @@ import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage 
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { AgeGroupSelect } from "@/components/teams/age-group-select";
 import { useToast } from "@/hooks/use-toast";
 import {
   Select,
@@ -156,7 +157,7 @@ function CreateTeamDialog({
     resolver: zodResolver(teamFormSchema),
     defaultValues: {
       name: "",
-      ageGroup: "U12",
+      ageGroup: "",
       gender: "",
       colorHex: "#16A34A",
       countryCode: countryCode as "AU",
@@ -257,7 +258,7 @@ function CreateTeamDialog({
                   <FormItem>
                     <FormLabel>Age Group</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. U12, Varsity" className="rounded-xl" {...field} />
+                      <AgeGroupSelect value={field.value} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

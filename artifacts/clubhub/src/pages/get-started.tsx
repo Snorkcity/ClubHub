@@ -13,6 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { NahreoBrand } from "@/components/brand/nahreo-logo";
 import { ClubLogoPicker } from "@/components/admin/club-logo-picker";
+import { AgeGroupSelect } from "@/components/teams/age-group-select";
 import { getSetupInvitation, clearSetupInvitation } from "@/lib/setup-invitation";
 import { switchClub } from "@/lib/active-club";
 import { ArrowLeft, ArrowRight, Loader2, Check } from "lucide-react";
@@ -244,7 +245,7 @@ export default function GetStarted() {
                                 <FormItem>
                                   <FormLabel>Age group</FormLabel>
                                   <FormControl>
-                                    <Input placeholder="e.g. U14" {...field} />
+                                    <AgeGroupSelect value={field.value} onChange={field.onChange} />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>

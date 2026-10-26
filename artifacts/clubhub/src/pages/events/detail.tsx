@@ -6,6 +6,7 @@ import {
   CheckCircle2, ChevronDown, HelpCircle, XCircle, FileQuestion, MessageSquare, Timer, ExternalLink
 } from "lucide-react";
 import { locationName, mapsUrl } from "@/lib/location";
+import { useTeamFeatures } from "@/lib/team-features";
 import { 
   useGetEvent, useSetRsvp, useCancelEvent, useCreatePost,
   getGetEventQueryKey, getListUpcomingEventsQueryKey, getGetTeamSummaryQueryKey,
@@ -39,6 +40,7 @@ export default function EventDetail() {
   
   const setRsvp = useSetRsvp();
   const { data: me } = useGetMe({ query: { queryKey: getGetMeQueryKey() } });
+  const { featuresFor } = useTeamFeatures();
   const [notOpen, setNotOpen] = useState(false);
   const [rsvpChoicesOpen, setRsvpChoicesOpen] = useState(false);
   const [notReason, setNotReason] = useState("");
@@ -226,7 +228,7 @@ export default function EventDetail() {
 
               {isStaff && (
                 <div className="flex flex-wrap gap-2 mb-6">
-                  {event.type === "game" && !isCancelled && (
+                  {event.type === "game" && !isCancelled && featuresFor(event.teamId).timekeeping && (
                     <Button asChild variant="outline" className="rounded-xl font-bold">
                       <Link href={`/events/${eventId}/timekeeping`}>
                         <Timer className="h-4 w-4 mr-2" /> Track game time

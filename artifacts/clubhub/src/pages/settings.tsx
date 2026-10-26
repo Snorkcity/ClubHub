@@ -28,6 +28,7 @@ import { fileToAvatarDataUrl } from "@/lib/profile-photo";
 import { ClubLogoSettings } from "@/components/admin/club-logo-settings";
 import { ClubAccessSettings } from "@/components/admin/club-access-settings";
 import { TeamMembershipSettings } from "@/components/people/team-membership-settings";
+import { useTeamFeatures } from "@/lib/team-features";
 import {
   CoachLearningPreferences,
   PlayerLearningPreferences,
@@ -271,6 +272,7 @@ function NotificationsCard({ me }: { me: any }) {
 }
 
 export default function Settings() {
+  const { playerEligible, activeTeamId } = useTeamFeatures();
   const { data: me, isLoading, error, refetch } = useGetMe({
     query: { queryKey: getGetMeQueryKey() }
   });
@@ -387,7 +389,7 @@ export default function Settings() {
 
           <NotificationsCard me={me} />
 
-          {isPlayer && <PlayerLearningPreferences />}
+          {isPlayer && playerEligible && <PlayerLearningPreferences key={activeTeamId ?? "all"} />}
           {isCoach && <CoachLearningPreferences />}
 
           <Card className="p-6 md:p-8 rounded-3xl border shadow-sm">

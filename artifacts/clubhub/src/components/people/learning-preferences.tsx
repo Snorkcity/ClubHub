@@ -1,3 +1,4 @@
+import { useActiveTeam } from "@/lib/active-team";
 import { useState } from "react";
 import { Activity, ArrowLeft, ArrowRight, Check, Eye, Headphones, RotateCcw } from "lucide-react";
 import {
@@ -137,13 +138,15 @@ type QuestionnaireProps = {
 };
 
 export function PlayerLearningPreferences() {
+  const { activeTeamId } = useActiveTeam();
+  const key = [...getGetMyLearningPreferencesQueryKey(), { activeTeamId }];
   const { data, isLoading, isError, refetch } = useGetMyLearningPreferences({
-    query: { queryKey: getGetMyLearningPreferencesQueryKey() },
+    query: { queryKey: key },
   });
   const submit = useSubmitMyLearningPreferences();
   const saveAnswers = async (answers: (LearningModality[] | "depends")[]) => {
     const result = await submit.mutateAsync({ data: { answers } });
-    queryClient.setQueryData(getGetMyLearningPreferencesQueryKey(), result);
+    queryClient.setQueryData(key, result);
     return result;
   };
   return (

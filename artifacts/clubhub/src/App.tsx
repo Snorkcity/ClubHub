@@ -26,6 +26,7 @@ import Checkin from "@/pages/checkin";
 import EventDetail from "@/pages/events/detail";
 import EventTimekeeping from "@/pages/events/timekeeping";
 import TeamMinutes from "@/pages/teams/minutes";
+import { FeaturePage } from "@/components/teams/feature-page";
 import Schedule from "@/pages/schedule";
 import Messages from "@/pages/messages/index";
 import ChatPage from "@/pages/messages/chat";
@@ -379,14 +380,14 @@ function ClerkProviderWithRoutes() {
           <ProtectedRoute path="/home" component={Home} />
           <ProtectedRoute path="/teams" component={TeamsList} />
           <ProtectedRoute path="/teams/:teamId" component={TeamDetail} />
-          <ProtectedRoute path="/teams/:teamId/monitoring" component={TeamMonitoring} />
+          <ProtectedRoute path="/teams/:teamId/monitoring" component={() => <FeaturePage feature="monitoring"><TeamMonitoring /></FeaturePage>} />
           <ProtectedRoute path="/teams/:teamId/development" component={TeamDevelopment} />
-          <ProtectedRoute path="/teams/:teamId/minutes" component={TeamMinutes} />
+          <ProtectedRoute path="/teams/:teamId/minutes" component={() => <FeaturePage feature="timekeeping"><TeamMinutes /></FeaturePage>} />
           <ProtectedRoute path="/development/cycles/:cycleId" component={DevelopmentCycle} />
           <ProtectedRoute path="/development/reports/:reportId" component={DevelopmentReport} />
           <ProtectedRoute path="/checkin" component={Checkin} />
           <ProtectedRoute path="/events/:eventId" component={EventDetail} />
-          <ProtectedRoute path="/events/:eventId/timekeeping" component={EventTimekeeping} />
+          <ProtectedRoute path="/events/:eventId/timekeeping" component={() => <FeaturePage feature="timekeeping"><EventTimekeeping /></FeaturePage>} />
           <ProtectedRoute path="/schedule" component={Schedule} />
           <ProtectedRoute path="/messages" component={Messages} />
           <ProtectedRoute path="/messages/:chatId" component={ChatPage} />

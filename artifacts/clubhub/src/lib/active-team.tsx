@@ -6,8 +6,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { setTeamIdGetter } from "@workspace/api-client-react";
 
 const STORAGE_KEY = "clubhub.activeTeamId";
+setTeamIdGetter(() => localStorage.getItem(STORAGE_KEY));
 
 type ActiveTeamContextValue = {
   /** null = "All teams" */

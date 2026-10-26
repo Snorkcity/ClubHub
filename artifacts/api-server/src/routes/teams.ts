@@ -17,6 +17,7 @@ import {
   SetTeamBannerBody,
   AddTeamMemberBody,
   UpdateTeamMemberBody,
+  normalizeTeamAgeGroup,
 } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
 import { personBelongsToClub } from "../lib/club-membership";
@@ -45,6 +46,8 @@ router.post("/teams", requireAuth, async (req, res) => {
   if (!isClubAdmin)
     return res.status(403).json({ error: "Only club admins can create teams" });
   const body = CreateTeamBody.parse(req.body);
+  const ageGroup = normalizeTeamAgeGroup(body.ageGroup);
+  if (!ageGroup) return res.status(400).json({ error: "Choose an age group such as U14 or Seniors." });
   const team = await db.transaction(async (tx) => {
     if (body.countryCode) {
       const existingTeams = await tx
@@ -64,7 +67,7 @@ router.post("/teams", requireAuth, async (req, res) => {
       .values({
         clubId,
         name: body.name,
-        ageGroup: body.ageGroup,
+        ageGroup,
         gender: body.gender ?? null,
         colorHex: body.colorHex ?? null,
         seasonId: body.seasonId ?? null,
@@ -95,6 +98,11 @@ router.patch("/teams/:teamId", requireAuth, async (req, res) => {
   if (!(await isTeamStaff(localUser.id, teamId, clubId, isClubAdmin)))
     return res.status(403).json({ error: "You cannot edit this team" });
   const body = UpdateTeamBody.parse(req.body);
+  if (body.ageGroup !== undefined) {
+    const normalized = normalizeTeamAgeGroup(body.ageGroup);
+    if (!normalized) return res.status(400).json({ error: "Choose an age group such as U14 or Seniors." });
+    body.ageGroup = normalized;
+  }
   const [team] = await db
     .update(teamsTable)
     .set(body)

@@ -23,6 +23,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AddMemberDialog, RemoveMemberButton } from "@/components/admin/team-roster-admin";
 import { TeamBannerEditor } from "@/components/admin/team-banner-editor";
+import { AgeGroupSettings } from "@/components/teams/age-group-settings";
+import { teamFeatures } from "@/lib/team-features";
 import { teamBannerUrl } from "@/lib/team-banner";
 
 export default function TeamDetail() {
@@ -114,17 +116,18 @@ export default function TeamDetail() {
             </div>
             {isCoach && (
               <div className="flex gap-2 ml-auto md:ml-4">
-                <Button asChild variant="outline" className="rounded-xl">
+                {teamFeatures(team.ageGroup).monitoring && <Button asChild variant="outline" className="rounded-xl">
                   <Link href={`/teams/${teamId}/monitoring`}>Monitoring</Link>
-                </Button>
-                <Button asChild variant="outline" className="rounded-xl">
+                </Button>}
+                {teamFeatures(team.ageGroup).timekeeping && <Button asChild variant="outline" className="rounded-xl">
                   <Link href={`/teams/${teamId}/minutes`}>Minutes</Link>
-                </Button>
+                </Button>}
               </div>
             )}
           </div>
         </div>
 
+        {isCoach && <AgeGroupSettings key={teamId} teamId={teamId} ageGroup={team.ageGroup} />}
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="bg-transparent border-b w-full justify-start rounded-none h-auto p-0 mb-8 overflow-x-auto hide-scrollbar">
             <TabsTrigger value="overview" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary border-b-2 border-transparent rounded-none px-4 py-3 font-semibold text-base">

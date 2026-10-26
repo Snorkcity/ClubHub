@@ -18,6 +18,12 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 let _baseUrl: string | null = null;
 let _authTokenGetter: AuthTokenGetter | null = null;
 let _clubIdGetter: (() => string | null) | null = null;
+let _teamIdGetter: (() => string | null) | null = null;
+
+/** A feature context only; never trusted as proof of membership by the API. */
+export function setTeamIdGetter(getter: (() => string | null) | null): void {
+  _teamIdGetter = getter;
+}
 
 /** An optional browser-selected club; the server must verify membership. */
 export function setClubIdGetter(getter: (() => string | null) | null): void {
@@ -344,6 +350,8 @@ export async function customFetch<T = unknown>(
 
   const headers = mergeHeaders(isRequest(input) ? input.headers : undefined, headersInit);
   const clubId = _clubIdGetter?.();
+  const teamId = _teamIdGetter?.();
+  if (teamId) headers.set("X-Team-Id", teamId);
   if (clubId) headers.set("X-Nahreo-Club", clubId);
 
   if (
