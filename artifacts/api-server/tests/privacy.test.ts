@@ -339,3 +339,84 @@ describe("GET /people?teamId scoping", () => {
     await request(app).get(`/api/people/${s.outsider}`).set(as("coach")).expect(403);
   });
 });
+
+describe("private contact details across person-bearing responses", () => {
+  const privateEmail = "private-contact-launch-test@example.invalid";
+  const privatePhone = "+61400001999";
+  const privateBio = "PRIVATE_CONTACT_LAUNCH_TEST_BIO";
+  let contactChatId: number;
+
+  beforeAll(async () => {
+    await db.update(usersTable).set({
+      email: privateEmail, phone: privatePhone, bio: privateBio,
+      emailPrivacy: "private", phonePrivacy: "private", bioPrivacy: "private",
+    }).where(eq(usersTable.id, s.playerB));
+    const [chat] = await db.insert(chatsTable).values({
+      clubId: s.clubId, name: PREFIX + "private_contacts", type: "group",
+    }).returning();
+    contactChatId = chat.id;
+    await db.insert(chatMembersTable).values(
+      [s.playerA, s.playerB, s.coach, s.guardianA, s.admin].map(userId => ({
+        chatId: contactChatId, userId,
+      })),
+    );
+  });
+
+  function expectPrivateDetailsAbsent(body: unknown) {
+    const json = JSON.stringify(body);
+    expect(json).not.toContain(privateEmail);
+    expect(json).not.toContain(privatePhone);
+    expect(json).not.toContain(privateBio);
+  }
+
+  it.each(["playerA", "coach", "guardianA", "admin"] as const)(
+    "%s cannot read another person's private contact fields in profiles, rosters or RSVPs",
+    async actor => {
+      const directoryStatus = actor === "coach" || actor === "admin" ? 200 : 403;
+      const checks: [string, number][] = [
+        [`/api/people/${s.playerB}`, directoryStatus],
+        [`/api/people?teamId=${s.teamIds[0]}`, directoryStatus],
+        [`/api/events/${s.eventId}`, 200],
+      ];
+      for (const [path, status] of checks) {
+        const response = await request(app).get(path).set(as(actor)).expect(status);
+        expectPrivateDetailsAbsent(response.body);
+      }
+    },
+  );
+
+  it.each(["playerA", "coach", "guardianA", "admin"] as const)(
+    "%s cannot read another person's private contact fields through chat membership",
+    async actor => {
+      const response = await request(app).get(`/api/chats/${contactChatId}`).set(as(actor)).expect(200);
+      expect(response.body.members.some((person: { id: number }) => person.id === s.playerB)).toBe(true);
+      expectPrivateDetailsAbsent(response.body);
+    },
+  );
+
+  it("lets a person read their own private contact fields", async () => {
+    const response = await request(app).get(`/api/people/${s.playerB}`).set(as("playerB")).expect(200);
+    expect(response.body.person).toMatchObject({
+      email: privateEmail, phone: privatePhone, bio: privateBio,
+    });
+  });
+
+  it("does not treat a coach as a club admin for admins-only fields", async () => {
+    await db.update(usersTable).set({ emailPrivacy: "admins" }).where(eq(usersTable.id, s.playerB));
+    try {
+      for (const actor of ["playerA", "coach", "guardianA", "admin"] as const) {
+        const directoryStatus = actor === "coach" || actor === "admin" ? 200 : 403;
+        const response = await request(app).get(`/api/people/${s.playerB}`).set(as(actor)).expect(directoryStatus);
+        if (directoryStatus === 403) {
+          expectPrivateDetailsAbsent(response.body);
+          continue;
+        }
+        expect(response.body.person.email).toBe(actor === "admin" ? privateEmail : null);
+        expect(response.body.person.phone).toBeNull();
+        expect(response.body.person.bio).toBeNull();
+      }
+    } finally {
+      await db.update(usersTable).set({ emailPrivacy: "private" }).where(eq(usersTable.id, s.playerB));
+    }
+  });
+});

@@ -202,7 +202,10 @@ router.get("/people/:personId", requireAuth, async (req, res) => {
     .select({ m: teamMembersTable, t: teamsTable })
     .from(teamMembersTable)
     .innerJoin(teamsTable, eq(teamMembersTable.teamId, teamsTable.id))
-    .where(eq(teamMembersTable.userId, personId));
+    .where(and(
+      eq(teamMembersTable.userId, personId),
+      eq(teamsTable.clubId, clubId),
+    ));
 
   const guardianLinks = await db
     .select()
