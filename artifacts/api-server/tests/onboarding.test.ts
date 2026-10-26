@@ -261,7 +261,7 @@ describe("first-time club onboarding", () => {
       .expect(403);
   });
 
-  it("returns one success and one conflict for simultaneous setup requests", async () => {
+  it("allows only one simultaneous setup request to consume its invitation", async () => {
     const clerkId = `${PREFIX}race`;
     const body = {
       invitation: await invite(clerkId),
@@ -276,9 +276,11 @@ describe("first-time club onboarding", () => {
       request(app).post("/api/onboarding").set(as(clerkId)).send(body),
       request(app).post("/api/onboarding").set(as(clerkId)).send(body),
     ]);
-    expect(responses.map((response) => response.status).sort()).toEqual([
-      201, 409,
-    ]);
+    const statuses = responses.map((response) => response.status).sort();
+    expect(statuses[0]).toBe(201);
+    // The losing request may see the consumed invitation before entering its
+    // transaction (403), or lose the locked consume inside it (409).
+    expect([403, 409]).toContain(statuses[1]);
     const successful = responses.find((response) => response.status === 201)!;
     createdClubIds.push(successful.body.clubId);
     const users = await db

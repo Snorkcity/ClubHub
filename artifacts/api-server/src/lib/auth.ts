@@ -7,6 +7,7 @@ import {
   clubMembersTable,
   type User,
 } from "@workspace/db";
+import { mayTransferLegacyClerkAccount } from "./clerk-account-migration";
 
 export interface AuthedRequest extends Request {
   localUser: User;
@@ -53,7 +54,7 @@ export async function findOrClaimUser(
   req: Request,
   clerkUserId: string,
 ): Promise<{ user?: User; identity?: ClerkIdentity }> {
-  let user = (
+  let user: User | undefined = (
     await db
       .select()
       .from(usersTable)
@@ -67,22 +68,39 @@ export async function findOrClaimUser(
 
   const identity = await loadClerkIdentity(req, clerkUserId);
   if (identity.email && identity.emailVerified) {
-    const candidates = await db
-      .select()
-      .from(usersTable)
-      .where(
-        and(
-          sql`lower(${usersTable.email}) = ${identity.email.toLowerCase()}`,
-          isNull(usersTable.clerkUserId),
-        ),
-      );
-    if (candidates.length === 1) {
-      user = await db.transaction(async (tx) => {
-        const [claimed] = await tx
-          .update(usersTable)
-          .set({ clerkUserId })
-          .where(eq(usersTable.id, candidates[0].id))
-          .returning();
+    const email = identity.email.toLowerCase();
+    user = await db.transaction(async (tx) => {
+      // Match invitation/leave lock ordering: email first, then person.
+      // Parallel first-login requests must not overwrite each other's claim.
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${email}))`);
+      const [alreadyLinked] = await tx.select().from(usersTable)
+        .where(eq(usersTable.clerkUserId, clerkUserId));
+      if (alreadyLinked) return alreadyLinked;
+
+      // Check ALL people, not only login-less placeholders. A duplicate must
+      // never choose a placeholder instead of the real, history-bearing account.
+      const candidates = await tx.select().from(usersTable)
+        .where(sql`lower(${usersTable.email}) = ${email}`).for("update");
+      if (candidates.length !== 1) {
+        if (candidates.length > 1) req.log.warn(
+          "Ambiguous verified email match on sign-in; account not linked",
+        );
+        return undefined;
+      }
+      const candidate = candidates[0];
+      const transferring = candidate.clerkUserId !== null;
+      if (transferring && !mayTransferLegacyClerkAccount(candidate.clerkUserId!))
+        return undefined;
+
+      const [claimed] = await tx.update(usersTable).set({ clerkUserId })
+        .where(and(
+          eq(usersTable.id, candidate.id),
+          transferring
+            ? eq(usersTable.clerkUserId, candidate.clerkUserId!)
+            : isNull(usersTable.clerkUserId),
+        )).returning();
+      if (!claimed) return undefined;
+      if (!transferring) {
         await tx
           .insert(clubMembersTable)
           .values({
@@ -91,14 +109,14 @@ export async function findOrClaimUser(
             role: "member",
           })
           .onConflictDoNothing();
-        return claimed;
-      });
-    } else if (candidates.length > 1) {
-      req.log.warn(
-        { clerkUserId },
-        "Ambiguous verified email match on sign-in; account not linked",
+      }
+      // A tenant transfer changes ONLY the login binding. In particular, do
+      // not restore clubs somebody left, alter roles, or create another person.
+      if (transferring) req.log.info(
+        { localUserId: claimed.id }, "Completed approved Clerk account transfer",
       );
-    }
+      return claimed;
+    });
   }
   return { user, identity };
 }

@@ -77,3 +77,37 @@ report that there are no schema changes.
 - API CORS is restricted in production to the Nahreo web address and the old
   compatibility address. Development remains open to proxied/local origins.
 - To bring existing data across, `pg_dump` the source database and restore into the Railway Postgres before switching over.
+
+## One-time external Clerk production cutover
+
+Keep Replit's development keys unchanged. The separately named
+`NAHREO_PRODUCTION_CLERK_*` preparation secrets are not read by the running app.
+Before enabling transfers, audit old login IDs against the old Clerk tenant:
+each primary email must be verified and match the unique Nahreo account email.
+Never print credentials or full provider profiles in audit output.
+
+Two temporary **API** variables control transfers:
+
+- `CLERK_LEGACY_USER_IDS`: comma-separated, individually audited old Clerk user
+  IDs, not email addresses, local person IDs, wildcard patterns or new IDs.
+- `CLERK_ACCOUNT_MIGRATION_UNTIL`: explicit ISO-8601 UTC expiry. Use a short
+  migration window and remove both variables once transfers are complete.
+
+Transfers run only with a live publishable key for `clerk.nahreo.com`. A new
+login must have a backend-verified primary email matching exactly one person
+globally, whose current login is an allowlisted old ID. Only the login binding
+changes, transactionally: no person is recreated and no departed membership is
+restored. The new binding cannot be claimed a second time using this bridge.
+Unverified identities, ambiguous emails, unauthorised source IDs and expired
+windows cannot transfer an existing login.
+
+Coordinate the Railway API's `CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY` with
+Web's build-time `VITE_CLERK_PUBLISHABLE_KEY`; rebuild Web. Existing passwords
+and sessions do not carry across instances. People use the same verified email
+with Google or register a new password; Nahreo records stay intact. Do not
+delete the old provider's users or revoke its keys during the switch.
+
+Before any transfers, rollback can restore the old Web build and API keys
+together. After transfers begin, restoring keys alone is not a complete
+rollback: explicitly recover the affected login bindings too. Never clear all
+login IDs or remove memberships to force re-registration.
