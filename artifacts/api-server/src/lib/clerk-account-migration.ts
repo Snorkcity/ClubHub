@@ -1,3 +1,5 @@
+import { isNahreoProductionClerkKey } from "./clerk-key";
+
 /**
  * Temporary, operator-controlled bridge between the old development tenant
  * and Nahreo's external production tenant. Never enable general email-based
@@ -11,10 +13,7 @@ export function mayTransferLegacyClerkAccount(sourceId: string): boolean {
   if (!configured) return false;
 
   const key = process.env.CLERK_PUBLISHABLE_KEY ?? "";
-  if (!key.startsWith("pk_live_")) return false;
-  const host = Buffer.from(key.slice("pk_live_".length), "base64")
-    .toString("utf8").replace(/\$$/, "");
-  if (host !== "clerk.nahreo.com") return false;
+  if (!isNahreoProductionClerkKey(key)) return false;
 
   const ids = configured.split(",").map((id) => id.trim());
   const expires = Date.parse(process.env.CLERK_ACCOUNT_MIGRATION_UNTIL ?? "");

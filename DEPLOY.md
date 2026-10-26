@@ -82,6 +82,11 @@ report that there are no schema changes.
 
 Keep Replit's development keys unchanged. The separately named
 `NAHREO_PRODUCTION_CLERK_*` preparation secrets are not read by the running app.
+Both services must retain the explicit `clerk.nahreo.com` production key rather
+than deriving a new key from their serving hostname. The managed SDK helper
+otherwise derives `clerk.app.nahreo.com` on Web and a different tenant on API.
+The production-key resolver preserves managed/development behavior for all
+other configured tenants.
 Before enabling transfers, audit old login IDs against the old Clerk tenant:
 each primary email must be verified and match the unique Nahreo account email.
 Never print credentials or full provider profiles in audit output.

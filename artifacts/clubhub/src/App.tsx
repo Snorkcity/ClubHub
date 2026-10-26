@@ -6,7 +6,7 @@ import { captureSetupInvitation, getSetupInvitation } from "@/lib/setup-invitati
 import { captureTeamInvitation, getTeamInvitationRedirect } from "@/lib/team-invitation";
 import { ActiveTeamProvider } from '@/lib/active-team';
 import { ThemeProvider } from '@/lib/theme';
-import { publishableKeyFromHost } from '@clerk/react/internal';
+import { resolveClerkPublishableKey } from "@/lib/clerk-key";
 import { shadcn } from '@clerk/themes';
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from 'wouter';
 import { queryClient } from "./lib/queryClient";
@@ -42,7 +42,7 @@ import GetStarted from "@/pages/get-started";
 import { useGetOnboardingStatus, useGetPlatformAccess, getGetPlatformAccessQueryKey } from "@workspace/api-client-react";
 import { Loader2 } from "lucide-react";
 
-const clerkPubKey = publishableKeyFromHost(
+const clerkPubKey = resolveClerkPublishableKey(
   window.location.hostname,
   import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
 );
