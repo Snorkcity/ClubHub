@@ -17,6 +17,7 @@ import { queryClient } from "@/lib/queryClient";
 
 import { LoadingScreen, ErrorState, EmptyState } from "@/components/ui/states";
 import { EventEditorDialog, initialFromEvent } from "@/components/schedule/new-event-dialog";
+import { GuardianRsvp } from "@/components/schedule/guardian-rsvp";
 import {
   Dialog,
   DialogContent,
@@ -35,7 +36,7 @@ export default function EventDetail() {
   const eventId = Number(params.eventId);
 
   const { data: eventData, isLoading, error, refetch } = useGetEvent(eventId, { 
-    query: { enabled: !!eventId, queryKey: getGetEventQueryKey(eventId) } 
+    query: { enabled: !!eventId, queryKey: getGetEventQueryKey(eventId), refetchInterval: 30_000 } 
   });
   
   const setRsvp = useSetRsvp();
@@ -386,6 +387,10 @@ export default function EventDetail() {
             </div>
           )}
         </div>
+
+        <GuardianRsvp eventId={eventId} teamId={event.teamId}
+          players={eventData.managedPlayers ?? []} rsvps={rsvps}
+          enabled={!isCancelled && invited.includes("players")} />
 
         {/* Availability Section */}
         <div className="space-y-6">

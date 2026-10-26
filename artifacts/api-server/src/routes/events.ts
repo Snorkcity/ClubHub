@@ -128,8 +128,24 @@ router.get("/events/:eventId", requireAuth, async (req, res) => {
   const canSeeReason = (userId: number) =>
     viewerIsStaff || userId === localUser.id || wardIds.has(userId);
 
+  // Derive guardian action targets on the server, not from an RSVP row or
+  // an unscoped family list. A child may not have responded to this event yet.
+  const manageable = await db
+    .selectDistinct({ person: usersTable })
+    .from(guardianshipsTable)
+    .innerJoin(usersTable, eq(guardianshipsTable.playerId, usersTable.id))
+    .innerJoin(teamMembersTable, eq(teamMembersTable.userId, usersTable.id))
+    .where(and(
+      eq(guardianshipsTable.guardianId, localUser.id),
+      eq(guardianshipsTable.canManage, true),
+      eq(teamMembersTable.teamId, event.teamId),
+      eq(teamMembersTable.role, "player"),
+    ))
+    .orderBy(asc(usersTable.firstName), asc(usersTable.lastName), asc(usersTable.id));
+
   return res.json({
     event: built,
+    managedPlayers: manageable.map(({ person }) => toPerson(person)),
     teamPlayerCount,
     teamStaffCount,
     rsvps: rows.map(({ r, u }) => ({

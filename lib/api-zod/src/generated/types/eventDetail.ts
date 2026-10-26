@@ -6,10 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Event } from './event';
+import type { Person } from './person';
 import type { Rsvp } from './rsvp';
 
 export interface EventDetail {
   event: Event;
+  /** Players on this event's team whom the signed-in guardian is authorised to manage, including players who have not responded yet. */
+  managedPlayers: Person[];
   rsvps: Rsvp[];
   teamPlayerCount?: number;
   teamStaffCount?: number;

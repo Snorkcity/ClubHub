@@ -2363,9 +2363,13 @@ components:
 
     EventDetail:
       type: object
-      required: [event, rsvps]
+      required: [event, rsvps, managedPlayers]
       properties:
         event: { $ref: "#/components/schemas/Event" }
+        managedPlayers:
+          type: array
+          description: Players on this event's team whom the signed-in guardian is authorised to manage, including players who have not responded yet.
+          items: { $ref: "#/components/schemas/Person" }
         rsvps:
           type: array
           items: { $ref: "#/components/schemas/Rsvp" }

@@ -1670,6 +1670,22 @@ export const GetEventResponse = zod.object({
   "cancelledAt": zod.string().nullish(),
   "cancelReason": zod.string().nullish()
 }),
+  "managedPlayers": zod.array(zod.object({
+  "id": zod.number(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "fullName": zod.string(),
+  "email": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "bio": zod.string().nullish(),
+  "phonePrivacy": zod.enum(['everyone', 'admins', 'private']).optional(),
+  "emailPrivacy": zod.enum(['everyone', 'admins', 'private']).optional(),
+  "bioPrivacy": zod.enum(['everyone', 'admins', 'private']).optional(),
+  "dateOfBirth": zod.string().nullish(),
+  "isMinor": zod.boolean(),
+  "hasLogin": zod.boolean().optional()
+})).describe('Players on this event\'s team whom the signed-in guardian is authorised to manage, including players who have not responded yet.'),
   "rsvps": zod.array(zod.object({
   "id": zod.number(),
   "eventId": zod.number(),

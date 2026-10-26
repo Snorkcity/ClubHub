@@ -16,8 +16,9 @@ failure mode or security attack has been tested.
 
 ## Automated results
 
-**179 tests passed across 21 test files.** API TypeScript checking also passed.
-The pass added 33 regression cases beyond the existing 146 tests.
+**189 tests passed across 21 test files**, including the guardian RSVP follow-up.
+API and frontend TypeScript checking and the web build also passed.
+The pass and follow-up added 43 regression cases beyond the original 146 tests.
 
 Command:
 
@@ -86,17 +87,34 @@ memberships and original home-club identity remain intact.
 
 This is a response-scoping fix, not a data migration or membership deletion.
 
-## Remaining functional gaps
+## Guardian RSVP follow-up — resolved and verified
 
-1. **Guardian RSVP entry point:** the tested event page did not expose a control
-   for a guardian to RSVP for their linked child. Positive guardian authority is
-   covered by API tests, but that does not make the missing UI complete.
-2. **Selected-team Schedule filtering:** selecting Team A still displayed events
-   for both accessible teams. No inaccessible club's events appeared, so this is
-   a context/filtering issue rather than evidence of unauthorised event access.
+The event page now offers a separate RSVP for each manageable child on the
+event's team, including children who have not yet responded. The server derives
+these targets from team membership and a guardianship with management permission.
 
-These should be resolved before treating the affected family/team workflows as
-fully ready.
+A focused desktop and 390-pixel mobile browser pass verified:
+
+- Exactly the two manageable children on the event's team have controls; the
+  other-team child and unrelated child do not.
+- Going and Not going save to the correct child's account, persist after reload,
+  and update attendance without changing the other child or RSVPing the guardian.
+- Absence reasons are optional. Going clears a previous reason.
+- Cancelling an absence edit causes no write.
+- A simulated failed save shows an error, leaves stored responses unchanged,
+  and can be retried successfully.
+- Read-only guardians, cancelled events and coaches-only events show no child
+  RSVP controls.
+
+Event details refresh every 30 seconds so another guardian's changes and
+cancellation/permission changes can become visible while the page stays open.
+
+## Remaining functional gap
+
+**Selected-team Schedule filtering:** selecting Team A still displayed events
+for both accessible teams. No inaccessible club's events appeared, so this is a
+context/filtering issue rather than evidence of unauthorised event access.
+It remains separate to the completed guardian RSVP fix.
 
 ## Checks still needed outside this pass
 

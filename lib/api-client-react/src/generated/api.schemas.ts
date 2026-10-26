@@ -795,6 +795,8 @@ export interface Rsvp {
 
 export interface EventDetail {
   event: Event;
+  /** Players on this event's team whom the signed-in guardian is authorised to manage, including players who have not responded yet. */
+  managedPlayers: Person[];
   rsvps: Rsvp[];
   teamPlayerCount?: number;
   teamStaffCount?: number;

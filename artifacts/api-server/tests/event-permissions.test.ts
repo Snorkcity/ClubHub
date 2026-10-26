@@ -196,3 +196,86 @@ describe("multi-club profile boundaries", () => {
     },
   );
 });
+
+describe("guardian event RSVP controls", () => {
+  beforeAll(async () => {
+    await db.insert(guardianshipsTable).values([
+      { guardianId: people.guardian, playerId: people.outsider, canManage: true },
+      { guardianId: people.guardian, playerId: people.peer, canManage: false },
+      { guardianId: people.guardian, playerId: people.coach, canManage: true },
+      { guardianId: people.guardian, playerId: people.foreignAdmin, canManage: true },
+    ]);
+    await db.insert(teamMembersTable).values({
+      teamId: teamIds[2], userId: people.foreignAdmin, role: "player",
+    });
+    await db.delete(rsvpsTable).where(
+      and(eq(rsvpsTable.eventId, eventA), eq(rsvpsTable.userId, people.ward)),
+    );
+  });
+
+  it("offers a manageable child before their first RSVP, excluding read-only, other-team and non-player links", async () => {
+    const response = await request(app).get(`/api/events/${eventA}`).set(acting("guardian")).expect(200);
+    expect(response.body.managedPlayers.map((p: { id: number }) => p.id)).toEqual([people.ward]);
+    expect(response.body.rsvps.some((r: { person: { id: number } }) => r.person.id === people.ward)).toBe(false);
+  });
+
+  it.each(["readOnly", "player", "coach", "admin"])("%s receives no guardian action targets without a manageable link", async actor => {
+    const response = await request(app).get(`/api/events/${eventA}`).set(acting(actor)).expect(200);
+    expect(response.body.managedPlayers).toEqual([]);
+  });
+
+  it("uses the event's team rather than every child in the guardian's family", async () => {
+    const response = await request(app).get(`/api/events/${eventIds[1]}`).set(acting("guardian")).expect(200);
+    expect(response.body.managedPlayers.map((p: { id: number }) => p.id)).toEqual([people.outsider]);
+  });
+
+  it("does not bypass the current club boundary for a linked child in another club", async () => {
+    await request(app).get(`/api/events/${eventIds[2]}`).set(acting("guardian"))
+      .set("X-Club-Id", String(clubIds[0])).expect(403);
+  });
+
+  it("saves separate responses for two manageable children on the same team", async () => {
+    const link = and(eq(guardianshipsTable.guardianId, people.guardian), eq(guardianshipsTable.playerId, people.peer));
+    await db.update(guardianshipsTable).set({ canManage: true }).where(link);
+    try {
+      await request(app).put(`/api/events/${eventA}/rsvp`).set(acting("guardian"))
+        .send({ status: "out", reason: "child-specific reason", onBehalfOfPersonId: people.ward }).expect(200);
+      await request(app).put(`/api/events/${eventA}/rsvp`).set(acting("guardian"))
+        .send({ status: "going", onBehalfOfPersonId: people.peer }).expect(200);
+      const response = await request(app).get(`/api/events/${eventA}`).set(acting("guardian")).expect(200);
+      expect(response.body.managedPlayers.map((p: { id: number }) => p.id).sort((a: number, b: number) => a - b))
+        .toEqual([people.peer, people.ward].sort((a, b) => a - b));
+      expect(response.body.rsvps.find((r: { person: { id: number } }) => r.person.id === people.ward))
+        .toMatchObject({ status: "out", reason: "child-specific reason" });
+      expect(response.body.rsvps.find((r: { person: { id: number } }) => r.person.id === people.peer))
+        .toMatchObject({ status: "going", reason: null });
+    } finally {
+      await db.update(guardianshipsTable).set({ canManage: false }).where(link);
+    }
+  });
+
+  it("changes a child's saved absence to going, clears the reason and never RSVPs the guardian", async () => {
+    await request(app).put(`/api/events/${eventA}/rsvp`).set(acting("guardian"))
+      .send({ status: "going", reason: "must not survive", onBehalfOfPersonId: people.ward }).expect(200);
+    const [stored] = await db.select().from(rsvpsTable).where(
+      and(eq(rsvpsTable.eventId, eventA), eq(rsvpsTable.userId, people.ward)),
+    );
+    expect(stored.status).toBe("going");
+    expect(stored.reason).toBeNull();
+    expect(await db.select().from(rsvpsTable).where(
+      and(eq(rsvpsTable.eventId, eventA), eq(rsvpsTable.userId, people.guardian)),
+    )).toHaveLength(0);
+  });
+
+  it("rejects guardian response changes after an event is cancelled", async () => {
+    const before = await db.select().from(rsvpsTable).where(eq(rsvpsTable.eventId, eventA));
+    await db.update(eventsTable).set({ cancelledAt: new Date() }).where(eq(eventsTable.id, eventA));
+    try {
+      await request(app).put(`/api/events/${eventA}/rsvp`).set(acting("guardian"))
+        .send({ status: "out", onBehalfOfPersonId: people.ward }).expect(409);
+      expect(await db.select().from(rsvpsTable).where(eq(rsvpsTable.eventId, eventA))).toEqual(before);
+    } finally {
+      await db.update(eventsTable).set({ cancelledAt: null }).where(eq(eventsTable.id, eventA));
+    }
+  });
+});
