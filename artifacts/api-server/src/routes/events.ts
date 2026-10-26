@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { and, asc, eq, gte, inArray } from "drizzle-orm";
 import { db, eventsTable, rsvpsTable, teamMembersTable, guardianshipsTable, usersTable } from "@workspace/db";
-import { CreateEventBody, UpdateEventBody, SetRsvpBody, CancelEventBody } from "@workspace/api-zod";
+import { CreateEventBody, UpdateEventBody, SetRsvpBody, CancelEventBody, ListUpcomingEventsQueryParams } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
 import { buildEvents } from "../lib/build";
 import { getVisibleTeamIds, canActFor } from "../lib/queries";
@@ -13,7 +13,18 @@ const router: IRouter = Router();
 
 router.get("/events/upcoming", requireAuth, async (req, res) => {
   const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
-  const visible = await getVisibleTeamIds(clubId, localUser.id, isClubAdmin);
+  const parsed = ListUpcomingEventsQueryParams.safeParse(req.query);
+  if (!parsed.success || (parsed.data.teamId !== undefined && !Number.isSafeInteger(parsed.data.teamId)))
+    return res.status(400).json({ error: "teamId must be a positive integer" });
+  const { teamId } = parsed.data;
+  if (teamId !== undefined && !(await canAccessTeam(localUser.id, teamId, clubId, isClubAdmin)))
+    return res.status(403).json({ error: "You cannot view this team's events" });
+  // Apply the selected team before the upcoming-event limit. Filtering a
+  // combined response afterwards can incorrectly make a busy team's schedule
+  // hide every event belonging to another accessible team.
+  const visible = teamId === undefined
+    ? await getVisibleTeamIds(clubId, localUser.id, isClubAdmin)
+    : [teamId];
   if (visible.length === 0) return res.json([]);
   const events = await db
     .select()

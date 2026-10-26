@@ -1556,6 +1556,13 @@ export const AddCommentResponse = zod.object({
 /**
  * @summary Upcoming events across the user's teams
  */
+
+
+
+export const ListUpcomingEventsQueryParams = zod.object({
+  "teamId": zod.coerce.number().min(1).optional().describe('Restrict upcoming events to this accessible team before applying the result limit. Omit for all accessible teams.')
+})
+
 export const ListUpcomingEventsResponseItem = zod.object({
   "id": zod.number(),
   "teamId": zod.number(),

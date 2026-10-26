@@ -7,6 +7,7 @@ import {
   useSetRsvp, getGetEventQueryKey, getGetTeamSummaryQueryKey
 } from "@workspace/api-client-react";
 import { queryClient } from "@/lib/queryClient";
+import { useActiveTeam } from "@/lib/active-team";
 
 import { LoadingScreen, ErrorState, EmptyState } from "@/components/ui/states";
 import { locationName } from "@/lib/location";
@@ -14,8 +15,10 @@ import { NewEventDialog } from "@/components/schedule/new-event-dialog";
 import { Button } from "@/components/ui/button";
 
 export default function Schedule() {
-  const { data: events, isLoading, error, refetch } = useListUpcomingEvents({ 
-    query: { queryKey: getListUpcomingEventsQueryKey() } 
+  const { activeTeamId } = useActiveTeam();
+  const params = activeTeamId == null ? undefined : { teamId: activeTeamId };
+  const { data: events, isLoading, error, refetch } = useListUpcomingEvents(params, {
+    query: { queryKey: getListUpcomingEventsQueryKey(params), refetchInterval: 30_000 }
   });
 
   if (isLoading) return <LoadingScreen message="Loading schedule..." />;
@@ -49,7 +52,9 @@ export default function Schedule() {
         {events.length === 0 ? (
           <EmptyState 
             title="Your schedule is clear" 
-            message="There are no upcoming events for any of your teams right now."
+            message={activeTeamId == null
+              ? "There are no upcoming events for any of your teams right now."
+              : "There are no upcoming events for this team right now."}
             icon={CalendarDays}
           />
         ) : (

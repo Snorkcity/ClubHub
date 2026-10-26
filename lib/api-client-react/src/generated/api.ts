@@ -70,6 +70,7 @@ import type {
   LeaveTeam200,
   ListNotificationsParams,
   ListPeopleParams,
+  ListUpcomingEventsParams,
   Message,
   MessageInput,
   NotFoundResponse,
@@ -4651,20 +4652,27 @@ export const useAddComment = <TError = ErrorType<unknown>,
       return useMutation(getAddCommentMutationOptions(options));
     }
 
-export const getListUpcomingEventsUrl = () => {
+export const getListUpcomingEventsUrl = (params?: ListUpcomingEventsParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/events/upcoming`
+  return stringifiedParams.length > 0 ? `/api/events/upcoming?${stringifiedParams}` : `/api/events/upcoming`
 }
 
 /**
  * @summary Upcoming events across the user's teams
  */
-export const listUpcomingEvents = async ( options?: RequestInit): Promise<Event[]> => {
+export const listUpcomingEvents = async (params?: ListUpcomingEventsParams, options?: RequestInit): Promise<Event[]> => {
 
-  return customFetch<Event[]>(getListUpcomingEventsUrl(),
+  return customFetch<Event[]>(getListUpcomingEventsUrl(params),
   {
     ...options,
     method: 'GET'
@@ -4677,23 +4685,23 @@ export const listUpcomingEvents = async ( options?: RequestInit): Promise<Event[
 
 
 
-export const getListUpcomingEventsQueryKey = () => {
+export const getListUpcomingEventsQueryKey = (params?: ListUpcomingEventsParams,) => {
     return [
-    `/api/events/upcoming`
+    `/api/events/upcoming`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getListUpcomingEventsQueryOptions = <TData = Awaited<ReturnType<typeof listUpcomingEvents>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listUpcomingEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListUpcomingEventsQueryOptions = <TData = Awaited<ReturnType<typeof listUpcomingEvents>>, TError = ErrorType<unknown>>(params?: ListUpcomingEventsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listUpcomingEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListUpcomingEventsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getListUpcomingEventsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listUpcomingEvents>>> = ({ signal }) => listUpcomingEvents({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listUpcomingEvents>>> = ({ signal }) => listUpcomingEvents(params, { signal, ...requestOptions });
 
 
 
@@ -4711,11 +4719,11 @@ export type ListUpcomingEventsQueryError = ErrorType<unknown>
  */
 
 export function useListUpcomingEvents<TData = Awaited<ReturnType<typeof listUpcomingEvents>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listUpcomingEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: ListUpcomingEventsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listUpcomingEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getListUpcomingEventsQueryOptions(options)
+  const queryOptions = getListUpcomingEventsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -1041,6 +1041,14 @@ paths:
       operationId: listUpcomingEvents
       tags: [events]
       summary: Upcoming events across the user's teams
+      parameters:
+        - in: query
+          name: teamId
+          required: false
+          description: Restrict upcoming events to this accessible team before applying the result limit. Omit for all accessible teams.
+          schema:
+            type: integer
+            minimum: 1
       responses:
         "200":
           description: Upcoming events

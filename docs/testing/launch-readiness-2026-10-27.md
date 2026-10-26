@@ -16,9 +16,10 @@ failure mode or security attack has been tested.
 
 ## Automated results
 
-**189 tests passed across 21 test files**, including the guardian RSVP follow-up.
+**209 tests passed across 21 test files**, including the guardian RSVP and
+selected-team Schedule follow-ups.
 API and frontend TypeScript checking and the web build also passed.
-The pass and follow-up added 43 regression cases beyond the original 146 tests.
+The pass and follow-ups added 63 regression cases beyond the original 146 tests.
 
 Command:
 
@@ -109,12 +110,23 @@ A focused desktop and 390-pixel mobile browser pass verified:
 Event details refresh every 30 seconds so another guardian's changes and
 cancellation/permission changes can become visible while the page stays open.
 
-## Remaining functional gap
+## Selected-team Schedule follow-up — resolved and checked
 
-**Selected-team Schedule filtering:** selecting Team A still displayed events
-for both accessible teams. No inaccessible club's events appeared, so this is a
-context/filtering issue rather than evidence of unauthorised event access.
-It remains separate to the completed guardian RSVP fix.
+Schedule now requests upcoming events for the selected team. All teams omits the
+filter and retains the combined accessible-team behaviour. The server validates
+the selected team against the current club and caller's access, then applies the
+filter before the existing 20-event upcoming limit.
+
+Twenty new API regression cases verify selected-team results for coaches,
+players, guardians and admins; busy other-team schedules cannot crowd out the
+selected team's events. They also check empty teams, past events, result ordering,
+unauthenticated requests, malformed selections and inaccessible clubs/teams.
+
+Seven additional checks of the generated request and cache-key helpers verify
+that each team has its own cache and existing event/RSVP invalidation still
+matches all affected schedule variants. Frontend and API typechecks and the web
+build pass. No separate signed-in browser walkthrough was run for this read-only
+filtering change.
 
 ## Checks still needed outside this pass
 

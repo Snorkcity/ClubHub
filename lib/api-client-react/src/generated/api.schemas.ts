@@ -1570,6 +1570,14 @@ export type CreateClubPost201 = {
   created: number;
 };
 
+export type ListUpcomingEventsParams = {
+/**
+ * Restrict upcoming events to this accessible team before applying the result limit. Omit for all accessible teams.
+ * @minimum 1
+ */
+teamId?: number;
+};
+
 export type GetCheckinStatusParams = {
 /**
  * The local calendar date to check in for (YYYY-MM-DD)

@@ -325,7 +325,7 @@ function useMarkActiveTeamSeen(teamId: number | null) {
 }
 
 function MemberDashboard({ me }: { me: any }) {
-  const { data: events, isLoading: eventsLoading } = useListUpcomingEvents({ 
+  const { data: events, isLoading: eventsLoading } = useListUpcomingEvents(undefined, {
     query: { queryKey: getListUpcomingEventsQueryKey() } 
   });
   

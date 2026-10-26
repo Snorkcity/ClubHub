@@ -279,3 +279,84 @@ describe("guardian event RSVP controls", () => {
     }
   });
 });
+
+describe("selected-team upcoming schedule", () => {
+  let emptyTeam: number;
+
+  beforeAll(async () => {
+    const [team] = await db.insert(teamsTable).values({
+      clubId: clubIds[0], name: prefix + "empty schedule", ageGroup: "U14",
+    }).returning();
+    emptyTeam = team.id;
+    teamIds.push(team.id);
+    // More than the combined result limit: these Team B events must not
+    // crowd Team A out of a request explicitly selecting Team A.
+    const added = await db.insert(eventsTable).values([
+      ...Array.from({ length: 25 }, (_, index) => ({
+        teamId: teamIds[1], createdById: people.otherCoach, type: "training",
+        title: prefix + "busy other team " + index,
+        startsAt: new Date(Date.UTC(2030, 0, 1, 8, index)),
+      })),
+      {
+        teamId: teamA, createdById: people.coach, type: "training",
+        title: prefix + "past", startsAt: new Date("2020-01-01T08:00:00Z"),
+      },
+    ]).returning();
+    eventIds.push(...added.map(event => event.id));
+    // An earlier event in another club would surface first if club isolation
+    // were accidentally removed from the combined schedule.
+    await db.update(eventsTable).set({ startsAt: new Date("2029-01-01T08:00:00Z") })
+      .where(eq(eventsTable.id, eventIds[2]));
+  });
+
+  it.each(["admin", "coach", "player", "guardian"])(
+    "%s gets only the selected team's future events, before the combined limit",
+    async actor => {
+      const response = await request(app).get(`/api/events/upcoming?teamId=${teamA}`)
+        .set(acting(actor)).expect(200);
+      expect(response.body.map((event: { id: number }) => event.id)).toEqual([eventA]);
+      expect(response.body.every((event: { teamId: number }) => event.teamId === teamA)).toBe(true);
+    },
+  );
+
+  it("keeps the all-accessible-teams behaviour and result ordering when no team is selected", async () => {
+    const response = await request(app).get("/api/events/upcoming").set(acting("admin")).expect(200);
+    expect(response.body).toHaveLength(20);
+    expect(response.body.every((event: { teamId: number }) => event.teamId === teamIds[1])).toBe(true);
+    const times = response.body.map((event: { startsAt: string }) => new Date(event.startsAt).getTime());
+    expect(times).toEqual([...times].sort((a: number, b: number) => a - b));
+  });
+
+  it("switches to the second team's events instead of retaining the first team's results", async () => {
+    const response = await request(app).get(`/api/events/upcoming?teamId=${teamIds[1]}`)
+      .set(acting("admin")).expect(200);
+    expect(response.body).toHaveLength(20);
+    expect(response.body.every((event: { teamId: number }) => event.teamId === teamIds[1])).toBe(true);
+    expect(response.body.some((event: { id: number }) => event.id === eventA)).toBe(false);
+  });
+
+  it("returns an empty schedule for an accessible empty team, not another team's events", async () => {
+    const response = await request(app).get(`/api/events/upcoming?teamId=${emptyTeam}`)
+      .set(acting("admin")).expect(200);
+    expect(response.body).toEqual([]);
+  });
+
+  it.each([
+    ["player", "B"], ["otherCoach", "A"], ["admin", "foreign"],
+    ["foreignAdmin", "A"], ["guardian", "foreign"],
+  ])("%s cannot select inaccessible team %s", async (actor, target) => {
+    const teamId = target === "A" ? teamA : target === "B" ? teamIds[1] : teamIds[2];
+    await request(app).get(`/api/events/upcoming?teamId=${teamId}`).set(acting(actor)).expect(403);
+  });
+
+  it.each(["0", "-1", "1.5", "nope", "", "9007199254740992", "1&teamId=2"])(
+    "rejects malformed team selection %s",
+    async value => {
+      await request(app).get(`/api/events/upcoming?teamId=${value}`).set(acting("admin")).expect(400);
+    },
+  );
+
+  it("does not expose a selected schedule without authentication", async () => {
+    await request(app).get(`/api/events/upcoming?teamId=${teamA}`).expect(401);
+  });
+});

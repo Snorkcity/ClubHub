@@ -91,6 +91,7 @@ export * from './leaveTeam200';
 export * from './listNotificationsParams';
 export * from './listPeopleParams';
 export * from './listPeopleRole';
+export * from './listUpcomingEventsParams';
 export * from './message';
 export * from './messageInput';
 export * from './monitoringFlag';
