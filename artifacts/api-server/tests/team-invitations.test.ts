@@ -289,20 +289,58 @@ describe("one account across club invitations", () => {
     }
   });
 
-  it("restricts guardian invitations and email-less player creation to club admins", async () => {
+  it("lets team coaches invite a guardian and accept without granting team or staff membership", async () => {
     const login = "test_guardian_coach";
     const coach = await account(login);
     await db.insert(clubMembersTable).values({ clubId: destinationClub, userId: coach.id, role: "member" });
     await db.insert(teamMembersTable).values({ teamId, userId: coach.id, role: "coach" });
-    const denied = await request(app).post("/api/team-invitations")
+    const playerId = await junior();
+    const parentLogin = "test_coach_invited_guardian";
+    const created = await request(app).post("/api/team-invitations")
       .set(as(login)).set("X-Nahreo-Club", String(destinationClub)).send({
-        teamId, firstName: "Adult", lastName: "Denied", email: "denied@example.test",
-        role: "guardian", guardianPlayerId: await junior(), deliveryMethod: "link",
+        teamId, firstName: "Adult", lastName: "Guardian", email: `${parentLogin}@example.test`,
+        role: "guardian", guardianPlayerId: playerId, deliveryMethod: "link",
       });
-    expect(denied.status).toBe(403);
+    expect(created.status).toBe(201);
+    await account(parentLogin);
+    const token = new URL(created.body.inviteLink).searchParams.get("token")!;
+    const accepted = await request(app).post("/api/team-invitations/accept")
+      .set(as(parentLogin)).send({ token });
+    expect(accepted.status).toBe(200);
+    const [parent] = await db.select().from(usersTable).where(eq(usersTable.clerkUserId, parentLogin));
+    expect(await db.select().from(guardianshipsTable).where(eq(guardianshipsTable.guardianId, parent.id)))
+      .toEqual([expect.objectContaining({ playerId, canManage: true })]);
+    expect(await db.select().from(teamMembersTable).where(eq(teamMembersTable.userId, parent.id))).toHaveLength(0);
     const noPlayer = await request(app).post("/api/people").set(as(login))
       .set("X-Nahreo-Club", String(destinationClub)).send({ firstName: "No", lastName: "Access", teamId });
     expect(noPlayer.status).toBe(403);
+  });
+
+  it("keeps guardian invitations within the staff member's own team and club", async () => {
+    const playerId = await junior();
+    const [otherTeam] = await db.insert(teamsTable).values({
+      clubId: destinationClub, name: "Other guardian team", ageGroup: "U14",
+    }).returning();
+    const [otherPlayer] = await db.insert(usersTable).values({
+      clubId: destinationClub, firstName: "Other", lastName: "Player",
+    }).returning();
+    await db.insert(teamMembersTable).values({ teamId: otherTeam.id, userId: otherPlayer.id, role: "player" });
+    const [foreignTeam] = await db.insert(teamsTable).values({
+      clubId: homeClub, name: "Foreign guardian team", ageGroup: "U14",
+    }).returning();
+    const invite = (login: string, selectedTeam: number, player: number) =>
+      request(app).post("/api/team-invitations")
+        .set(as(login)).set("X-Nahreo-Club", String(destinationClub)).send({
+          teamId: selectedTeam, firstName: "Blocked", lastName: "Guardian",
+          email: "blocked-guardian-scope@example.test", role: "guardian",
+          guardianPlayerId: player, deliveryMethod: "link",
+        });
+    expect((await invite("test_guardian_coach", otherTeam.id, otherPlayer.id)).status).toBe(403);
+    expect((await invite("test_guardian_coach", foreignTeam.id, playerId)).status).toBe(403);
+    expect((await invite("test_guardian_coach", teamId, otherPlayer.id)).status).toBe(400);
+    expect((await invite("test_invite_brandnew", teamId, playerId)).status).toBe(403);
+    expect((await invite("test_coach_invited_guardian", teamId, playerId)).status).toBe(403);
+    expect(await db.select().from(usersTable).where(eq(usersTable.email, "blocked-guardian-scope@example.test"))).toHaveLength(0);
   });
 
   it("rejects players outside the selected team and foreign team creation without writing a person", async () => {

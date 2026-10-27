@@ -39,6 +39,10 @@ export function InvitePersonDialog({
   const [role, setRole] = useState<"manager" | "coach" | "player" | "guardian">("player");
   const [guardianPlayerId, setGuardianPlayerId] = useState("");
   const { data: me } = useGetMe();
+  const canInviteGuardian = me?.isClubAdmin || me?.memberships?.some(
+    (membership) => membership.teamId === invitationTeamId &&
+      (membership.role === "coach" || membership.role === "manager"),
+  );
   const { data: members } = useListTeamMembers(invitationTeamId ?? 0, {
     query: { queryKey: getListTeamMembersQueryKey(invitationTeamId ?? 0), enabled: !!invitationTeamId && role === "guardian" },
   });
@@ -250,7 +254,7 @@ export function InvitePersonDialog({
                   <SelectItem value="player">Player</SelectItem>
                   <SelectItem value="coach">Coach</SelectItem>
                   <SelectItem value="manager">Manager</SelectItem>
-                  {me?.isClubAdmin && <SelectItem value="guardian">Parent / Guardian</SelectItem>}
+                  {canInviteGuardian && <SelectItem value="guardian">Parent / Guardian</SelectItem>}
                 </SelectContent>
               </Select>
             </div>

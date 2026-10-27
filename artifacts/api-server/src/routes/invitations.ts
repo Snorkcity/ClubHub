@@ -90,8 +90,6 @@ router.post("/team-invitations", requireAuth, async (req, res) => {
     .where(and(eq(teamsTable.id, body.teamId), eq(teamsTable.clubId, clubId)));
   if (!team) return res.status(404).json({ error: "Team not found" });
   if (body.role === "guardian") {
-    if (!isClubAdmin)
-      return res.status(403).json({ error: "Only club admins can invite guardians" });
     const [player] = await db.select({ id: teamMembersTable.userId }).from(teamMembersTable)
       .where(and(eq(teamMembersTable.teamId, team.id),
         eq(teamMembersTable.userId, body.guardianPlayerId ?? -1),
