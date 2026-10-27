@@ -1007,6 +1007,11 @@ export interface PersonInput {
   email?: string;
   phone?: string;
   dateOfBirth?: string;
+  /**
+     * Optionally add a new email-less player to this team's roster atomically.
+     * @minimum 1
+     */
+  teamId?: number;
 }
 
 export type TeamInvitationInputRole = typeof TeamInvitationInputRole[keyof typeof TeamInvitationInputRole];
@@ -1016,6 +1021,7 @@ export const TeamInvitationInputRole = {
   manager: 'manager',
   coach: 'coach',
   player: 'player',
+  guardian: 'guardian',
 } as const;
 
 export type TeamInvitationInputDeliveryMethod = typeof TeamInvitationInputDeliveryMethod[keyof typeof TeamInvitationInputDeliveryMethod];
@@ -1038,6 +1044,8 @@ export interface TeamInvitationInput {
      */
   email: string;
   role: TeamInvitationInputRole;
+  /** @minimum 1 */
+  guardianPlayerId?: number;
   deliveryMethod?: TeamInvitationInputDeliveryMethod;
 }
 
@@ -1055,6 +1063,7 @@ export const TeamInvitationPreviewRole = {
   manager: 'manager',
   coach: 'coach',
   player: 'player',
+  guardian: 'guardian',
 } as const;
 
 export interface TeamInvitationPreview {

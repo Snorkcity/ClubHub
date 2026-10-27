@@ -20,5 +20,7 @@ export interface TeamInvitationInput {
      */
   email: string;
   role: TeamInvitationInputRole;
+  /** @minimum 1 */
+  guardianPlayerId?: number;
   deliveryMethod?: TeamInvitationInputDeliveryMethod;
 }

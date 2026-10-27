@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Check, Copy, Link2, Mail, MailPlus } from "lucide-react";
-import { useCreateTeamInvitation, getListPeopleQueryKey } from "@workspace/api-client-react";
+import { useCreateTeamInvitation, getListPeopleQueryKey, useGetMe, useListTeamMembers, getListTeamMembersQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,7 +36,12 @@ export function InvitePersonDialog({
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"manager" | "coach" | "player">("player");
+  const [role, setRole] = useState<"manager" | "coach" | "player" | "guardian">("player");
+  const [guardianPlayerId, setGuardianPlayerId] = useState("");
+  const { data: me } = useGetMe();
+  const { data: members } = useListTeamMembers(invitationTeamId ?? 0, {
+    query: { queryKey: getListTeamMembersQueryKey(invitationTeamId ?? 0), enabled: !!invitationTeamId && role === "guardian" },
+  });
   const [deliveryMethod, setDeliveryMethod] = useState<"email" | "link">("email");
   const [result, setResult] = useState<{
     inviteLink: string;
@@ -53,6 +58,7 @@ export function InvitePersonDialog({
     setLastName("");
     setEmail("");
     setRole("player");
+    setGuardianPlayerId("");
     setDeliveryMethod("email");
     setResult(null);
     setCopied(false);
@@ -62,11 +68,13 @@ export function InvitePersonDialog({
     event.preventDefault();
     if (!invitationTeamId || !teams.some((team) => team.id === invitationTeamId)) return;
     createInvite.mutate(
-      { data: { teamId: invitationTeamId, firstName, lastName, email, role, deliveryMethod } },
+      { data: { teamId: invitationTeamId, firstName, lastName, email, role, deliveryMethod,
+        guardianPlayerId: role === "guardian" ? Number(guardianPlayerId) : undefined } },
       {
         onSuccess: (data) => {
           setResult(data);
           void queryClient.invalidateQueries({ queryKey: getListPeopleQueryKey() });
+          void queryClient.invalidateQueries({ queryKey: getListTeamMembersQueryKey(invitationTeamId) });
         },
         onError: (error: any) =>
           toast({
@@ -104,7 +112,7 @@ export function InvitePersonDialog({
           Invite someone
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="min-w-0 max-h-[90dvh] overflow-y-auto overflow-x-hidden">
         {result ? (
           <>
             <DialogHeader>
@@ -148,14 +156,14 @@ export function InvitePersonDialog({
                 Invite someone
               </DialogTitle>
               <DialogDescription>
-                Add them to this team and send a secure Nahreo invitation.
+                Invite a player, staff member or parent. Parents keep their own account, linked to their child.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-2">
               <Label htmlFor="invite-team">Team</Label>
               <Select
                 value={invitationTeamId?.toString() ?? ""}
-                onValueChange={(value) => setSelectedTeamId(Number(value))}
+                onValueChange={(value) => { setSelectedTeamId(Number(value)); setGuardianPlayerId(""); }}
               >
                 <SelectTrigger id="invite-team">
                   <SelectValue placeholder="Choose a team" />
@@ -169,7 +177,7 @@ export function InvitePersonDialog({
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label htmlFor="invite-first-name">First name</Label>
                 <Input
@@ -191,7 +199,7 @@ export function InvitePersonDialog({
             </div>
             <div className="space-y-2">
               <Label>How would you like to send it?</Label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Button
                   type="button"
                   variant={deliveryMethod === "email" ? "default" : "outline"}
@@ -219,7 +227,7 @@ export function InvitePersonDialog({
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="invite-email">Email</Label>
+              <Label htmlFor="invite-email">{role === "guardian" ? "Parent/guardian email" : "Email"}</Label>
               <Input
                 id="invite-email"
                 type="email"
@@ -242,12 +250,30 @@ export function InvitePersonDialog({
                   <SelectItem value="player">Player</SelectItem>
                   <SelectItem value="coach">Coach</SelectItem>
                   <SelectItem value="manager">Manager</SelectItem>
+                  {me?.isClubAdmin && <SelectItem value="guardian">Parent / Guardian</SelectItem>}
                 </SelectContent>
               </Select>
             </div>
+            {role === "guardian" && (
+              <div className="space-y-2">
+                <Label>Player they look after</Label>
+                <Select value={guardianPlayerId} onValueChange={setGuardianPlayerId}>
+                  <SelectTrigger><SelectValue placeholder="Choose a player" /></SelectTrigger>
+                  <SelectContent>
+                    {(members ?? []).filter((m) => m.role === "player").map((m) => (
+                      <SelectItem key={m.person.id} value={String(m.person.id)}>{m.person.fullName}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Add the player to the roster first. This invitation gives the adult permission to act for that player, not staff access.
+                  Use the adult’s name and email above, never their child’s details.
+                </p>
+              </div>
+            )}
             <Button
               type="submit"
-              disabled={createInvite.isPending || !invitationTeamId}
+              disabled={createInvite.isPending || !invitationTeamId || (role === "guardian" && !guardianPlayerId)}
               className="w-full rounded-xl"
             >
               {createInvite.isPending

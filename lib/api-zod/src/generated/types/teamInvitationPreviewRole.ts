@@ -13,4 +13,5 @@ export const TeamInvitationPreviewRole = {
   manager: 'manager',
   coach: 'coach',
   player: 'player',
+  guardian: 'guardian',
 } as const;

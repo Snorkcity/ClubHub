@@ -2554,6 +2554,7 @@ components:
         email: { type: string }
         phone: { type: string }
         dateOfBirth: { type: string }
+        teamId: { type: integer, minimum: 1, description: "Optionally add a new email-less player to this team's roster atomically." }
 
     TeamInvitationInput:
       type: object
@@ -2566,7 +2567,8 @@ components:
           type: string
           minLength: 3
           pattern: '^[^@\s]+@[^@\s]+\.[^@\s]+$'
-        role: { type: string, enum: [manager, coach, player] }
+        role: { type: string, enum: [manager, coach, player, guardian] }
+        guardianPlayerId: { type: integer, minimum: 1 }
         deliveryMethod:
           type: string
           enum: [email, link]
@@ -2586,7 +2588,7 @@ components:
       properties:
         firstName: { type: string }
         teamName: { type: string }
-        role: { type: string, enum: [manager, coach, player] }
+        role: { type: string, enum: [manager, coach, player, guardian] }
         expiresAt: { type: string, format: date-time }
         accepted: { type: boolean }
 

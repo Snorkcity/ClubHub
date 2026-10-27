@@ -20,6 +20,7 @@ import { eq, sql } from "drizzle-orm";
 import {
   db, pool, clubsTable, usersTable, teamsTable, teamMembersTable,
   clubMembersTable, chatsTable, chatMembersTable, teamInvitationsTable, teamReadsTable,
+  guardianshipsTable,
 } from "@workspace/db";
 import app from "../src/app";
 
@@ -192,5 +193,125 @@ describe("one account across club invitations", () => {
       email: "not-invited@example.test", role: "coach", deliveryMethod: "link",
     });
     expect(denied.status).toBe(403);
+  });
+
+  it("creates an email-less player atomically with ordinary club and player memberships", async () => {
+    const created = await request(app).post("/api/people").set(as(adminLogin)).send({
+      firstName: "Junior", lastName: "NoEmail", teamId,
+    });
+    expect(created.status).toBe(201);
+    const [person] = await db.select().from(usersTable).where(eq(usersTable.id, created.body.id));
+    expect(person.email).toBeNull();
+    expect(person.clerkUserId).toBeNull();
+    expect(await db.select().from(clubMembersTable).where(eq(clubMembersTable.userId, person.id)))
+      .toEqual([expect.objectContaining({ clubId: destinationClub, role: "member" })]);
+    expect(await db.select().from(teamMembersTable).where(eq(teamMembersTable.userId, person.id)))
+      .toEqual([expect.objectContaining({ teamId, role: "player" })]);
+  });
+
+  async function guardianInvite(login: string, playerId: number) {
+    return request(app).post("/api/team-invitations").set(as(adminLogin)).send({
+      teamId, firstName: "Adult", lastName: "Guardian", email: `${login}@example.test`,
+      role: "guardian", guardianPlayerId: playerId, deliveryMethod: "link",
+    });
+  }
+
+  async function junior() {
+    const created = await request(app).post("/api/people").set(as(adminLogin)).send({
+      firstName: "Junior", lastName: "GuardianTest", teamId,
+    });
+    expect(created.status).toBe(201);
+    return created.body.id as number;
+  }
+
+  it("admits a brand-new guardian only after verified acceptance, never as staff or player", async () => {
+    const playerId = await junior();
+    const login = "test_guardian_new";
+    const created = await guardianInvite(login, playerId);
+    expect(created.status).toBe(201);
+    const token = new URL(created.body.inviteLink).searchParams.get("token")!;
+    const preview = await request(app).get("/api/team-invitations/preview").query({ token });
+    expect(preview.status).toBe(200);
+    expect(preview.body.role).toBe("guardian");
+    const [invite] = await db.select().from(teamInvitationsTable)
+      .where(eq(teamInvitationsTable.tokenHash, hash(token)));
+    expect(await db.select().from(guardianshipsTable).where(eq(guardianshipsTable.guardianId, invite.personId))).toHaveLength(0);
+    expect(await db.select().from(teamMembersTable).where(eq(teamMembersTable.userId, invite.personId))).toHaveLength(0);
+    expect(await db.select().from(chatMembersTable).where(eq(chatMembersTable.userId, invite.personId))).toHaveLength(0);
+    const accepted = await request(app).post("/api/team-invitations/accept").set(as(login)).send({ token });
+    expect(accepted.status).toBe(200);
+    const me = await request(app).get("/api/me").set(as(login)).set("X-Nahreo-Club", String(destinationClub));
+    expect(me.status).toBe(200);
+    expect(me.body.isClubAdmin).toBe(false);
+    expect(me.body.memberships).toHaveLength(0);
+    expect(me.body.guardianOf.map((p: { id: number }) => p.id)).toContain(playerId);
+    const [link] = await db.select().from(guardianshipsTable).where(eq(guardianshipsTable.guardianId, invite.personId));
+    expect(link.canManage).toBe(true);
+    const again = await request(app).post("/api/team-invitations/accept").set(as(login)).send({ token });
+    expect(again.status).toBe(200);
+    await db.delete(guardianshipsTable).where(eq(guardianshipsTable.id, link.id));
+    const revoked = await request(app).post("/api/team-invitations/accept").set(as(login)).send({ token });
+    expect(revoked.status).toBe(403);
+    expect(await db.select().from(guardianshipsTable).where(eq(guardianshipsTable.guardianId, invite.personId))).toHaveLength(0);
+  });
+
+  it("reuses an existing guardian's permanent account across clubs", async () => {
+    const login = "test_guardian_existing";
+    const existing = await account(login);
+    const playerId = await junior();
+    const created = await guardianInvite(login, playerId);
+    expect(created.status).toBe(201);
+    const token = new URL(created.body.inviteLink).searchParams.get("token")!;
+    const accepted = await request(app).post("/api/team-invitations/accept").set(as(login)).send({ token });
+    expect(accepted.status).toBe(200);
+    const [person] = await db.select().from(usersTable).where(eq(usersTable.id, existing.id));
+    expect(person.clubId).toBe(homeClub);
+    expect(await db.select().from(teamMembersTable).where(eq(teamMembersTable.userId, existing.id))).toHaveLength(0);
+    const [link] = await db.select().from(guardianshipsTable).where(eq(guardianshipsTable.guardianId, existing.id));
+    expect(link.playerId).toBe(playerId);
+  });
+
+  it("rejects wrong and unverified guardian emails, expired invitations and departed players", async () => {
+    for (const login of ["test_guardian_target", "test_guardian_unverified", "test_guardian_expired", "test_guardian_departed"]) {
+      await account(login);
+      const playerId = await junior();
+      const created = await guardianInvite(login, playerId);
+      expect(created.status).toBe(201);
+      const token = new URL(created.body.inviteLink).searchParams.get("token")!;
+      if (login.endsWith("expired"))
+        await db.update(teamInvitationsTable).set({ expiresAt: new Date(0) }).where(eq(teamInvitationsTable.tokenHash, hash(token)));
+      if (login.endsWith("departed"))
+        await db.delete(teamMembersTable).where(eq(teamMembersTable.userId, playerId));
+      const result = await request(app).post("/api/team-invitations/accept")
+        .set(as(login.endsWith("target") ? adminLogin : login)).send({ token });
+      expect(result.status).toBe(login.endsWith("expired") ? 404 : 403);
+      expect(await db.select().from(guardianshipsTable).where(eq(guardianshipsTable.playerId, playerId))).toHaveLength(0);
+    }
+  });
+
+  it("restricts guardian invitations and email-less player creation to club admins", async () => {
+    const login = "test_guardian_coach";
+    const coach = await account(login);
+    await db.insert(clubMembersTable).values({ clubId: destinationClub, userId: coach.id, role: "member" });
+    await db.insert(teamMembersTable).values({ teamId, userId: coach.id, role: "coach" });
+    const denied = await request(app).post("/api/team-invitations")
+      .set(as(login)).set("X-Nahreo-Club", String(destinationClub)).send({
+        teamId, firstName: "Adult", lastName: "Denied", email: "denied@example.test",
+        role: "guardian", guardianPlayerId: await junior(), deliveryMethod: "link",
+      });
+    expect(denied.status).toBe(403);
+    const noPlayer = await request(app).post("/api/people").set(as(login))
+      .set("X-Nahreo-Club", String(destinationClub)).send({ firstName: "No", lastName: "Access", teamId });
+    expect(noPlayer.status).toBe(403);
+  });
+
+  it("rejects players outside the selected team and foreign team creation without writing a person", async () => {
+    expect((await guardianInvite("test_guardian_foreign", adminId)).status).toBe(400);
+    const [foreignTeam] = await db.insert(teamsTable).values({ clubId: homeClub, name: "Foreign team", ageGroup: "U14" }).returning();
+    const invalid = await request(app).post("/api/people").set(as(adminLogin)).send({
+      firstName: "MustNot", lastName: "Exist", teamId: foreignTeam.id,
+    });
+    expect(invalid.status).toBe(404);
+    expect(await db.select().from(usersTable).where(eq(usersTable.firstName, "MustNot"))).toHaveLength(0);
   });
 });

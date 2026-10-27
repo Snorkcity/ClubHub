@@ -804,12 +804,14 @@ export const ListPeopleResponse = zod.array(ListPeopleResponseItem)
 
 
 
+
 export const CreatePersonBody = zod.object({
   "firstName": zod.string().min(1),
   "lastName": zod.string().min(1),
   "email": zod.string().optional(),
   "phone": zod.string().optional(),
-  "dateOfBirth": zod.string().optional()
+  "dateOfBirth": zod.string().optional(),
+  "teamId": zod.number().min(1).optional().describe('Optionally add a new email-less player to this team\'s roster atomically.')
 })
 
 export const CreatePersonResponse = zod.object({
@@ -841,12 +843,14 @@ export const createTeamInvitationBodyEmailMin = 3;
 export const createTeamInvitationBodyEmailRegExp = new RegExp('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$');
 
 
+
 export const CreateTeamInvitationBody = zod.object({
   "teamId": zod.number(),
   "firstName": zod.string().min(1),
   "lastName": zod.string().min(1),
   "email": zod.string().min(createTeamInvitationBodyEmailMin).regex(createTeamInvitationBodyEmailRegExp),
-  "role": zod.enum(['manager', 'coach', 'player']),
+  "role": zod.enum(['manager', 'coach', 'player', 'guardian']),
+  "guardianPlayerId": zod.number().min(1).optional(),
   "deliveryMethod": zod.enum(['email', 'link']).optional()
 })
 
@@ -868,7 +872,7 @@ export const PreviewTeamInvitationQueryParams = zod.object({
 export const PreviewTeamInvitationResponse = zod.object({
   "firstName": zod.string(),
   "teamName": zod.string(),
-  "role": zod.enum(['manager', 'coach', 'player']),
+  "role": zod.enum(['manager', 'coach', 'player', 'guardian']),
   "expiresAt": zod.coerce.date(),
   "accepted": zod.boolean()
 })

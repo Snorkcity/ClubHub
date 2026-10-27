@@ -3,6 +3,9 @@ import { Trash2, UserPlus } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useListPeople,
+  useGetMe,
+  useCreatePerson,
+  getListPeopleQueryKey,
   useAddTeamMember,
   useRemoveTeamMember,
   getListTeamMembersQueryKey,
@@ -64,6 +67,11 @@ export function AddMemberDialog({
   const [role, setRole] = useState<string>(mode === "player" ? "player" : "coach");
   const [jersey, setJersey] = useState("");
   const [position, setPosition] = useState("");
+  const [createNew, setCreateNew] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const { data: me } = useGetMe();
+  const createPerson = useCreatePerson();
 
   const { data: people } = useListPeople();
   const qc = useQueryClient();
@@ -79,9 +87,30 @@ export function AddMemberDialog({
     setRole(mode === "player" ? "player" : "coach");
     setJersey("");
     setPosition("");
+    setCreateNew(false);
+    setFirstName("");
+    setLastName("");
   }
 
   function submit() {
+    if (createNew) {
+      if (!firstName.trim() || !lastName.trim()) return;
+      createPerson.mutate({ data: { firstName: firstName.trim(), lastName: lastName.trim(), teamId } }, {
+        onSuccess: () => {
+          invalidateTeam(qc, teamId);
+          void qc.invalidateQueries({ queryKey: getListPeopleQueryKey() });
+          toast({ title: "Player created and added to the team" });
+          reset();
+          setOpen(false);
+        },
+        onError: (error: any) => toast({
+          title: "Could not add player",
+          description: error?.data?.error ?? "Check the details and try again.",
+          variant: "destructive",
+        }),
+      });
+      return;
+    }
     if (!personId) {
       toast({ title: "Pick a person first", variant: "destructive" });
       return;
@@ -128,20 +157,33 @@ export function AddMemberDialog({
           {mode === "player" ? "Add Player" : "Add Staff"}
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="min-w-0 max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">
             {mode === "player" ? "Add Player" : "Add Staff"}
           </DialogTitle>
           <DialogDescription>
             {mode === "player"
-              ? "Add a player from your club directory to this roster."
+              ? "Choose an existing person to keep their history, or create a new player without an email."
               : "Assign a coach or manager to this team."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          <div className="space-y-2">
+          {mode === "player" && me?.isClubAdmin && (
+            <Button variant="outline" onClick={() => setCreateNew(!createNew)}>
+              {createNew ? "Choose existing person instead" : "New player without email"}
+            </Button>
+          )}
+          {createNew ? (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">Check the club directory first to avoid a duplicate. The player gets their own permanent record; invite their parent separately.</p>
+              <div className="space-y-2"><Label htmlFor="new-player-first">Player first name</Label>
+                <Input id="new-player-first" value={firstName} onChange={(e) => setFirstName(e.target.value)} /></div>
+              <div className="space-y-2"><Label htmlFor="new-player-last">Player last name</Label>
+                <Input id="new-player-last" value={lastName} onChange={(e) => setLastName(e.target.value)} /></div>
+            </div>
+          ) : <div className="space-y-2">
             <Label>Person</Label>
             <Select value={personId} onValueChange={setPersonId}>
               <SelectTrigger>
@@ -161,7 +203,7 @@ export function AddMemberDialog({
                 )}
               </SelectContent>
             </Select>
-          </div>
+          </div>}
 
           {mode === "staff" && (
             <div className="space-y-2">
@@ -178,7 +220,7 @@ export function AddMemberDialog({
             </div>
           )}
 
-          {mode === "player" && (
+          {mode === "player" && !createNew && (
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Jersey #</Label>
@@ -202,8 +244,8 @@ export function AddMemberDialog({
         </div>
 
         <DialogFooter>
-          <Button onClick={submit} disabled={add.isPending} className="rounded-xl">
-            {add.isPending ? "Adding..." : "Add to team"}
+          <Button onClick={submit} disabled={add.isPending || createPerson.isPending || (createNew && (!firstName.trim() || !lastName.trim()))} className="rounded-xl">
+            {add.isPending || createPerson.isPending ? "Adding..." : "Add to team"}
           </Button>
         </DialogFooter>
       </DialogContent>

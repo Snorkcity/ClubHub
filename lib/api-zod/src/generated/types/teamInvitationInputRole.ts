@@ -13,4 +13,5 @@ export const TeamInvitationInputRole = {
   manager: 'manager',
   coach: 'coach',
   player: 'player',
+  guardian: 'guardian',
 } as const;

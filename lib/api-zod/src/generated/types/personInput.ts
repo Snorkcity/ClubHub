@@ -14,4 +14,9 @@ export interface PersonInput {
   email?: string;
   phone?: string;
   dateOfBirth?: string;
+  /**
+     * Optionally add a new email-less player to this team's roster atomically.
+     * @minimum 1
+     */
+  teamId?: number;
 }

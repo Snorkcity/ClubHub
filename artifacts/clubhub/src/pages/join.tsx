@@ -51,7 +51,7 @@ export default function JoinTeam() {
         <p className="text-sm font-semibold uppercase tracking-wider text-primary">
           Team invitation
         </p>
-        <h1 className="mt-2 font-display text-3xl font-bold">
+        <h1 className="mt-2 font-display text-3xl font-bold [overflow-wrap:anywhere]">
           Join {preview.data.teamName}
         </h1>
         <p className="mt-3 text-muted-foreground">

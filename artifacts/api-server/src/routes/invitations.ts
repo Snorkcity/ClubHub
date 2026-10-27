@@ -5,6 +5,7 @@ import {
   chatMembersTable,
   chatsTable,
   clubMembersTable,
+  guardianshipsTable,
   db,
   teamMembersTable,
   teamsTable,
@@ -50,7 +51,7 @@ async function findInvitation(token: string) {
     .from(teamInvitationsTable)
     .innerJoin(usersTable, eq(usersTable.id, teamInvitationsTable.personId))
     .innerJoin(teamsTable, eq(teamsTable.id, teamInvitationsTable.teamId))
-    .innerJoin(
+    .leftJoin(
       teamMembersTable,
       and(
         eq(teamMembersTable.userId, teamInvitationsTable.personId),
@@ -58,7 +59,7 @@ async function findInvitation(token: string) {
       ),
     )
     .where(eq(teamInvitationsTable.tokenHash, tokenHash(token)));
-  return row ?? null;
+  return row && (row.invitation.guardianPlayerId || row.role) ? row : null;
 }
 
 router.get("/team-invitations/preview", async (req, res) => {
@@ -69,7 +70,7 @@ router.get("/team-invitations/preview", async (req, res) => {
   return res.json({
     firstName: row.firstName,
     teamName: row.teamName,
-    role: row.role,
+    role: row.invitation.guardianPlayerId ? "guardian" : row.role,
     expiresAt: row.invitation.expiresAt.toISOString(),
     accepted: !!row.invitation.acceptedAt,
   });
@@ -88,6 +89,18 @@ router.post("/team-invitations", requireAuth, async (req, res) => {
     .from(teamsTable)
     .where(and(eq(teamsTable.id, body.teamId), eq(teamsTable.clubId, clubId)));
   if (!team) return res.status(404).json({ error: "Team not found" });
+  if (body.role === "guardian") {
+    if (!isClubAdmin)
+      return res.status(403).json({ error: "Only club admins can invite guardians" });
+    const [player] = await db.select({ id: teamMembersTable.userId }).from(teamMembersTable)
+      .where(and(eq(teamMembersTable.teamId, team.id),
+        eq(teamMembersTable.userId, body.guardianPlayerId ?? -1),
+        eq(teamMembersTable.role, "player")));
+    if (!player)
+      return res.status(400).json({ error: "Choose a player on this team's roster" });
+  } else if (body.guardianPlayerId !== undefined) {
+    return res.status(400).json({ error: "Only guardian invitations can link a player" });
+  }
 
   const token = randomBytes(32).toString("base64url");
   const expiresAtDate = new Date(Date.now() + INVITE_LIFETIME_MS);
@@ -96,6 +109,8 @@ router.post("/team-invitations", requireAuth, async (req, res) => {
     const existing = await tx.select().from(usersTable)
       .where(sql`lower(${usersTable.email}) = ${email}`);
     if (existing.length > 1) return null;
+    if (body.role === "guardian" && existing[0]?.id === body.guardianPlayerId)
+      return null;
     // A person keeps one identity across clubs. An invitation may add roles,
     // but must never create a second profile for an existing account.
     const created = existing[0]
@@ -114,7 +129,7 @@ router.post("/team-invitations", requireAuth, async (req, res) => {
       userId: created.id,
       role: "member",
     }).onConflictDoNothing();
-    await tx.insert(teamMembersTable).values({
+    if (body.role !== "guardian") await tx.insert(teamMembersTable).values({
       teamId: team.id,
       userId: created.id,
       role: body.role,
@@ -123,7 +138,7 @@ router.post("/team-invitations", requireAuth, async (req, res) => {
       .select({ id: chatsTable.id })
       .from(chatsTable)
       .where(and(eq(chatsTable.teamId, team.id), eq(chatsTable.type, "team")));
-    if (teamChat)
+    if (teamChat && body.role !== "guardian")
       await tx
         .insert(chatMembersTable)
         .values({ chatId: teamChat.id, userId: created.id })
@@ -135,6 +150,7 @@ router.post("/team-invitations", requireAuth, async (req, res) => {
       invitedByUserId: localUser.id,
       tokenHash: tokenHash(token),
       expiresAt: expiresAtDate,
+      guardianPlayerId: body.role === "guardian" ? body.guardianPlayerId : null,
     });
     return created;
   });
@@ -207,7 +223,26 @@ router.post("/team-invitations/accept", requireAccount, async (req, res) => {
     }
     const [membership] = await tx.select({ id: teamMembersTable.id }).from(teamMembersTable)
       .where(and(eq(teamMembersTable.teamId, invitation.teamId), eq(teamMembersTable.userId, localUser.id)));
-    if (!membership)
+    if (invitation.guardianPlayerId) {
+      const [player] = await tx.select({ id: teamMembersTable.id }).from(teamMembersTable)
+        .where(and(eq(teamMembersTable.teamId, invitation.teamId),
+          eq(teamMembersTable.userId, invitation.guardianPlayerId), eq(teamMembersTable.role, "player")));
+      if (!player || invitation.guardianPlayerId === localUser.id)
+        return { status: 403, error: "This player is no longer on the team. Ask your club admin for a new invitation." };
+      // Never reinstate a link removed after acceptance by replaying an old URL.
+      const [existingLink] = await tx.select().from(guardianshipsTable).where(and(
+        eq(guardianshipsTable.guardianId, localUser.id),
+        eq(guardianshipsTable.playerId, invitation.guardianPlayerId)));
+      if (invitation.acceptedAt && !existingLink?.canManage)
+        return { status: 403, error: "This family link is no longer active. Ask your club admin for a new invitation." };
+      if (!invitation.acceptedAt) await tx.insert(guardianshipsTable).values({
+        guardianId: localUser.id, playerId: invitation.guardianPlayerId,
+        relationship: "guardian", canManage: true,
+      }).onConflictDoUpdate({
+        target: [guardianshipsTable.guardianId, guardianshipsTable.playerId],
+        set: { canManage: true },
+      });
+    } else if (!membership)
       return { status: 403, error: "You are no longer a member of this team. Ask for a new invitation to rejoin." };
     await tx.update(teamInvitationsTable).set({ acceptedAt: invitation.acceptedAt ?? new Date() })
       .where(eq(teamInvitationsTable.id, invitation.id));

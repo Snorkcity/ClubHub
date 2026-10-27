@@ -3,6 +3,7 @@ import { and, asc, eq, inArray } from "drizzle-orm";
 import {
   db,
   clubsTable,
+  clubMembersTable,
   usersTable,
   teamsTable,
   teamMembersTable,
@@ -170,11 +171,19 @@ router.post("/people", requireAuth, async (req, res) => {
   if (!isClubAdmin)
     return res.status(403).json({ error: "Only club admins can add people" });
   const body = CreatePersonBody.parse(req.body);
+  if (body.teamId !== undefined) {
+    if (body.email?.trim())
+      return res.status(400).json({ error: "Use an invitation for a player with an email address" });
+    const [team] = await db.select({ id: teamsTable.id }).from(teamsTable)
+      .where(and(eq(teamsTable.id, body.teamId), eq(teamsTable.clubId, clubId)));
+    if (!team) return res.status(404).json({ error: "Team not found" });
+  }
   const [club] = await db
     .select({ countryCode: clubsTable.countryCode })
     .from(clubsTable)
     .where(eq(clubsTable.id, clubId));
-  const [person] = await db
+  const person = await db.transaction(async (tx) => {
+    const [created] = await tx
     .insert(usersTable)
     .values({
       clubId,
@@ -187,6 +196,12 @@ router.post("/people", requireAuth, async (req, res) => {
       dateOfBirth: body.dateOfBirth ?? null,
     })
     .returning();
+    await tx.insert(clubMembersTable).values({ clubId, userId: created.id, role: "member" });
+    if (body.teamId !== undefined) await tx.insert(teamMembersTable).values({
+      teamId: body.teamId, userId: created.id, role: "player",
+    });
+    return created;
+  });
   return res.status(201).json(toPerson(person));
 });
 
