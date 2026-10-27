@@ -6982,7 +6982,8 @@ export const getSubmitDevelopmentCycleUrl = (cycleId: number,) => {
 }
 
 /**
- * @summary Submit and lock a complete cycle
+ * At least one current player must have a saved assessment. Unassessed players do not block submission and receive no report. Every saved family-report draft must still be reviewed before release.
+ * @summary Submit and lock saved player assessments
  */
 export const submitDevelopmentCycle = async (cycleId: number, options?: RequestInit): Promise<DevelopmentCycleDetail> => {
 
@@ -7031,7 +7032,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type SubmitDevelopmentCycleMutationError = ErrorType<unknown>
 
     /**
- * @summary Submit and lock a complete cycle
+ * @summary Submit and lock saved player assessments
  */
 export const useSubmitDevelopmentCycle = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitDevelopmentCycle>>, TError,{cycleId: number}, TContext>, request?: SecondParameter<typeof customFetch>}

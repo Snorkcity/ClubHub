@@ -2978,7 +2978,8 @@ export const SaveDevelopmentReportDraftResponse = zod.object({
 
 
 /**
- * @summary Submit and lock a complete cycle
+ * At least one current player must have a saved assessment. Unassessed players do not block submission and receive no report. Every saved family-report draft must still be reviewed before release.
+ * @summary Submit and lock saved player assessments
  */
 export const submitDevelopmentCycleResponseTwoPlayersItemAssessmentOneOneOneTechnicalMax = 5;
 

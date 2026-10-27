@@ -1593,7 +1593,8 @@ paths:
     post:
       operationId: submitDevelopmentCycle
       tags: [development]
-      summary: Submit and lock a complete cycle
+      summary: Submit and lock saved player assessments
+      description: At least one current player must have a saved assessment. Unassessed players do not block submission and receive no report. Every saved family-report draft must still be reviewed before release.
       parameters:
         - $ref: "#/components/parameters/CycleId"
       responses:

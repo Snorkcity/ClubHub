@@ -16,10 +16,10 @@ failure mode or security attack has been tested.
 
 ## Automated results
 
-**209 tests passed across 21 test files**, including the guardian RSVP and
-selected-team Schedule follow-ups.
+**217 tests passed across 21 test files**, including the guardian RSVP,
+selected-team Schedule and partial Player Feedback follow-ups.
 API and frontend TypeScript checking and the web build also passed.
-The pass and follow-ups added 63 regression cases beyond the original 146 tests.
+The pass and follow-ups added 71 regression cases beyond the original 146 tests.
 
 Command:
 
@@ -127,6 +127,36 @@ that each team has its own cache and existing event/RSVP invalidation still
 matches all affected schedule variants. Frontend and API typechecks and the web
 build pass. No separate signed-in browser walkthrough was run for this read-only
 filtering change.
+
+## Partial Player Feedback finalisation
+
+Cycles can now be submitted with one or more saved current-player assessments,
+without requiring assessments for the entire roster. Confirmation identifies
+unassessed players as excluded and explains that assessments cannot be added
+after submission. Excluded players have no placeholder family draft or report.
+
+The review gate remains: every included family-report draft must be reviewed
+before release. Review totals now count saved assessments rather than the roster.
+Only included players and their managing guardians receive the relevant reports
+and report-ready notifications.
+
+Eight new regression cases cover empty/invalid assessments, partial submission,
+omitted players, review requirements, permissions, delivery recipients, concurrent
+and repeated release, saved private notes and a racing assessment save/submission.
+The race check caught and verified a fix so a successful concurrent save is
+included in the finalisation snapshot rather than silently missing its draft.
+Frontend/API typechecks and the web build pass.
+
+The focused browser check also passed: first save and repeat save keep the count
+correct without a reload; cancel leaves the cycle active; a simulated failed
+submission shows an error without locking; one of two players can be submitted,
+reviewed and released. Excluded players have no editable draft or delivery.
+Reload preserves the released state. Both confirmation dialogs fit a 390px phone
+viewport without horizontal overflow.
+
+The production-only variant preserves existing production recipient rules and
+omits unrelated preview test-fill controls. It also passed both typechecks, the
+web build and all 13 Player Development lifecycle tests in an isolated copy.
 
 ## Checks still needed outside this pass
 

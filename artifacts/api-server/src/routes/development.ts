@@ -88,7 +88,8 @@ async function canViewCycle(cycle: DevelopmentCycle, assessorIds: number[], user
 }
 
 function isSerializationFailure(error: unknown) {
-  return (error as { code?: string } | undefined)?.code === "40001";
+  const failure = error as { code?: string; cause?: { code?: string } } | undefined;
+  return failure?.code === "40001" || failure?.cause?.code === "40001";
 }
 
 async function serializable<T>(work: () => Promise<T>): Promise<T> {
@@ -152,7 +153,7 @@ async function buildDetail(cycle: DevelopmentCycle, assessorIds: number[], actor
     completedPlayers: assessments.filter((a) => rosterRows.some((r) => r.user.id === a.playerId)).length,
     totalPlayers: rosterRows.length,
     reviewedReports: assessments.filter((a) => a.reviewedAt && a.familyDraftCategories && a.familyStrength && a.familyFocus).length,
-    totalReports: rosterRows.length,
+    totalReports: assessments.length,
     capabilities: caps,
     submittedAt: cycle.submittedAt?.toISOString() ?? null,
     releasedAt: cycle.releasedAt?.toISOString() ?? null,
@@ -298,6 +299,11 @@ router.put("/development-cycles/:cycleId/players/:playerId/assessment", requireA
       target: [developmentAssessmentsTable.cycleId, developmentAssessmentsTable.playerId],
       set: { ...parsed.data, internalNotes: parsed.data.internalNotes ?? null, updatedById: localUser.id, updatedAt: new Date() },
     }).returning();
+    // A submit transaction may have taken its serializable snapshot before
+    // waiting for this lock. Updating the shared cycle row forces it to retry
+    // with a snapshot that includes this successful save, not omit its draft.
+    await tx.update(developmentCyclesTable).set({ updatedAt: new Date() })
+      .where(eq(developmentCyclesTable.id, cycleId));
     return { kind: "saved" as const, saved, player: player.user };
   });
   if (result.kind === "missing") { res.status(404).json({ error: "Development cycle not found" }); return; }
@@ -359,7 +365,7 @@ router.post("/development-cycles/:cycleId/submit", requireAuth, async (req, res)
   const cycleId = Number(req.params.cycleId);
   let outcome:
     | { kind: "missing" | "forbidden" | "locked" }
-    | { kind: "incomplete"; missing: number }
+    | { kind: "empty" }
     | { kind: "submitted"; cycle: DevelopmentCycle; assessorIds: number[] };
   try {
     outcome = await serializable(() => db.transaction(async (tx) => {
@@ -373,15 +379,14 @@ router.post("/development-cycles/:cycleId/submit", requireAuth, async (req, res)
       const assessorIds = assessors.map((a) => a.userId);
       if (!access(row.cycle, assessorIds, localUser.id, isClubAdmin).canSubmit)
         return { kind: row.cycle.status === "active" ? "forbidden" as const : "locked" as const };
-      // Serializable isolation plus row locks makes the roster snapshot and
-      // assessment completeness check one atomic submission decision.
+      // Snapshot saved assessments atomically with the roster. Unassessed
+      // players do not block submission, but an empty cycle cannot be submitted.
       const players = await tx.select({ userId: teamMembersTable.userId }).from(teamMembersTable)
         .where(and(eq(teamMembersTable.teamId, row.cycle.teamId), eq(teamMembersTable.role, "player"))).for("update");
       const assessments = await tx.select().from(developmentAssessmentsTable)
         .where(eq(developmentAssessmentsTable.cycleId, cycleId)).for("update");
       const completed = new Set(assessments.map((a) => a.playerId));
-      const missing = players.filter((p) => !completed.has(p.userId)).length;
-      if (missing) return { kind: "incomplete" as const, missing };
+      if (!players.some((p) => completed.has(p.userId))) return { kind: "empty" as const };
       // Submission creates an unreviewed, family-safe draft from the shared
       // assessment. Review is explicitly required before release.
       for (const assessment of assessments) {
@@ -401,13 +406,13 @@ router.post("/development-cycles/:cycleId/submit", requireAuth, async (req, res)
       return { kind: "submitted" as const, cycle: submitted, assessorIds };
     }, { isolationLevel: "serializable" }));
   } catch (error) {
-    if (isSerializationFailure(error)) { res.status(409).json({ error: "The roster changed while submitting; review completion and try again" }); return; }
+    if (isSerializationFailure(error)) { res.status(409).json({ error: "The roster or assessments changed while submitting; check the saved assessments and try again" }); return; }
     throw error;
   }
   if (outcome.kind === "missing") { res.status(404).json({ error: "Development cycle not found" }); return; }
   if (outcome.kind === "forbidden") { res.status(403).json({ error: "You are not a selected assessor" }); return; }
   if (outcome.kind === "locked") { res.status(409).json({ error: "Cycle has already been submitted" }); return; }
-  if (outcome.kind === "incomplete") { res.status(409).json({ error: `All current players must be completed before submission (${outcome.missing} remaining)` }); return; }
+  if (outcome.kind === "empty") { res.status(409).json({ error: "Complete and save at least one player assessment before submitting this cycle" }); return; }
   if (outcome.kind !== "submitted") { res.status(409).json({ error: "Cycle has already been submitted" }); return; }
   res.json(await buildDetail(outcome.cycle, outcome.assessorIds, localUser.id, isClubAdmin));
 });

@@ -5,6 +5,8 @@ import { ArrowLeft, Check, Lock, Eye, HelpCircle, User, Loader2 } from "lucide-r
 import {
   useGetDevelopmentCycle,
   getGetDevelopmentCycleQueryKey,
+  getListDevelopmentCyclesQueryKey,
+  getGetDevelopmentInternalSummaryQueryKey,
   useSubmitDevelopmentCycle,
   useReleaseDevelopmentReports,
   type DevelopmentCycleDetail,
@@ -36,7 +38,7 @@ export default function DevelopmentCycle() {
   const [activeTab, setActiveTab] = useState<"wording" | "team" | "assessments" | null>(null);
 
   const { data: cycle, isLoading, error, refetch } = useGetDevelopmentCycle(cycleId, {
-    query: { queryKey: getGetDevelopmentCycleQueryKey(cycleId) }
+    query: { queryKey: getGetDevelopmentCycleQueryKey(cycleId), refetchOnMount: "always" }
   });
 
   useEffect(() => {
@@ -91,7 +93,7 @@ export default function DevelopmentCycle() {
                 {cycle.status === "active" && <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200 hidden sm:inline-flex">Active</Badge>}
               </div>
               <p className="text-xs text-muted-foreground truncate">
-                {cycle.reportingPeriod} · {cycle.completedPlayers}/{cycle.totalPlayers} completed
+                {cycle.reportingPeriod} · {cycle.completedPlayers}/{cycle.totalPlayers} players assessed
               </p>
             </div>
           </div>
@@ -173,7 +175,9 @@ export default function DevelopmentCycle() {
                         {player.person.fullName}
                       </div>
                       <div className={`text-xs truncate ${isSelected ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                        {activeTab === "wording"
+                        {isLocked && !player.complete
+                          ? "Not included in this cycle"
+                          : activeTab === "wording"
                           ? (isComplete ? "Reviewed" : "Needs review")
                           : (isComplete ? "Assessed" : "Needs assessment")
                         }
@@ -191,6 +195,17 @@ export default function DevelopmentCycle() {
         <div className={`flex-1 min-h-0 flex flex-col min-w-0 bg-background ${renderSidebar && !selectedPlayerId && 'hidden md:flex'}`}>
           {activeTab === "team" ? (
             <TeamReportView cycle={cycle} />
+          ) : selectedPlayer && isLocked && !selectedPlayer.complete ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center gap-3">
+              <Button variant="ghost" onClick={() => setSelectedPlayerId(null)} className="md:hidden">
+                <ArrowLeft className="mr-2 h-4 w-4" /> Back to players
+              </Button>
+              <h2 className="font-semibold">Not included in this cycle</h2>
+              <p className="text-sm text-muted-foreground max-w-md">
+                No assessment was saved for {selectedPlayer.person.fullName} when this cycle was locked.
+                They will not receive a family report from this cycle.
+              </p>
+            </div>
           ) : activeTab === "wording" && selectedPlayer ? (
             <WordingForm cycle={cycle} player={selectedPlayer} onBack={() => setSelectedPlayerId(null)} />
           ) : selectedPlayer ? (
@@ -254,32 +269,51 @@ export default function DevelopmentCycle() {
 
 function CycleActions({ cycle }: { cycle: DevelopmentCycleDetail }) {
   const { toast } = useToast();
+  
   const submitCycle = useSubmitDevelopmentCycle();
   const releaseReports = useReleaseDevelopmentReports();
   const [submitOpen, setSubmitOpen] = useState(false);
   const [releaseOpen, setReleaseOpen] = useState(false);
+  
+  
 
   const canSubmit = cycle.capabilities.canSubmit && cycle.status === "active";
   const canRelease = cycle.capabilities.canRelease && cycle.status === "submitted";
+  
 
-  const allComplete = cycle.completedPlayers === cycle.totalPlayers;
+  const hasAssessments = cycle.completedPlayers > 0;
   const allReviewed = cycle.reviewedReports === cycle.totalReports;
   const remainingReviews = cycle.totalReports - cycle.reviewedReports;
+  const skippedPlayers = cycle.totalPlayers - cycle.completedPlayers;
+
+  const refreshCycle = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: getGetDevelopmentCycleQueryKey(cycle.id) }),
+      queryClient.invalidateQueries({ queryKey: getListDevelopmentCyclesQueryKey(cycle.teamId) }),
+      queryClient.invalidateQueries({ queryKey: getGetDevelopmentInternalSummaryQueryKey(cycle.id) }),
+    ]);
+  };
+
+  
 
   const handleSubmit = () => {
     submitCycle.mutate({ cycleId: cycle.id }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetDevelopmentCycleQueryKey(cycle.id) });
+      onSuccess: async () => {
+        await refreshCycle();
         setSubmitOpen(false);
-        toast({ title: "Cycle locked successfully" });
-      }
+        toast({ title: "Cycle locked successfully", description: "Review the saved family-report drafts before releasing them." });
+      },
+      onError: async (err) => {
+        await refreshCycle();
+        toast({ title: "Cannot submit cycle", description: err.message || "Check the saved assessments and try again.", variant: "destructive" });
+      },
     });
   };
 
   const handleRelease = () => {
     releaseReports.mutate({ cycleId: cycle.id }, {
-      onSuccess: (res) => {
-        queryClient.invalidateQueries({ queryKey: getGetDevelopmentCycleQueryKey(cycle.id) });
+      onSuccess: async (res) => {
+        await refreshCycle();
         setReleaseOpen(false);
         toast({ title: "Reports released", description: `${res.reportCount} reports have been made available.` });
       },
@@ -294,20 +328,22 @@ function CycleActions({ cycle }: { cycle: DevelopmentCycleDetail }) {
   };
 
   if (cycle.status === "released") {
-    return <Badge variant="secondary" className="bg-blue-50 text-blue-700">All Done</Badge>;
+    return <Badge variant="secondary" className="bg-blue-50 text-blue-700">Reports released</Badge>;
   }
 
   return (
     <>
       {canSubmit && (
         <Button
-          variant={allComplete ? "default" : "secondary"}
-          className={!allComplete ? "bg-amber-100 text-amber-800 hover:bg-amber-200" : ""}
+          variant={hasAssessments ? "default" : "secondary"}
           onClick={() => setSubmitOpen(true)}
+          data-testid="button-lock-submit-cycle"
         >
           <Lock className="mr-2 h-4 w-4" /> Lock & Submit
         </Button>
       )}
+
+      
 
       {canRelease && (
         <Button
@@ -323,21 +359,32 @@ function CycleActions({ cycle }: { cycle: DevelopmentCycleDetail }) {
       <Dialog open={submitOpen} onOpenChange={setSubmitOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Lock this cycle?</DialogTitle>
+            <DialogTitle>Lock and submit assessments?</DialogTitle>
             <DialogDescription>
-              {allComplete
-                ? "All players have been assessed. Locking the cycle will prevent further edits."
-                : `Wait! Only ${cycle.completedPlayers} of ${cycle.totalPlayers} players have been assessed. You cannot edit assessments after locking.`
+              {hasAssessments
+                ? `Locking includes ${cycle.totalReports} saved assessment(s) and freezes ratings, family feedback and private staff notes. ${
+                    skippedPlayers > 0
+                      ? `${skippedPlayers} unassessed player(s) will not receive a report from this cycle. `
+                      : ""
+                  }You cannot add assessments after locking. Family-report drafts stay private until reviewed and released.`
+                : "Complete and save at least one player assessment before locking and submitting this cycle. You do not need to assess every player."
               }
-              {cycle.internalRecipient && " The internal report will be sent to the selected reviewer."}
+              {cycle.internalRecipient && ` ${cycle.internalRecipient.fullName} can view the internal summary after submission and will be notified when reports are released.`}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSubmitOpen(false)}>Cancel</Button>
+            <Button
+              variant="outline"
+              onClick={() => setSubmitOpen(false)}
+              data-testid="button-cancel-lock-cycle"
+            >
+              Cancel
+            </Button>
             <Button
               variant="default"
               onClick={handleSubmit}
-              disabled={submitCycle.isPending || !allComplete}
+              disabled={submitCycle.isPending || !hasAssessments}
+              data-testid="button-confirm-lock-cycle"
             >
               {submitCycle.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Yes, lock it
@@ -346,20 +393,24 @@ function CycleActions({ cycle }: { cycle: DevelopmentCycleDetail }) {
         </DialogContent>
       </Dialog>
 
+      
+
       <Dialog open={releaseOpen} onOpenChange={setReleaseOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Release reports to families?</DialogTitle>
             <DialogDescription>
               {!allReviewed && `Wait! You still have ${remainingReviews} report(s) left to review. You cannot release until all drafts are reviewed.`}
-              {allReviewed && "This will make the reports visible on player profiles for guardians and the players themselves. They will receive a notification."}
+              {allReviewed && `This will release ${cycle.totalReports} reviewed report(s) to those players and their managing guardians. They will receive a notification. ${
+                skippedPlayers > 0 ? `${skippedPlayers} unassessed player(s) will not receive a report or notification from this cycle.` : ""
+              }`}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setReleaseOpen(false)}>Cancel</Button>
             <Button variant="default" onClick={handleRelease} disabled={releaseReports.isPending || !allReviewed}>
               {releaseReports.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Release {cycle.completedPlayers} reports
+              Release {cycle.totalReports} reports
             </Button>
           </DialogFooter>
         </DialogContent>

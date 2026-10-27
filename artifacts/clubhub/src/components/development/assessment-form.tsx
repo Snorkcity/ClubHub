@@ -8,6 +8,7 @@ import * as z from "zod";
 import {
   useSaveDevelopmentAssessment,
   getGetDevelopmentCycleQueryKey,
+  getListDevelopmentCyclesQueryKey,
   type DevelopmentCycleDetail,
   type DevelopmentCyclePlayer,
 } from "@workspace/api-client-react";
@@ -75,21 +76,33 @@ export function AssessmentForm({
 
   const onSubmit = (data: AssessmentFormValues) => {
     saveAssessment.mutate({ cycleId: cycle.id, playerId: player.person.id, data }, {
-      onSuccess: () => {
-        // Optimistically update the cache so the checkmark appears immediately without refetch cascade
+      onSuccess: async (savedAssessment) => {
+        // Keep both roster progress and the actual report count in sync.
         queryClient.setQueryData(getGetDevelopmentCycleQueryKey(cycle.id), (old: any) => {
-          if (!old) return old;
+          if (!old || old.status !== "active") return old;
+          const previousPlayer = old.players.find((p: any) => p.person.id === player.person.id);
+          if (!previousPlayer) return old;
           const newPlayers = old.players.map((p: any) => {
             if (p.person.id === player.person.id) {
-              return { ...p, complete: true, assessment: { ...p.assessment, ...data } };
+              return { ...p, complete: true, assessment: savedAssessment };
             }
             return p;
           });
           const completedCount = newPlayers.filter((p: any) => p.complete).length;
-          return { ...old, players: newPlayers, completedPlayers: completedCount };
+          return {
+            ...old, players: newPlayers, completedPlayers: completedCount,
+            totalReports: old.totalReports + (previousPlayer.complete ? 0 : 1),
+          };
         });
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: getGetDevelopmentCycleQueryKey(cycle.id) }),
+          queryClient.invalidateQueries({ queryKey: getListDevelopmentCyclesQueryKey(cycle.teamId) }),
+        ]);
         toast({ title: "Saved", description: `Assessment for ${player.person.firstName} saved.` });
-      }
+      },
+      onError: (error) => {
+        toast({ title: "Assessment not saved", description: error.message || "Check the cycle is still active and try again.", variant: "destructive" });
+      },
     });
   };
 
