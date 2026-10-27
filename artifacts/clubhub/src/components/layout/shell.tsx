@@ -20,7 +20,6 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, 
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { ClubMark } from "@/components/brand/club-mark";
 import { useTeamFeatures } from "@/lib/team-features";
 
 const DESKTOP_NAV_COLLAPSED_KEY = "nahreo-desktop-nav-collapsed";
@@ -124,37 +123,14 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       : i.label !== "Monitoring" && i.label !== "Team Members" && i.label !== "Player Feedback",
   );
 
-  // Secondary destinations stay off the four primary tabs, but remain easy
-  // to discover from Home on phones. Use the same role and eligibility gates
-  // as the main navigation so these shortcuts never grant additional access.
-  const homeShortcuts = [
-    ...(isStaff ? [{ label: "Team Members", href: "/people", icon: UserSquare2 }] : []),
-    ...(isStaff && staffTeamId != null
-      ? [{ label: "Player Feedback", href: `/teams/${staffTeamId}/development`, icon: TrendingUp }]
-      : []),
-    ...(isPlayer && playerEligible
-      ? [{ label: "Check-in", href: "/checkin", icon: ClipboardCheck }]
-      : []),
-  ];
-
   return (
     <div className="min-h-screen bg-muted/20 flex flex-col md:flex-row overflow-x-clip">
       {/* Sidebar for Desktop */}
       <aside className={`hidden md:flex flex-col ${isNavCollapsed ? "w-20" : "w-72"} bg-background border-r shrink-0 sticky top-0 h-screen transition-[width] duration-200 ease-in-out`}>
-        <div className={`h-16 flex items-center border-b shrink-0 ${isNavCollapsed ? "justify-center gap-1 px-1" : "justify-between px-6"}`}>
-          <Link
-            href="/home"
-            aria-label={club?.name || "Nahreo"}
-            title={isNavCollapsed ? club?.name || "Nahreo" : undefined}
-            className={`flex min-w-0 items-center ${isNavCollapsed ? "h-8 w-8 justify-center" : "flex-1 gap-3"}`}
-          >
-            <ClubMark logoUrl={club?.logoUrl} name={club?.name} />
-            {!isNavCollapsed && (
-              <span className="font-display font-bold text-lg truncate">
-                {club?.name || "Nahreo"}
-              </span>
-            )}
-          </Link>
+        <div className={`h-16 flex items-center border-b shrink-0 ${isNavCollapsed ? "justify-center gap-0 px-0" : "justify-between px-6"}`}>
+          <div className={isNavCollapsed ? "shrink-0" : "min-w-0 flex-1"}>
+            <TeamSwitcher club={club} collapsed={isNavCollapsed} />
+          </div>
           <Button
             type="button"
             variant="ghost"
@@ -178,9 +154,6 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           aria-label="Primary navigation"
           className={`flex-1 overflow-y-auto py-6 flex flex-col gap-1 ${isNavCollapsed ? "px-2" : "px-4"}`}
         >
-          <div className={`mb-4 ${isNavCollapsed ? "flex justify-center" : ""}`}>
-            <TeamSwitcher collapsed={isNavCollapsed} />
-          </div>
           {!isNavCollapsed && (
             <div className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
               Menu
@@ -259,13 +232,10 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Header — only on Home; other pages have their own compact headers */}
       {location === "/home" && (
-      <header className="md:hidden sticky top-0 z-40 flex flex-col gap-1 border-b-2 border-primary/25 bg-primary/10 px-3 py-2 shadow-sm dark:bg-primary/15">
-        <div className="flex h-11 min-w-0 items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-1">
-            <Link href="/home" className="flex h-11 w-9 shrink-0 items-center justify-center rounded-lg" aria-label={club?.name || "Nahreo"} title={club?.name || "Nahreo"}>
-              <ClubMark logoUrl={club?.logoUrl} name={club?.name} />
-            </Link>
-            <TeamSwitcher compact />
+      <header className="md:hidden sticky top-0 z-40 isolate shrink-0 border-b-2 border-primary/25 bg-background px-3 py-2 shadow-sm before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-primary/10 dark:before:bg-primary/15">
+        <div className="flex h-12 min-w-0 items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <TeamSwitcher club={club} />
           </div>
 
           <div className="flex shrink-0 items-center gap-1">
@@ -292,33 +262,6 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             />
           </div>
         </div>
-        {homeShortcuts.length > 0 && (
-          <nav
-            aria-label="Home shortcuts"
-            className="flex min-w-0 gap-1 border-t border-primary/10 pt-1"
-          >
-            {homeShortcuts.map((item) => {
-              const isActive = location === item.href || location.startsWith(`${item.href}/`);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  aria-label={item.label}
-                  aria-current={isActive ? "page" : undefined}
-                  data-testid={`link-home-shortcut-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
-                  className={`flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 rounded-lg px-1.5 py-1 text-center text-xs font-semibold leading-tight transition-colors ${
-                    isActive
-                      ? "bg-primary/15 text-primary"
-                      : "text-foreground/80 hover:bg-primary/10 hover:text-foreground"
-                  }`}
-                >
-                  <item.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-                  <span className="min-w-0">{item.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-        )}
       </header>
       )}
 

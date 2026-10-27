@@ -1,10 +1,11 @@
 import { useEffect } from "react";
-import { Check, ChevronDown, Users } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { Check, ChevronDown, Users, Building2 } from "lucide-react";
+import { useLocation } from "wouter";
 import {
   useListTeamUnreads,
-  useMarkTeamSeen,
   getListTeamUnreadsQueryKey,
+  useGetPlatformAccess,
+  getGetPlatformAccessQueryKey,
 } from "@workspace/api-client-react";
 
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useActiveTeam } from "@/lib/active-team";
+import { switchClub } from "@/lib/active-club";
+import { ClubMark } from "@/components/brand/club-mark";
 
 /** Poll unread counts every 60s so badges stay fresh without a refresh. */
 export function useTeamUnreads() {
@@ -30,19 +33,27 @@ export function useTeamUnreads() {
 }
 
 /**
- * Heja-style team switcher. Shows the active team (or "All teams") with a
- * chevron; the dropdown lists every team you belong to, with unread badges
- * for the teams you're NOT currently looking at.
+ * The club logo opens the current club's teams and the account's other clubs.
+ * Club switches use the existing full reload to discard all old club state.
  */
 export function TeamSwitcher({
-  compact = false,
   collapsed = false,
+  club,
 }: {
-  compact?: boolean;
   collapsed?: boolean;
+  club?: { id: number; name: string; logoUrl?: string | null };
 }) {
   const { activeTeamId, setActiveTeamId } = useActiveTeam();
-  const { data: unreads } = useTeamUnreads();
+  const [, navigate] = useLocation();
+  const teamsQuery = useTeamUnreads();
+  const { data: unreads } = teamsQuery;
+  const accessQuery = useGetPlatformAccess({
+    query: {
+      queryKey: getGetPlatformAccessQueryKey(),
+      staleTime: 30_000,
+      refetchOnWindowFocus: true,
+    },
+  });
 
   const teams = unreads ?? [];
 
@@ -50,58 +61,64 @@ export function TeamSwitcher({
   useEffect(() => {
     if (
       activeTeamId != null &&
-      teams.length > 0 &&
+      teamsQuery.isSuccess &&
       !teams.some((t) => t.teamId === activeTeamId)
     ) {
       setActiveTeamId(null);
     }
-  }, [activeTeamId, teams, setActiveTeamId]);
-
-  // Only one team: nothing to switch, no dropdown needed.
-  if (teams.length <= 1) return null;
+  }, [activeTeamId, teams, teamsQuery.isSuccess, setActiveTeamId]);
 
   const active = teams.find((t) => t.teamId === activeTeamId) ?? null;
-  const label = active ? active.teamName : "All teams";
+  const label = active?.teamName ?? (teams.length === 1 ? teams[0].teamName : teams.length > 1 ? "All teams" : club?.name ?? "Nahreo");
 
   // Note: switching does NOT mark the team seen — that happens after the
   // user has actually been viewing its content for a moment (home/team page).
-  const select = (teamId: number | null) => setActiveTeamId(teamId);
+  const select = (teamId: number | null) => {
+    setActiveTeamId(teamId);
+    navigate("/home");
+  };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          aria-label={`My teams, currently showing ${label}`}
-          title={collapsed ? `My teams: ${label}` : undefined}
-          data-testid="button-switch-team"
+          aria-label={`Switch club or team, ${club?.name ?? "Nahreo"}, currently showing ${label}`}
+          title={`Switch club or team: ${label}`}
+          data-testid="button-switch-club-team"
           className={collapsed
             ? "h-11 w-11 justify-center rounded-xl p-0"
-            : compact
-              ? "h-11 max-w-[45vw] gap-1.5 px-2"
-              : "w-full justify-between rounded-xl h-10 px-3 font-semibold"}
+            : "h-12 min-w-0 w-full justify-start gap-2 rounded-xl px-1 font-semibold"}
         >
-          {collapsed ? (
-            <Users className="h-5 w-5" aria-hidden="true" />
-          ) : compact ? (
+          <span className="shrink-0">
+            <ClubMark logoUrl={club?.logoUrl} name={club?.name} />
+          </span>
+          {!collapsed && (
             <span className="flex min-w-0 flex-col items-start leading-tight">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                My teams
+              <span className="w-full truncate text-xs text-muted-foreground">
+                {club?.name ?? "Nahreo"}
               </span>
               <span className="w-full truncate font-display text-sm font-bold">
                 {label}
               </span>
             </span>
-          ) : (
-            <span className="truncate">{label}</span>
           )}
           {!collapsed && <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-64 rounded-2xl p-2 shadow-xl">
+      <DropdownMenuContent align="start" className="w-72 max-w-[calc(100vw-1rem)] max-h-[min(70dvh,var(--radix-dropdown-menu-content-available-height))] overflow-y-auto rounded-2xl p-2 shadow-xl">
         <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          My teams
+          Teams in {club?.name ?? "this club"}
         </DropdownMenuLabel>
+        {teamsQuery.isPending && <div className="px-2 py-3 text-sm text-muted-foreground">Loading teams…</div>}
+        {teamsQuery.isError && (
+          <DropdownMenuItem onSelect={(event) => { event.preventDefault(); void teamsQuery.refetch(); }}>
+            Unable to load teams. Try again
+          </DropdownMenuItem>
+        )}
+        {teamsQuery.isSuccess && teams.length === 0 && <div className="px-2 py-3 text-sm text-muted-foreground">No teams available in this club.</div>}
+        {teams.length > 1 && (
+        <>
         <DropdownMenuItem
           className="rounded-xl py-2.5 cursor-pointer"
           onClick={() => select(null)}
@@ -111,16 +128,18 @@ export function TeamSwitcher({
           {activeTeamId == null && <Check className="h-4 w-4 text-primary" />}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
+        </>
+        )}
         {teams.map((t) => {
           const unread = t.unreadPosts + t.unreadMessages;
           const isActive = t.teamId === activeTeamId;
           return (
             <DropdownMenuItem
               key={t.teamId}
-              className="rounded-xl py-2.5 cursor-pointer"
+              className="min-h-11 rounded-xl py-2.5 cursor-pointer"
               onClick={() => select(t.teamId)}
             >
-              <span className="flex-1 truncate">{t.teamName}</span>
+              <span className="min-w-0 flex-1 truncate">{t.teamName}</span>
               {isActive ? (
                 <Check className="h-4 w-4 text-primary" />
               ) : unread > 0 ? (
@@ -131,6 +150,27 @@ export function TeamSwitcher({
             </DropdownMenuItem>
           );
         })}
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          My clubs
+        </DropdownMenuLabel>
+        {accessQuery.isPending && <div className="px-2 py-3 text-sm text-muted-foreground">Loading clubs…</div>}
+        {accessQuery.isError && (
+          <DropdownMenuItem onSelect={(event) => { event.preventDefault(); void accessQuery.refetch(); }}>
+            Unable to load clubs. Try again
+          </DropdownMenuItem>
+        )}
+        {(accessQuery.data?.clubs ?? []).map((option) => (
+          <DropdownMenuItem
+            key={option.id}
+            className="min-h-11 cursor-pointer gap-2 rounded-xl py-2.5"
+            onSelect={() => { if (option.id !== club?.id) switchClub(option.id); }}
+          >
+            <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <span className="min-w-0 flex-1 truncate">{option.name}</span>
+            {option.id === club?.id && <Check className="h-4 w-4 shrink-0 text-primary" aria-label="Current club" />}
+          </DropdownMenuItem>
+        ))}
       </DropdownMenuContent>
     </DropdownMenu>
   );
