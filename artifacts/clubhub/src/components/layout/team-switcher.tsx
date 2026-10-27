@@ -94,13 +94,8 @@ export function TeamSwitcher({
             <ClubMark logoUrl={club?.logoUrl} name={club?.name} />
           </span>
           {!collapsed && (
-            <span className="flex min-w-0 flex-col items-start leading-tight">
-              <span className="w-full truncate text-xs text-muted-foreground">
-                {club?.name ?? "Nahreo"}
-              </span>
-              <span className="w-full truncate font-display text-sm font-bold">
-                {label}
-              </span>
+            <span className="min-w-0 truncate font-display text-sm font-bold">
+              {label}
             </span>
           )}
           {!collapsed && <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />}
