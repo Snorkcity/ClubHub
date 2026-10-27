@@ -124,6 +124,19 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       : i.label !== "Monitoring" && i.label !== "Team Members" && i.label !== "Player Feedback",
   );
 
+  // Secondary destinations stay off the four primary tabs, but remain easy
+  // to discover from Home on phones. Use the same role and eligibility gates
+  // as the main navigation so these shortcuts never grant additional access.
+  const homeShortcuts = [
+    ...(isStaff ? [{ label: "Team Members", href: "/people", icon: UserSquare2 }] : []),
+    ...(isStaff && staffTeamId != null
+      ? [{ label: "Player Feedback", href: `/teams/${staffTeamId}/development`, icon: TrendingUp }]
+      : []),
+    ...(isPlayer && playerEligible
+      ? [{ label: "Check-in", href: "/checkin", icon: ClipboardCheck }]
+      : []),
+  ];
+
   return (
     <div className="min-h-screen bg-muted/20 flex flex-col md:flex-row overflow-x-clip">
       {/* Sidebar for Desktop */}
@@ -246,31 +259,66 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Header — only on Home; other pages have their own compact headers */}
       {location === "/home" && (
-      <header className="md:hidden h-16 bg-background border-b flex items-center justify-between px-4 sticky top-0 z-40 gap-2">
-        <div className="flex items-center gap-1 min-w-0">
-          <Link href="/home" className="flex items-center shrink-0" aria-label={club?.name || "Nahreo"} title={club?.name || "Nahreo"}>
-            <ClubMark logoUrl={club?.logoUrl} name={club?.name} />
-          </Link>
-          <TeamSwitcher compact />
-        </div>
+      <header className="md:hidden sticky top-0 z-40 flex flex-col gap-1 border-b-2 border-primary/25 bg-primary/10 px-3 py-2 shadow-sm dark:bg-primary/15">
+        <div className="flex h-11 min-w-0 items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-1">
+            <Link href="/home" className="flex h-11 w-9 shrink-0 items-center justify-center rounded-lg" aria-label={club?.name || "Nahreo"} title={club?.name || "Nahreo"}>
+              <ClubMark logoUrl={club?.logoUrl} name={club?.name} />
+            </Link>
+            <TeamSwitcher compact />
+          </div>
 
-        <div className="flex items-center gap-1 shrink-0">
-          <Link href="/notifications" className="relative p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors">
-            <Bell className="h-6 w-6" />
-            {notificationsUnread > 0 && (
-              <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-background" />
-            )}
-          </Link>
-          <UserMenu
-            me={me}
-            clerkUser={clerkUser}
-            onSignOut={() => signOut({ redirectUrl: "/" })}
-            avatarOnly
-            isStaff={isStaff}
-            notificationsUnread={notificationsUnread}
-            staffTeamId={staffTeamId}
-          />
+          <div className="flex shrink-0 items-center gap-1">
+            <Link
+              href="/notifications"
+              aria-label={`Notifications${notificationsUnread > 0 ? `, ${notificationsUnread} unread` : ""}`}
+              aria-current={location.startsWith("/notifications") ? "page" : undefined}
+              data-testid="link-mobile-notifications"
+              className="relative flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground"
+            >
+              <Bell className="h-5 w-5" aria-hidden="true" />
+              {notificationsUnread > 0 && (
+                <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-background" />
+              )}
+            </Link>
+            <UserMenu
+              me={me}
+              clerkUser={clerkUser}
+              onSignOut={() => signOut({ redirectUrl: "/" })}
+              avatarOnly
+              isStaff={isStaff}
+              notificationsUnread={notificationsUnread}
+              staffTeamId={staffTeamId}
+            />
+          </div>
         </div>
+        {homeShortcuts.length > 0 && (
+          <nav
+            aria-label="Home shortcuts"
+            className="flex min-w-0 gap-1 border-t border-primary/10 pt-1"
+          >
+            {homeShortcuts.map((item) => {
+              const isActive = location === item.href || location.startsWith(`${item.href}/`);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-label={item.label}
+                  aria-current={isActive ? "page" : undefined}
+                  data-testid={`link-home-shortcut-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
+                  className={`flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 rounded-lg px-1.5 py-1 text-center text-xs font-semibold leading-tight transition-colors ${
+                    isActive
+                      ? "bg-primary/15 text-primary"
+                      : "text-foreground/80 hover:bg-primary/10 hover:text-foreground"
+                  }`}
+                >
+                  <item.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span className="min-w-0">{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        )}
       </header>
       )}
 
@@ -402,6 +450,15 @@ function UserMenu({ me, clerkUser, onSignOut, avatarOnly = false, isStaff = fals
             )}
           </Link>
         </DropdownMenuItem>
+
+        {isStaff && (
+          <DropdownMenuItem asChild className="min-h-11 rounded-xl py-2.5 cursor-pointer text-base md:hidden">
+            <Link href="/people" className="flex items-center w-full" data-testid="link-account-team-members">
+              <UserSquare2 className="mr-2 h-4 w-4 text-muted-foreground" />
+              <span>Team Members</span>
+            </Link>
+          </DropdownMenuItem>
+        )}
 
         {isStaff && staffTeamId != null && (
           <DropdownMenuItem asChild className="min-h-11 rounded-xl py-2.5 cursor-pointer text-base md:hidden">
