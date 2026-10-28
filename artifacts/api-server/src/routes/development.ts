@@ -3,6 +3,7 @@ import { and, desc, eq, inArray, lt } from "drizzle-orm";
 import {
   db,
   clubMembersTable,
+  clubsTable,
   developmentAssessmentsTable,
   developmentCycleAssessorsTable,
   developmentCyclesTable,
@@ -24,6 +25,7 @@ import { requireAuth, type AuthedRequest } from "../lib/auth";
 import { personBelongsToClub } from "../lib/club-membership";
 import { getTeamInClub, isTeamStaff } from "../lib/authz";
 import { createNotification } from "../lib/notifications";
+import { developmentReportEmail } from "../lib/development-report-email";
 import {
   DEVELOPMENT_DISCLOSURE,
   DEVELOPMENT_RUBRIC,
@@ -457,10 +459,11 @@ router.post("/development-cycles/:cycleId/release", requireAuth, async (req, res
     | { kind: "notSubmitted" }
     | { kind: "incompleteReviews"; remaining: number }
     | { kind: "alreadyReleased"; reportCount: number }
-    | { kind: "claimed"; reports: DevelopmentReport[]; cycle: DevelopmentCycle };
+    | { kind: "claimed"; reports: DevelopmentReport[]; cycle: DevelopmentCycle; clubName: string; teamName: string };
   outcome = await db.transaction(async (tx) => {
-    const [locked] = await tx.select({ cycle: developmentCyclesTable }).from(developmentCyclesTable)
+    const [locked] = await tx.select({ cycle: developmentCyclesTable, clubName: clubsTable.name, teamName: teamsTable.name }).from(developmentCyclesTable)
       .innerJoin(teamsTable, eq(developmentCyclesTable.teamId, teamsTable.id))
+      .innerJoin(clubsTable, eq(developmentCyclesTable.clubId, clubsTable.id))
       .where(and(eq(developmentCyclesTable.id, cycleId), eq(developmentCyclesTable.clubId, clubId), eq(teamsTable.clubId, clubId)))
       .for("update");
     if (!locked) return { kind: "missing" as const };
@@ -498,14 +501,14 @@ router.post("/development-cycles/:cycleId/release", requireAuth, async (req, res
       }).returning();
       created.push(report);
     }
-    return { kind: "claimed" as const, reports: created, cycle: claimed };
+    return { kind: "claimed" as const, reports: created, cycle: claimed, clubName: locked.clubName, teamName: locked.teamName };
   });
   if (outcome.kind === "missing") { res.status(404).json({ error: "Development cycle not found" }); return; }
   if (outcome.kind === "forbidden") { res.status(403).json({ error: "Only the cycle creator or a club admin can release submitted reports" }); return; }
   if (outcome.kind === "notSubmitted") { res.status(409).json({ error: "Cycle must be submitted before reports are released" }); return; }
   if (outcome.kind === "incompleteReviews") { res.status(409).json({ error: `All family report drafts must be reviewed before release (${outcome.remaining} remaining)` }); return; }
   if (outcome.kind === "alreadyReleased") { res.json({ released: true, reportCount: outcome.reportCount, emailFailures: 0 }); return; }
-  const { reports, cycle } = outcome;
+  const { reports, cycle, clubName, teamName } = outcome;
 
   const emailJobs: {
     email: string;
@@ -529,9 +532,10 @@ router.post("/development-cycles/:cycleId/release", requireAuth, async (req, res
       emailJobs.push({
         email: recipient.email,
         reportId: report.id,
-        subject: `${report.playerFirstName}'s Nahreo development report is ready`,
-        text: `${report.playerFirstName}'s development report for ${report.reportingPeriod} is ready. Sign in securely to view it: ${link}`,
-        html: `<div style="font-family:Inter,Arial,sans-serif;color:#101828;max-width:560px;margin:auto"><h1 style="color:#173F8A">Development report ready</h1><p>${escapeHtml(report.playerFirstName)}'s report for ${escapeHtml(report.reportingPeriod)} is ready.</p><p style="margin:32px 0"><a href="${escapeHtml(link)}" style="background:#173F8A;color:white;padding:14px 22px;border-radius:12px;text-decoration:none;font-weight:700">View securely in Nahreo</a></p></div>`,
+        ...developmentReportEmail({
+          playerName: report.playerFullName, clubName, teamName,
+          reportingPeriod: report.reportingPeriod, link,
+        }),
       });
     }
   }
