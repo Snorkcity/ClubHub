@@ -4,7 +4,7 @@ import { useClerk, useUser } from "@clerk/react";
 import { 
   Home, Users, CalendarDays, MessageSquare, Settings, 
   LogOut, ChevronDown, UserSquare2, ClipboardCheck, Activity, Bell, TrendingUp,
-  PanelLeftClose, PanelLeftOpen
+  PanelLeftClose, PanelLeftOpen, Database
 } from "lucide-react";
 import {
   useGetMe, useGetClub, useListNotifications,
@@ -399,6 +399,15 @@ function UserMenu({ me, clerkUser, onSignOut, avatarOnly = false, isStaff = fals
             <Link href="/people" className="flex items-center w-full" data-testid="link-account-team-members">
               <UserSquare2 className="mr-2 h-4 w-4 text-muted-foreground" />
               <span>Team Members</span>
+            </Link>
+          </DropdownMenuItem>
+        )}
+
+        {me?.isClubAdmin === true && (
+          <DropdownMenuItem asChild className="min-h-11 rounded-xl py-2.5 cursor-pointer text-base">
+            <Link href="/admin/photo-storage" className="flex items-center w-full" data-testid="link-photo-storage">
+              <Database className="mr-2 h-4 w-4 text-muted-foreground" />
+              <span>Photo storage</span>
             </Link>
           </DropdownMenuItem>
         )}

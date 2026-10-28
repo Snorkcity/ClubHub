@@ -35,6 +35,7 @@ import ChatPage from "@/pages/messages/chat";
 import PeopleList from "@/pages/people/index";
 import PersonDetail from "@/pages/people/detail";
 import Settings from "@/pages/settings";
+import PhotoStoragePage from "@/pages/admin/photo-storage";
 import Notifications from "@/pages/notifications";
 import JoinTeam from "@/pages/join";
 import TeamDevelopment from "@/pages/teams/development";
@@ -420,6 +421,7 @@ function ClerkProviderWithRoutes() {
           <ProtectedRoute path="/people" component={PeopleList} />
           <ProtectedRoute path="/people/:personId" component={PersonDetail} />
           <ProtectedRoute path="/settings" component={Settings} />
+          <ProtectedRoute path="/admin/photo-storage" component={PhotoStoragePage} />
           <ProtectedRoute path="/notifications" component={Notifications} />
           
           <Route component={NotFound} />

@@ -8,13 +8,12 @@ import {
 import { Link } from "wouter";
 import { format, isToday, isTomorrow } from "date-fns";
 import { 
-  Users, CalendarDays, Activity, MessageSquare, 
-  ChevronRight, MapPin, Clock, Plus, Database, AlertTriangle
+  MessageSquare, ChevronRight, MapPin, Clock
 } from "lucide-react";
 import { 
-  useGetMe, useGetClubOverview, useGetClubStorage, useGetFeed,
+  useGetMe, useGetClubOverview, useGetFeed,
   useListUpcomingEvents, useListTeams,
-  getGetMeQueryKey, getGetClubOverviewQueryKey, getGetClubStorageQueryKey,
+  getGetMeQueryKey, getGetClubOverviewQueryKey,
   getGetFeedQueryKey, getListUpcomingEventsQueryKey, getListTeamsQueryKey
 } from "@workspace/api-client-react";
 
@@ -27,9 +26,6 @@ import { PostCard } from "@/components/feed/post-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Progress } from "@/components/ui/progress";
 
 export default function Home() {
   const { data: me, isLoading: meLoading } = useGetMe({ query: { queryKey: getGetMeQueryKey() } });
@@ -152,31 +148,9 @@ function AdminDashboard() {
   if (isLoading) return <LoadingScreen message="Loading club overview..." />;
   if (error || !overview) return <ErrorState onRetry={() => refetch()} />;
 
-  const stats = [
-    { label: "Teams", value: overview.teamCount, icon: Users, color: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-500/10" },
-    { label: "Players", value: overview.playerCount, icon: Activity, color: "text-green-500", bg: "bg-green-50 dark:bg-green-500/10" },
-    { label: "Coaches", value: overview.coachCount, icon: ShieldCheck, color: "text-amber-500", bg: "bg-amber-50 dark:bg-amber-500/10" },
-    { label: "Parents", value: overview.parentCount, icon: Heart, color: "text-purple-500", bg: "bg-purple-50 dark:bg-purple-500/10" },
-  ];
-
   return (
     <div className="space-y-8">
-      <StorageHealth />
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {stats.map((stat, i) => (
-          <div key={i} className="bg-card border rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
-            <div className={`h-10 w-10 rounded-xl ${stat.bg} flex items-center justify-center mb-4`}>
-              <stat.icon className={`h-5 w-5 ${stat.color}`} />
-            </div>
-            <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
-            <p className="text-3xl font-display font-bold mt-1">{stat.value}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-8">
-        <div className="space-y-4">
+      <section className="space-y-4" data-testid="home-upcoming-club-events">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-display font-bold">Upcoming Club Events</h2>
             <Button variant="ghost" size="sm" asChild>
@@ -195,11 +169,11 @@ function AdminDashboard() {
               ))}
             </div>
           )}
-        </div>
+      </section>
 
-        <div className="space-y-4">
+      <section className="space-y-4" data-testid="home-club-news">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-display font-bold">Recent Updates</h2>
+            <h2 className="text-xl font-display font-bold">Club News</h2>
           </div>
           
           {/* Mobile uses the floating pencil button instead of this card. */}
@@ -218,91 +192,9 @@ function AdminDashboard() {
               ))}
             </div>
           )}
-        </div>
-      </div>
+      </section>
     </div>
   );
-}
-
-function StorageHealth() {
-  const { data: storage, isLoading } = useGetClubStorage({
-    query: { queryKey: getGetClubStorageQueryKey(), staleTime: 5 * 60 * 1000 },
-  });
-
-  if (isLoading) {
-    return <div className="h-24 animate-pulse rounded-2xl border bg-muted/30" />;
-  }
-  if (!storage) return null;
-
-  const isAlert = storage.status !== "ok";
-  const percentOfCritical = Math.min(
-    100,
-    (storage.postPhotos.bytes / storage.thresholds.criticalBytes) * 100,
-  );
-
-  return (
-    <section className="space-y-3" aria-labelledby="storage-health-title">
-      {isAlert && (
-        <Alert
-          variant={storage.status === "critical" ? "destructive" : "default"}
-          className={storage.status === "warning" ? "border-amber-500/60 bg-amber-50 text-amber-950 dark:bg-amber-950/20 dark:text-amber-100 [&>svg]:text-amber-600" : ""}
-          data-testid={`status-storage-${storage.status}`}
-        >
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>
-            {storage.status === "critical" ? "Photo storage is critical" : "Photo storage needs attention"}
-          </AlertTitle>
-          <AlertDescription>{storage.plan}</AlertDescription>
-        </Alert>
-      )}
-
-      <Card className="rounded-2xl p-4 shadow-sm" data-testid="card-storage-health">
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <Database className="h-5 w-5" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <h2 id="storage-health-title" className="font-display font-bold">Photo storage</h2>
-                <p className="text-xs text-muted-foreground">
-                  {storage.postPhotos.count.toLocaleString()} {storage.postPhotos.count === 1 ? "photo" : "photos"}
-                </p>
-              </div>
-              <Badge variant={storage.status === "critical" ? "destructive" : "secondary"} data-testid="status-storage-label">
-                {storage.status === "ok" ? "Healthy" : storage.status === "warning" ? "Warning" : "Critical"}
-              </Badge>
-            </div>
-            <Progress
-              value={percentOfCritical}
-              className="mt-3"
-              aria-label={`${formatBytes(storage.postPhotos.bytes)} of ${formatBytes(storage.thresholds.criticalBytes)} critical threshold used`}
-            />
-            <div className="mt-2 flex flex-wrap justify-between gap-x-4 gap-y-1 text-xs">
-              <span data-testid="text-storage-current">
-                <strong>{formatBytes(storage.postPhotos.bytes)}</strong> used
-              </span>
-              <span className="text-muted-foreground" data-testid="text-storage-thresholds">
-                Warn at {formatBytes(storage.thresholds.warnBytes)} · Critical at {formatBytes(storage.thresholds.criticalBytes)}
-              </span>
-            </div>
-          </div>
-        </div>
-      </Card>
-    </section>
-  );
-}
-
-function formatBytes(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  const units = ["KB", "MB", "GB", "TB"];
-  let value = bytes / 1024;
-  let unit = units[0];
-  for (let i = 1; value >= 1024 && i < units.length; i += 1) {
-    value /= 1024;
-    unit = units[i];
-  }
-  return `${value >= 10 ? value.toFixed(1) : value.toFixed(2)} ${unit}`;
 }
 
 /** Marks the given team's content as seen shortly after viewing, then
@@ -516,7 +408,3 @@ function EventCard({ event, compact = false }: { event: any, compact?: boolean }
     </Link>
   );
 }
-
-
-// Temporary Icon placeholders since lucide-react is imported fully, but not all were destructured.
-import { ShieldCheck, Heart } from "lucide-react";
