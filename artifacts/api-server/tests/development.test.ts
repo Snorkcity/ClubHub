@@ -178,7 +178,7 @@ describe("player development permissions and lifecycle", () => {
     await request(app).get(`/api/development-cycles/${ids.cycle}/internal-summary`).set(as("guardian")).expect(403);
     await db.update(developmentCyclesTable).set({ internalRecipientId: technicalDirector }).where(eq(developmentCyclesTable.id, ids.cycle));
     expect(detail.body.players[0].reportDraft.categories.find((x: { score: number }) => x.score === 3).narrative)
-      .toMatch(/meets the expected team standard/i);
+      .toMatch(/meets the expected standard in technical competency/i);
     await request(app).put(`/api/development-cycles/${ids.cycle}/players/${playerA}/assessment`)
       .set(as("selected")).send(assessment("changed")).expect(409);
   });

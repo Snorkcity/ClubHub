@@ -8,15 +8,28 @@ export const DEVELOPMENT_RUBRIC = [
   { key: "attendanceReliability", label: "Attendance & reliability", description: "Dependable attendance, preparation, and punctuality." },
 ] as const;
 
-const SCORE_WORDING = {
-  1: "is beginning to build this area and will benefit from patient, regular practice",
-  2: "is developing in this area and is showing foundations to build on",
-  3: "meets the expected team standard in this area and contributes reliably",
-  4: "is performing above the expected team standard in this area with strong consistency",
-  5: "is a standout at the team standard in this area and models it consistently",
-} as const;
-
 export type RatingKey = (typeof DEVELOPMENT_RUBRIC)[number]["key"];
+
+// Describe each whole category, not skills or behaviours the coach has not
+// recorded. Specific observations belong in the coach's family comments.
+const CATEGORY_AREAS: Record<RatingKey, string> = {
+  technical: "technical competency",
+  tactical: "tactical understanding",
+  physical: "physical development",
+  coachabilityMindset: "coachability and mindset",
+  effortConsistency: "effort and consistency",
+  teamworkCommunication: "teamwork and communication",
+  attendanceReliability: "attendance and reliability",
+};
+
+const TEAM_STANDARD = "the team's age and competition level";
+const SCORE_WORDING = {
+  1: (area: string) => `Currently below the expected standard in ${area} for ${TEAM_STANDARD}, with significant development needed.`,
+  2: (area: string) => `Developing towards the expected standard in ${area} for ${TEAM_STANDARD}, with improvement needed.`,
+  3: (area: string) => `Meets the expected standard in ${area} for ${TEAM_STANDARD}.`,
+  4: (area: string) => `Above the expected standard in ${area} for ${TEAM_STANDARD}.`,
+  5: (area: string) => `Demonstrates a consistently strong standard of ${area} for ${TEAM_STANDARD}.`,
+} as const;
 
 export function familyCategories(ratings: Record<RatingKey, number>) {
   return DEVELOPMENT_RUBRIC.map((category) => {
@@ -25,7 +38,7 @@ export function familyCategories(ratings: Record<RatingKey, number>) {
       key: category.key,
       label: category.label,
       score,
-      narrative: `${category.label} ${SCORE_WORDING[score]}.`,
+      narrative: SCORE_WORDING[score](CATEGORY_AREAS[category.key]),
     };
   });
 }
