@@ -1,10 +1,11 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response } from "express";
 import { createHash, randomBytes } from "node:crypto";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, gt, isNull, sql, type SQL } from "drizzle-orm";
 import {
   chatMembersTable,
   chatsTable,
   clubMembersTable,
+  clubsTable,
   guardianshipsTable,
   db,
   teamMembersTable,
@@ -73,6 +74,59 @@ router.get("/team-invitations/preview", async (req, res) => {
     role: row.invitation.guardianPlayerId ? "guardian" : row.role,
     expiresAt: row.invitation.expiresAt.toISOString(),
     accepted: !!row.invitation.acceptedAt,
+  });
+});
+
+router.get("/team-invitations/pending", requireAccount, async (req, res) => {
+  const { localUser } = req as AuthedRequest;
+  const identity = await loadClerkIdentity(req, localUser.clerkUserId!);
+  if (!identity.emailVerified || !identity.email)
+    return res.status(403).json({ error: "Verify your email address before completing your invitation." });
+  const invitations = await db.select({
+    id: teamInvitationsTable.id,
+    teamId: teamsTable.id,
+    teamName: teamsTable.name,
+    clubName: clubsTable.name,
+    guardianPlayerId: teamInvitationsTable.guardianPlayerId,
+    role: teamMembersTable.role,
+    expiresAt: teamInvitationsTable.expiresAt,
+  }).from(teamInvitationsTable)
+    .innerJoin(usersTable, eq(usersTable.id, teamInvitationsTable.personId))
+    .innerJoin(teamsTable, and(eq(teamsTable.id, teamInvitationsTable.teamId), eq(teamsTable.clubId, teamInvitationsTable.clubId)))
+    .innerJoin(clubsTable, eq(clubsTable.id, teamsTable.clubId))
+    .leftJoin(teamMembersTable, and(eq(teamMembersTable.teamId, teamsTable.id), eq(teamMembersTable.userId, localUser.id)))
+    .where(and(
+      eq(teamInvitationsTable.personId, localUser.id),
+      sql`lower(${usersTable.email}) = ${identity.email.toLowerCase()}`,
+      isNull(teamInvitationsTable.acceptedAt),
+      gt(teamInvitationsTable.expiresAt, new Date()),
+      sql`(${teamInvitationsTable.guardianPlayerId} IS NULL OR EXISTS (
+        SELECT 1 FROM team_members p WHERE p.team_id = ${teamsTable.id}
+          AND p.user_id = ${teamInvitationsTable.guardianPlayerId} AND p.role = 'player'
+      ))`,
+    ));
+  // Invitations provision roster rows before acceptance. Those rows alone
+  // must not count as a completed first join; preserve unrelated existing teams.
+  const established = await db.select({ id: clubMembersTable.id }).from(clubMembersTable)
+    .where(and(eq(clubMembersTable.userId, localUser.id), sql`(
+      ${clubMembersTable.role} = 'admin'
+      OR NOT EXISTS (SELECT 1 FROM team_invitations i WHERE i.person_id = ${localUser.id}
+        AND i.club_id = ${clubMembersTable.clubId} AND i.accepted_at IS NULL)
+      OR EXISTS (SELECT 1 FROM guardianships g JOIN team_members tm ON tm.user_id = g.player_id
+        JOIN teams t ON t.id = tm.team_id WHERE g.guardian_id = ${localUser.id}
+        AND g.can_manage = true AND t.club_id = ${clubMembersTable.clubId})
+      OR EXISTS (SELECT 1 FROM team_members tm JOIN teams t ON t.id = tm.team_id
+        WHERE tm.user_id = ${localUser.id} AND t.club_id = ${clubMembersTable.clubId}
+        AND NOT EXISTS (SELECT 1 FROM team_invitations i WHERE i.person_id = ${localUser.id}
+          AND i.team_id = tm.team_id AND i.accepted_at IS NULL))
+    )`)).limit(1);
+  return res.json({
+    invitations: invitations.filter((row) => row.guardianPlayerId || row.role).map((row) => ({
+      id: row.id, teamId: row.teamId, teamName: row.teamName, clubName: row.clubName,
+      role: row.guardianPlayerId ? "guardian" : row.role!,
+      expiresAt: row.expiresAt.toISOString(),
+    })),
+    hasEstablishedAccess: established.length > 0,
   });
 });
 
@@ -194,15 +248,14 @@ router.post("/team-invitations", requireAuth, async (req, res) => {
   return res.status(201).json({ inviteLink, expiresAt, emailSent, warning });
 });
 
-router.post("/team-invitations/accept", requireAccount, async (req, res) => {
+async function acceptInvitation(req: Request, res: Response, selector: SQL) {
   const { localUser } = req as AuthedRequest;
-  const body = AcceptTeamInvitationBody.parse(req.body);
   const identity = await loadClerkIdentity(req, localUser.clerkUserId!);
   const result = await db.transaction(async (tx) => {
     if (identity.email)
       await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${identity.email.toLowerCase()}))`);
     const [invitation] = await tx.select().from(teamInvitationsTable)
-      .where(eq(teamInvitationsTable.tokenHash, tokenHash(body.token))).for("update");
+      .where(selector).for("update");
     if (!invitation || invitation.expiresAt.getTime() <= Date.now())
       return { status: 404, error: "This invitation is invalid or has expired" };
     const [person] = await tx.select().from(usersTable)
@@ -251,6 +304,18 @@ router.post("/team-invitations/accept", requireAccount, async (req, res) => {
   return res.json({
     accepted: true, clubId: result.clubId, teamId: result.teamId,
     });
+}
+
+router.post("/team-invitations/accept", requireAccount, async (req, res) => {
+  const body = AcceptTeamInvitationBody.parse(req.body);
+  return acceptInvitation(req, res, eq(teamInvitationsTable.tokenHash, tokenHash(body.token)));
+});
+
+router.post("/team-invitations/:invitationId/accept", requireAccount, async (req, res) => {
+  const id = Number(req.params.invitationId);
+  if (!Number.isSafeInteger(id) || id <= 0)
+    return res.status(400).json({ error: "Invalid invitation" });
+  return acceptInvitation(req, res, eq(teamInvitationsTable.id, id));
 });
 
 export default router;

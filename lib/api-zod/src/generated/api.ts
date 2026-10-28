@@ -863,6 +863,32 @@ export const CreateTeamInvitationResponse = zod.object({
 
 
 /**
+ * @summary Find unfinished invitations for the signed-in verified account
+ */
+export const GetPendingTeamInvitationsResponse = zod.object({
+  "invitations": zod.array(zod.object({
+  "id": zod.number(),
+  "teamId": zod.number(),
+  "teamName": zod.string(),
+  "clubName": zod.string(),
+  "role": zod.string(),
+  "expiresAt": zod.coerce.date()
+})),
+  "hasEstablishedAccess": zod.boolean()
+})
+
+
+/**
+ * @summary Accept your own pending invitation without reopening an email
+ */
+export const AcceptPendingTeamInvitationResponse = zod.object({
+  "accepted": zod.boolean(),
+  "teamId": zod.number(),
+  "clubId": zod.number()
+})
+
+
+/**
  * @summary Preview a team invitation
  */
 export const PreviewTeamInvitationQueryParams = zod.object({

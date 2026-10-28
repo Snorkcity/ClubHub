@@ -1056,6 +1056,26 @@ export interface TeamInvitationResult {
   warning?: string;
 }
 
+export interface PendingTeamInvitation {
+  id: number;
+  teamId: number;
+  teamName: string;
+  clubName: string;
+  role: string;
+  expiresAt: string;
+}
+
+export interface PendingTeamInvitations {
+  invitations: PendingTeamInvitation[];
+  hasEstablishedAccess: boolean;
+}
+
+export interface TeamInvitationAccepted {
+  accepted: boolean;
+  teamId: number;
+  clubId: number;
+}
+
 export type TeamInvitationPreviewRole = typeof TeamInvitationPreviewRole[keyof typeof TeamInvitationPreviewRole];
 
 

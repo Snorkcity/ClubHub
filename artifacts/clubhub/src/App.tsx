@@ -4,6 +4,8 @@ import { setAuthTokenGetter, setBaseUrl, setClubIdGetter } from '@workspace/api-
 import { bindClubAccount, selectedClubId, switchClub } from "@/lib/active-club";
 import { captureSetupInvitation, getSetupInvitation } from "@/lib/setup-invitation";
 import { captureTeamInvitation, getTeamInvitationRedirect } from "@/lib/team-invitation";
+import { PendingInvitations } from "@/components/people/pending-invitations";
+import { useGetPendingTeamInvitations, getGetPendingTeamInvitationsQueryKey } from "@workspace/api-client-react";
 import { ActiveTeamProvider } from '@/lib/active-team';
 import { ThemeProvider } from '@/lib/theme';
 import { resolveClerkPublishableKey } from "@/lib/clerk-key";
@@ -195,6 +197,15 @@ function HomeRedirect() {
 function ProtectedRouteInner({ component: Component }: { component: any }) {
   const { data: status, isLoading, isError, refetch } =
     useGetOnboardingStatus();
+  const pending = useGetPendingTeamInvitations({
+    query: {
+      queryKey: getGetPendingTeamInvitationsQueryKey(),
+      enabled: status?.needsOnboarding === false,
+      staleTime: 5_000,
+      refetchInterval: 30_000,
+      refetchOnWindowFocus: true,
+    },
+  });
   const access = useGetPlatformAccess({
     query: { queryKey: getGetPlatformAccessQueryKey(), enabled: status?.needsOnboarding === false, staleTime: 30_000, refetchOnWindowFocus: true },
   });
@@ -233,6 +244,20 @@ function ProtectedRouteInner({ component: Component }: { component: any }) {
     return <Redirect to="/get-started" />;
   }
 
+  if (pending.isLoading) {
+    return <div className="flex min-h-[100dvh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  }
+  if (pending.isError) {
+    return <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 p-6">
+      <p role="alert">{(pending.error as any)?.data?.error ?? "We couldn't check your team invitations."}</p>
+      <button className="min-h-12 rounded-xl border px-5" onClick={() => void pending.refetch()}>Try again</button>
+      <SignOutButton><button className="min-h-11 text-primary">Sign out to use another account</button></SignOutButton>
+    </div>;
+  }
+  if (pending.data?.invitations.length && !pending.data.hasEstablishedAccess) {
+    return <PendingInvitations data={pending.data} standalone />;
+  }
+
   if (access.isLoading || replacement) {
     return <div className="flex min-h-[100dvh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
@@ -255,6 +280,7 @@ function ProtectedRouteInner({ component: Component }: { component: any }) {
 
   return (
     <Shell>
+      {pending.data && <PendingInvitations data={pending.data} />}
       <Component />
     </Shell>
   );

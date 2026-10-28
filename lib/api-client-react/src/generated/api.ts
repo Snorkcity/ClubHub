@@ -79,6 +79,7 @@ import type {
   OnboardingInput,
   OnboardingResult,
   OnboardingStatus,
+  PendingTeamInvitations,
   Person,
   PersonDetail,
   PersonInput,
@@ -104,6 +105,7 @@ import type {
   TeamBannerInput,
   TeamInput,
   TeamInvitationAcceptance,
+  TeamInvitationAccepted,
   TeamInvitationInput,
   TeamInvitationPreview,
   TeamInvitationResult,
@@ -3017,6 +3019,154 @@ export const useCreateTeamInvitation = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateTeamInvitationMutationOptions(options));
+    }
+
+export const getGetPendingTeamInvitationsUrl = () => {
+
+
+
+
+  return `/api/team-invitations/pending`
+}
+
+/**
+ * @summary Find unfinished invitations for the signed-in verified account
+ */
+export const getPendingTeamInvitations = async ( options?: RequestInit): Promise<PendingTeamInvitations> => {
+
+  return customFetch<PendingTeamInvitations>(getGetPendingTeamInvitationsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPendingTeamInvitationsQueryKey = () => {
+    return [
+    `/api/team-invitations/pending`
+    ] as const;
+    }
+
+
+export const getGetPendingTeamInvitationsQueryOptions = <TData = Awaited<ReturnType<typeof getPendingTeamInvitations>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPendingTeamInvitations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPendingTeamInvitationsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPendingTeamInvitations>>> = ({ signal }) => getPendingTeamInvitations({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPendingTeamInvitations>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPendingTeamInvitationsQueryResult = NonNullable<Awaited<ReturnType<typeof getPendingTeamInvitations>>>
+export type GetPendingTeamInvitationsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Find unfinished invitations for the signed-in verified account
+ */
+
+export function useGetPendingTeamInvitations<TData = Awaited<ReturnType<typeof getPendingTeamInvitations>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPendingTeamInvitations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPendingTeamInvitationsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAcceptPendingTeamInvitationUrl = (invitationId: number,) => {
+
+
+
+
+  return `/api/team-invitations/${invitationId}/accept`
+}
+
+/**
+ * @summary Accept your own pending invitation without reopening an email
+ */
+export const acceptPendingTeamInvitation = async (invitationId: number, options?: RequestInit): Promise<TeamInvitationAccepted> => {
+
+  return customFetch<TeamInvitationAccepted>(getAcceptPendingTeamInvitationUrl(invitationId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getAcceptPendingTeamInvitationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptPendingTeamInvitation>>, TError,{invitationId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof acceptPendingTeamInvitation>>, TError,{invitationId: number}, TContext> => {
+
+const mutationKey = ['acceptPendingTeamInvitation'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof acceptPendingTeamInvitation>>, {invitationId: number}> = (props) => {
+          const {invitationId} = props ?? {};
+
+          return  acceptPendingTeamInvitation(invitationId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AcceptPendingTeamInvitationMutationResult = NonNullable<Awaited<ReturnType<typeof acceptPendingTeamInvitation>>>
+
+    export type AcceptPendingTeamInvitationMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Accept your own pending invitation without reopening an email
+ */
+export const useAcceptPendingTeamInvitation = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptPendingTeamInvitation>>, TError,{invitationId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof acceptPendingTeamInvitation>>,
+        TError,
+        {invitationId: number},
+        TContext
+      > => {
+      return useMutation(getAcceptPendingTeamInvitationMutationOptions(options));
     }
 
 export const getPreviewTeamInvitationUrl = (params: PreviewTeamInvitationParams,) => {

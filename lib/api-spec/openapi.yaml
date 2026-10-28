@@ -646,6 +646,37 @@ paths:
               schema:
                 $ref: "#/components/schemas/TeamInvitationResult"
 
+  /team-invitations/pending:
+    get:
+      operationId: getPendingTeamInvitations
+      tags: [people]
+      summary: Find unfinished invitations for the signed-in verified account
+      responses:
+        "200":
+          description: Pending invitations and existing access
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PendingTeamInvitations"
+
+  /team-invitations/{invitationId}/accept:
+    post:
+      operationId: acceptPendingTeamInvitation
+      tags: [people]
+      summary: Accept your own pending invitation without reopening an email
+      parameters:
+        - name: invitationId
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: Invitation accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamInvitationAccepted"
+
   /team-invitations/preview:
     get:
       operationId: previewTeamInvitation
@@ -2581,6 +2612,32 @@ components:
         expiresAt: { type: string, format: date-time }
         emailSent: { type: boolean }
         warning: { type: string }
+
+    PendingTeamInvitation:
+      type: object
+      required: [id, teamId, teamName, clubName, role, expiresAt]
+      properties:
+        id: { type: integer }
+        teamId: { type: integer }
+        teamName: { type: string }
+        clubName: { type: string }
+        role: { type: string }
+        expiresAt: { type: string, format: date-time }
+    PendingTeamInvitations:
+      type: object
+      required: [invitations, hasEstablishedAccess]
+      properties:
+        invitations:
+          type: array
+          items: { $ref: "#/components/schemas/PendingTeamInvitation" }
+        hasEstablishedAccess: { type: boolean }
+    TeamInvitationAccepted:
+      type: object
+      required: [accepted, teamId, clubId]
+      properties:
+        accepted: { type: boolean }
+        teamId: { type: integer }
+        clubId: { type: integer }
 
     TeamInvitationPreview:
       type: object

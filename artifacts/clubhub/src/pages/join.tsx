@@ -65,6 +65,11 @@ export default function JoinTeam() {
                   Already use Nahreo—even with another club? Sign in with your existing account.
                   You don’t need to register again.
                 </p>
+                <p className="text-sm text-muted-foreground">
+                  Use the email address you were invited with. If you create an account,
+                  complete any email verification, then return here to accept.
+                  This shared link is enough—you don&apos;t need a separate invitation email.
+                </p>
                 <Button asChild className="w-full rounded-xl">
                   <Link href={`/sign-in?redirect_url=${encodeURIComponent(redirect)}`}>
                     Sign in and join
@@ -78,6 +83,9 @@ export default function JoinTeam() {
               </div>
             </Show>
             <Show when="signed-in">
+              {!preview.data.accepted && <p className="mt-5 text-sm text-muted-foreground">
+                You&apos;re signed in. Accept below to finish joining and activate your invited access.
+              </p>}
               <Button
                 className="mt-7 w-full rounded-xl"
                 disabled={accept.isPending}
@@ -91,7 +99,7 @@ export default function JoinTeam() {
                   )
                 }
               >
-                {accept.isPending ? "Joining…" : preview.data.accepted ? "Open this team’s club" : "Complete invitation"}
+                {accept.isPending ? "Joining…" : preview.data.accepted ? "Open this team’s club" : "Accept invitation and join"}
               </Button>
               {accept.error && (
                 <p className="mt-3 text-sm text-destructive">
