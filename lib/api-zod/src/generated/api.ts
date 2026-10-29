@@ -832,6 +832,82 @@ export const CreatePersonResponse = zod.object({
 })
 
 
+export const GetTeamJoinCodeResponse = zod.object({
+  "code": zod.string().nullable(),
+  "link": zod.string().nullable()
+})
+
+
+export const RotateTeamJoinCodeResponse = zod.object({
+  "code": zod.string().nullable(),
+  "link": zod.string().nullable()
+})
+
+
+export const DisableTeamJoinCodeResponse = zod.void()
+
+
+export const previewTeamCodeBodyCodeMax = 40;
+
+
+
+export const PreviewTeamCodeBody = zod.object({
+  "code": zod.string().min(1).max(previewTeamCodeBodyCodeMax)
+})
+
+export const PreviewTeamCodeResponse = zod.object({
+  "teamName": zod.string(),
+  "clubName": zod.string()
+})
+
+
+export const joinWithTeamCodeBodyCodeMax = 40;
+
+export const joinWithTeamCodeBodyFirstNameMax = 100;
+
+export const joinWithTeamCodeBodyLastNameMax = 100;
+
+export const joinWithTeamCodeBodyChildNameMax = 200;
+
+
+
+export const JoinWithTeamCodeBody = zod.object({
+  "code": zod.string().min(1).max(joinWithTeamCodeBodyCodeMax),
+  "role": zod.enum(['player', 'guardian']),
+  "firstName": zod.string().min(1).max(joinWithTeamCodeBodyFirstNameMax),
+  "lastName": zod.string().min(1).max(joinWithTeamCodeBodyLastNameMax),
+  "childName": zod.string().max(joinWithTeamCodeBodyChildNameMax).optional()
+})
+
+export const JoinWithTeamCodeResponse = zod.object({
+  "status": zod.enum(['joined', 'pending', 'rejected']),
+  "teamId": zod.number(),
+  "clubId": zod.number()
+})
+
+
+export const GetTeamJoinRequestsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "childName": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+export const GetTeamJoinRequestsResponse = zod.array(GetTeamJoinRequestsResponseItem)
+
+
+
+
+
+export const ReviewTeamJoinRequestBody = zod.object({
+  "decision": zod.enum(['approve', 'reject']),
+  "playerId": zod.number().min(1).optional()
+})
+
+export const ReviewTeamJoinRequestResponse = zod.object({
+  "status": zod.enum(['approved', 'rejected'])
+})
+
+
 /**
  * @summary Invite a new person to a team
  */

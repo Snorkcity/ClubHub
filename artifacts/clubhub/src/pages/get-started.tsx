@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
+import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCompleteOnboarding } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
@@ -322,6 +323,10 @@ export default function GetStarted() {
               />
             ))}
           </div>
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            Already have a Nahreo account?{" "}
+            <Link href="/join-team" className="font-semibold text-primary underline underline-offset-4">Join a team with a code</Link>
+          </p>
         </div>
       </div>
     </div>

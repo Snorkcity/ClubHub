@@ -5,10 +5,13 @@ export function bindClubAccount(id: string | null) { accountId = id; }
 export function selectedClubId(): string | null {
   return accountId ? localStorage.getItem(key(accountId)) : null;
 }
-export function switchClub(clubId: number): void {
+export function switchClub(clubId: number, teamId?: number): void {
   if (!accountId || !Number.isSafeInteger(clubId) || clubId <= 0) return;
   localStorage.setItem(key(accountId), String(clubId));
-  localStorage.removeItem("clubhub.activeTeamId");
+  if (teamId && Number.isSafeInteger(teamId) && teamId > 0)
+    localStorage.setItem("clubhub.activeTeamId", String(teamId));
+  else
+    localStorage.removeItem("clubhub.activeTeamId");
   // Discard every old club query, team selection, dialog and mounted view.
   window.location.assign(`${import.meta.env.BASE_URL}home`);
 }

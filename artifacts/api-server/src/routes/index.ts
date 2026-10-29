@@ -1,3 +1,4 @@
+import teamCodesRouter from "./team-codes";
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
 import meRouter from "./me";
@@ -36,6 +37,7 @@ router.use(monitoringRouter);
 router.use(timekeepingRouter);
 router.use(notificationsRouter);
 router.use(invitationsRouter);
+router.use(teamCodesRouter);
 router.use(developmentRouter);
 router.use(learningPreferencesRouter);
 

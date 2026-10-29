@@ -38,6 +38,7 @@ import Settings from "@/pages/settings";
 import PhotoStoragePage from "@/pages/admin/photo-storage";
 import Notifications from "@/pages/notifications";
 import JoinTeam from "@/pages/join";
+import JoinTeamByCode from "@/pages/join-team";
 import TeamDevelopment from "@/pages/teams/development";
 import DevelopmentCycle from "@/pages/development/cycle";
 import DevelopmentReport from "@/pages/development/report";
@@ -121,7 +122,7 @@ function SignInPage() {
     <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-5 bg-gray-50 dark:bg-zinc-950 px-4 py-8 pattern-grid-lg text-gray-200 dark:text-zinc-900/20">
       <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} forceRedirectUrl={getTeamInvitationRedirect() ?? (getSetupInvitation() ? `${basePath}/get-started?newClub=1` : undefined)} />
       <p className="max-w-sm text-center text-sm leading-relaxed text-muted-foreground">
-        Club setup is invitation-only. Signing in or creating an account does not create a club or team. To join, use your invitation link.
+        Club setup is invitation-only. Signing in or creating an account does not create a club or team. To join a team, <a href={`${basePath}/join-team`} className="font-semibold text-primary underline">use a team code</a>.
       </p>
     </div>
   );
@@ -341,7 +342,7 @@ function GetStartedRoute() {
       <div className="w-full max-w-md space-y-5 rounded-2xl border bg-card p-6 shadow-sm">
         <h1 className="text-2xl font-bold">Club setup is invitation-only</h1>
         <p className="leading-relaxed text-muted-foreground">{status?.accessMessage || "Ask the Nahreo owner for a club setup invitation."}</p>
-        <p className="text-sm text-muted-foreground">Already invited to a team? Open your team invitation link instead. Your existing team access has not changed.</p>
+        <p className="text-sm text-muted-foreground">Already invited to a team? Open your individual invitation link or join with a reusable team code. Your existing team access has not changed.</p>
         <button className="min-h-12 rounded-xl border px-5 font-semibold" onClick={() => void refetch()}>Check again</button>
         {!status?.needsOnboarding && <a className="ml-4 inline-flex min-h-12 items-center font-semibold text-primary" href={`${import.meta.env.BASE_URL}home`}>Back to my club</a>}
         <SignOutButton><button className="block min-h-12 font-semibold text-primary">Sign out to use another account</button></SignOutButton>
@@ -372,7 +373,7 @@ function ClerkProviderWithRoutes() {
         signUp: {
           start: {
             title: "Join Nahreo",
-            subtitle: "Create your account, then use your invitation to access a club or team",
+            subtitle: "Create your account, then use your team code or invitation to join",
           },
         },
       }}
@@ -388,6 +389,7 @@ function ClerkProviderWithRoutes() {
           <Route path="/sign-in/*?" component={SignInPage} />
           <Route path="/sign-up/*?" component={SignUpPage} />
           <Route path="/join" component={JoinTeam} />
+          <Route path="/join-team" component={JoinTeamByCode} />
 
           <Route path="/get-started">
             {() => {

@@ -360,6 +360,13 @@ function UserMenu({ me, clerkUser, onSignOut, avatarOnly = false, isStaff = fals
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
+        <DropdownMenuItem asChild className="min-h-11 rounded-xl py-2.5 cursor-pointer text-base" data-testid="link-account-join-team">
+          <Link href="/join-team" className="flex items-center w-full">
+            <Users className="mr-2 h-4 w-4 text-muted-foreground" />
+            <span>Join a team with a code</span>
+          </Link>
+        </DropdownMenuItem>
+
         {me?.guardianOf?.length > 0 && (
           <>
             <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">

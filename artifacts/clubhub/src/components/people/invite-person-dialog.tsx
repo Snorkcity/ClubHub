@@ -46,7 +46,7 @@ export function InvitePersonDialog({
   const { data: members } = useListTeamMembers(invitationTeamId ?? 0, {
     query: { queryKey: getListTeamMembersQueryKey(invitationTeamId ?? 0), enabled: !!invitationTeamId && role === "guardian" },
   });
-  const [deliveryMethod, setDeliveryMethod] = useState<"email" | "link">("email");
+  const [deliveryMethod, setDeliveryMethod] = useState<"email" | "link">("link");
   const [result, setResult] = useState<{
     inviteLink: string;
     emailSent: boolean;
@@ -63,7 +63,7 @@ export function InvitePersonDialog({
     setEmail("");
     setRole("player");
     setGuardianPlayerId("");
-    setDeliveryMethod("email");
+    setDeliveryMethod("link");
     setResult(null);
     setCopied(false);
   }
@@ -95,9 +95,13 @@ export function InvitePersonDialog({
 
   async function copyLink() {
     if (!result) return;
-    await navigator.clipboard.writeText(result.inviteLink);
-    setCopied(true);
-    toast({ title: "Invitation link copied" });
+    try {
+      await navigator.clipboard.writeText(result.inviteLink);
+      setCopied(true);
+      toast({ title: "Invitation link copied" });
+    } catch {
+      toast({ title: "Could not copy link", description: "Select and copy the link manually.", variant: "destructive" });
+    }
   }
 
   return (

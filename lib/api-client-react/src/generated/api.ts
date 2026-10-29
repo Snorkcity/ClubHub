@@ -94,6 +94,7 @@ import type {
   PushConfig,
   PushSubscriptionDelete,
   PushSubscriptionInput,
+  ReviewTeamJoinRequest200,
   RpeEntry,
   RpeInput,
   Rsvp,
@@ -103,12 +104,19 @@ import type {
   StartPeriodInput,
   Team,
   TeamBannerInput,
+  TeamCodeInput,
+  TeamCodeJoinInput,
+  TeamCodeJoinResult,
+  TeamCodePreview,
   TeamInput,
   TeamInvitationAcceptance,
   TeamInvitationAccepted,
   TeamInvitationInput,
   TeamInvitationPreview,
   TeamInvitationResult,
+  TeamJoinCode,
+  TeamJoinRequest,
+  TeamJoinReviewInput,
   TeamMember,
   TeamMemberInput,
   TeamMemberPerson,
@@ -2948,6 +2956,476 @@ export const useCreatePerson = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreatePersonMutationOptions(options));
+    }
+
+export const getGetTeamJoinCodeUrl = (teamId: number,) => {
+
+
+
+
+  return `/api/teams/${teamId}/join-code`
+}
+
+export const getTeamJoinCode = async (teamId: number, options?: RequestInit): Promise<TeamJoinCode> => {
+
+  return customFetch<TeamJoinCode>(getGetTeamJoinCodeUrl(teamId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTeamJoinCodeQueryKey = (teamId: number,) => {
+    return [
+    `/api/teams/${teamId}/join-code`
+    ] as const;
+    }
+
+
+export const getGetTeamJoinCodeQueryOptions = <TData = Awaited<ReturnType<typeof getTeamJoinCode>>, TError = ErrorType<unknown>>(teamId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTeamJoinCode>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTeamJoinCodeQueryKey(teamId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTeamJoinCode>>> = ({ signal }) => getTeamJoinCode(teamId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: teamId !== null && teamId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTeamJoinCode>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTeamJoinCodeQueryResult = NonNullable<Awaited<ReturnType<typeof getTeamJoinCode>>>
+export type GetTeamJoinCodeQueryError = ErrorType<unknown>
+
+
+
+export function useGetTeamJoinCode<TData = Awaited<ReturnType<typeof getTeamJoinCode>>, TError = ErrorType<unknown>>(
+ teamId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTeamJoinCode>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTeamJoinCodeQueryOptions(teamId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRotateTeamJoinCodeUrl = (teamId: number,) => {
+
+
+
+
+  return `/api/teams/${teamId}/join-code`
+}
+
+export const rotateTeamJoinCode = async (teamId: number, options?: RequestInit): Promise<TeamJoinCode> => {
+
+  return customFetch<TeamJoinCode>(getRotateTeamJoinCodeUrl(teamId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRotateTeamJoinCodeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rotateTeamJoinCode>>, TError,{teamId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof rotateTeamJoinCode>>, TError,{teamId: number}, TContext> => {
+
+const mutationKey = ['rotateTeamJoinCode'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rotateTeamJoinCode>>, {teamId: number}> = (props) => {
+          const {teamId} = props ?? {};
+
+          return  rotateTeamJoinCode(teamId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RotateTeamJoinCodeMutationResult = NonNullable<Awaited<ReturnType<typeof rotateTeamJoinCode>>>
+
+    export type RotateTeamJoinCodeMutationError = ErrorType<unknown>
+
+    export const useRotateTeamJoinCode = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rotateTeamJoinCode>>, TError,{teamId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof rotateTeamJoinCode>>,
+        TError,
+        {teamId: number},
+        TContext
+      > => {
+      return useMutation(getRotateTeamJoinCodeMutationOptions(options));
+    }
+
+export const getDisableTeamJoinCodeUrl = (teamId: number,) => {
+
+
+
+
+  return `/api/teams/${teamId}/join-code`
+}
+
+export const disableTeamJoinCode = async (teamId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDisableTeamJoinCodeUrl(teamId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDisableTeamJoinCodeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disableTeamJoinCode>>, TError,{teamId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof disableTeamJoinCode>>, TError,{teamId: number}, TContext> => {
+
+const mutationKey = ['disableTeamJoinCode'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof disableTeamJoinCode>>, {teamId: number}> = (props) => {
+          const {teamId} = props ?? {};
+
+          return  disableTeamJoinCode(teamId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DisableTeamJoinCodeMutationResult = NonNullable<Awaited<ReturnType<typeof disableTeamJoinCode>>>
+
+    export type DisableTeamJoinCodeMutationError = ErrorType<unknown>
+
+    export const useDisableTeamJoinCode = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disableTeamJoinCode>>, TError,{teamId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof disableTeamJoinCode>>,
+        TError,
+        {teamId: number},
+        TContext
+      > => {
+      return useMutation(getDisableTeamJoinCodeMutationOptions(options));
+    }
+
+export const getPreviewTeamCodeUrl = () => {
+
+
+
+
+  return `/api/team-codes/preview`
+}
+
+export const previewTeamCode = async (teamCodeInput: TeamCodeInput, options?: RequestInit): Promise<TeamCodePreview> => {
+
+  return customFetch<TeamCodePreview>(getPreviewTeamCodeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(teamCodeInput)
+  }
+);}
+
+
+
+
+
+export const getPreviewTeamCodeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewTeamCode>>, TError,{data: BodyType<TeamCodeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof previewTeamCode>>, TError,{data: BodyType<TeamCodeInput>}, TContext> => {
+
+const mutationKey = ['previewTeamCode'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof previewTeamCode>>, {data: BodyType<TeamCodeInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  previewTeamCode(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreviewTeamCodeMutationResult = NonNullable<Awaited<ReturnType<typeof previewTeamCode>>>
+    export type PreviewTeamCodeMutationBody = BodyType<TeamCodeInput>
+    export type PreviewTeamCodeMutationError = ErrorType<unknown>
+
+    export const usePreviewTeamCode = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewTeamCode>>, TError,{data: BodyType<TeamCodeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof previewTeamCode>>,
+        TError,
+        {data: BodyType<TeamCodeInput>},
+        TContext
+      > => {
+      return useMutation(getPreviewTeamCodeMutationOptions(options));
+    }
+
+export const getJoinWithTeamCodeUrl = () => {
+
+
+
+
+  return `/api/team-codes/join`
+}
+
+export const joinWithTeamCode = async (teamCodeJoinInput: TeamCodeJoinInput, options?: RequestInit): Promise<TeamCodeJoinResult> => {
+
+  return customFetch<TeamCodeJoinResult>(getJoinWithTeamCodeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(teamCodeJoinInput)
+  }
+);}
+
+
+
+
+
+export const getJoinWithTeamCodeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof joinWithTeamCode>>, TError,{data: BodyType<TeamCodeJoinInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof joinWithTeamCode>>, TError,{data: BodyType<TeamCodeJoinInput>}, TContext> => {
+
+const mutationKey = ['joinWithTeamCode'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof joinWithTeamCode>>, {data: BodyType<TeamCodeJoinInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  joinWithTeamCode(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type JoinWithTeamCodeMutationResult = NonNullable<Awaited<ReturnType<typeof joinWithTeamCode>>>
+    export type JoinWithTeamCodeMutationBody = BodyType<TeamCodeJoinInput>
+    export type JoinWithTeamCodeMutationError = ErrorType<unknown>
+
+    export const useJoinWithTeamCode = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof joinWithTeamCode>>, TError,{data: BodyType<TeamCodeJoinInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof joinWithTeamCode>>,
+        TError,
+        {data: BodyType<TeamCodeJoinInput>},
+        TContext
+      > => {
+      return useMutation(getJoinWithTeamCodeMutationOptions(options));
+    }
+
+export const getGetTeamJoinRequestsUrl = (teamId: number,) => {
+
+
+
+
+  return `/api/teams/${teamId}/join-requests`
+}
+
+export const getTeamJoinRequests = async (teamId: number, options?: RequestInit): Promise<TeamJoinRequest[]> => {
+
+  return customFetch<TeamJoinRequest[]>(getGetTeamJoinRequestsUrl(teamId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTeamJoinRequestsQueryKey = (teamId: number,) => {
+    return [
+    `/api/teams/${teamId}/join-requests`
+    ] as const;
+    }
+
+
+export const getGetTeamJoinRequestsQueryOptions = <TData = Awaited<ReturnType<typeof getTeamJoinRequests>>, TError = ErrorType<unknown>>(teamId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTeamJoinRequests>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTeamJoinRequestsQueryKey(teamId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTeamJoinRequests>>> = ({ signal }) => getTeamJoinRequests(teamId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: teamId !== null && teamId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTeamJoinRequests>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTeamJoinRequestsQueryResult = NonNullable<Awaited<ReturnType<typeof getTeamJoinRequests>>>
+export type GetTeamJoinRequestsQueryError = ErrorType<unknown>
+
+
+
+export function useGetTeamJoinRequests<TData = Awaited<ReturnType<typeof getTeamJoinRequests>>, TError = ErrorType<unknown>>(
+ teamId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTeamJoinRequests>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTeamJoinRequestsQueryOptions(teamId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getReviewTeamJoinRequestUrl = (teamId: number,
+    requestId: number,) => {
+
+
+
+
+  return `/api/teams/${teamId}/join-requests/${requestId}`
+}
+
+export const reviewTeamJoinRequest = async (teamId: number,
+    requestId: number,
+    teamJoinReviewInput: TeamJoinReviewInput, options?: RequestInit): Promise<ReviewTeamJoinRequest200> => {
+
+  return customFetch<ReviewTeamJoinRequest200>(getReviewTeamJoinRequestUrl(teamId,requestId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(teamJoinReviewInput)
+  }
+);}
+
+
+
+
+
+export const getReviewTeamJoinRequestMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewTeamJoinRequest>>, TError,{teamId: number;requestId: number;data: BodyType<TeamJoinReviewInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviewTeamJoinRequest>>, TError,{teamId: number;requestId: number;data: BodyType<TeamJoinReviewInput>}, TContext> => {
+
+const mutationKey = ['reviewTeamJoinRequest'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewTeamJoinRequest>>, {teamId: number;requestId: number;data: BodyType<TeamJoinReviewInput>}> = (props) => {
+          const {teamId,requestId,data} = props ?? {};
+
+          return  reviewTeamJoinRequest(teamId,requestId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReviewTeamJoinRequestMutationResult = NonNullable<Awaited<ReturnType<typeof reviewTeamJoinRequest>>>
+    export type ReviewTeamJoinRequestMutationBody = BodyType<TeamJoinReviewInput>
+    export type ReviewTeamJoinRequestMutationError = ErrorType<unknown>
+
+    export const useReviewTeamJoinRequest = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewTeamJoinRequest>>, TError,{teamId: number;requestId: number;data: BodyType<TeamJoinReviewInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reviewTeamJoinRequest>>,
+        TError,
+        {teamId: number;requestId: number;data: BodyType<TeamJoinReviewInput>},
+        TContext
+      > => {
+      return useMutation(getReviewTeamJoinRequestMutationOptions(options));
     }
 
 export const getCreateTeamInvitationUrl = () => {

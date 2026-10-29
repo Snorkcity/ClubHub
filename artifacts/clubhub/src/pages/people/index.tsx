@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useActiveTeam } from "@/lib/active-team";
 import { InvitePersonDialog } from "@/components/people/invite-person-dialog";
+import { TeamJoinAccess } from "@/components/people/team-join-access";
 
 export default function PeopleList() {
   const { activeTeamId } = useActiveTeam();
@@ -55,6 +56,17 @@ export default function PeopleList() {
       queryKey: getListPeopleQueryKey(summaryParams),
     },
   });
+  if (meLoading) return <LoadingScreen />;
+  if (me && !me.isClubAdmin && staffedTeamIds.size === 0) {
+    return (
+      <div className="mx-auto max-w-md px-5 py-16 text-center" data-testid="team-members-staff-only">
+        <h1 className="font-display text-2xl font-bold">Team Members is for team staff</h1>
+        <p className="mt-3 text-muted-foreground">Only coaches, managers and club admins can open the member directory or manage team access.</p>
+        <Link href="/home" className="mt-6 inline-block rounded-xl bg-primary px-5 py-3 font-semibold text-primary-foreground">Back to Home</Link>
+      </div>
+    );
+  }
+
   const summary = {
     teams: teamId != null ? 1 : (clubTeams ?? []).length,
     players: summaryPeople?.filter((person) =>
@@ -101,6 +113,8 @@ export default function PeopleList() {
           </div>
           {canInvite && <InvitePersonDialog teamId={teamId} teams={inviteTeams} />}
         </header>
+
+        {canInvite && <TeamJoinAccess teams={inviteTeams} initialTeamId={teamId} />}
 
         <section
           aria-label={teamId != null ? "Team member summary" : "Club member summary"}

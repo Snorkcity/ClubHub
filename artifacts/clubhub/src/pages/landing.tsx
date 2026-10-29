@@ -42,7 +42,7 @@ export default function Landing() {
               </Button>
             </div>
             <p className="mt-6 text-sm leading-relaxed text-muted-foreground">
-              New clubs are invitation-only. To set up a club or join a team, open the invitation link you received.
+              New clubs are invitation-only. To join a team, enter the reusable code shared by its coach or club admin.
             </p>
           </div>
         </section>
@@ -84,7 +84,7 @@ export default function Landing() {
           <div className="container mx-auto px-4 text-center max-w-3xl">
             <h2 className="text-4xl lg:text-5xl font-display font-bold tracking-tight mb-6">Ready to elevate your club?</h2>
             <p className="text-xl text-muted-foreground mb-10">
-              Already part of Nahreo? Sign in to your club. New club and team members should use their invitation link.
+              Already part of Nahreo? Sign in to your club, or join another team with a code.
             </p>
             <Button asChild size="lg" className="rounded-full px-10 h-16 text-lg font-bold shadow-xl shadow-primary/20">
               <Link href="/sign-in">

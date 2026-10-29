@@ -627,6 +627,107 @@ paths:
               schema:
                 $ref: "#/components/schemas/Person"
 
+  /teams/{teamId}/join-code:
+    parameters:
+      - $ref: "#/components/parameters/TeamId"
+    get:
+      operationId: getTeamJoinCode
+      tags: [people]
+      responses:
+        "200":
+          description: Staff-only reusable code
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TeamJoinCode" }
+    post:
+      operationId: rotateTeamJoinCode
+      tags: [people]
+      responses:
+        "200":
+          description: New code, replacing any old code
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TeamJoinCode" }
+    delete:
+      operationId: disableTeamJoinCode
+      tags: [people]
+      responses:
+        "204": { description: Code disabled }
+
+  /team-codes/preview:
+    post:
+      operationId: previewTeamCode
+      tags: [people]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TeamCodeInput" }
+      responses:
+        "200":
+          description: Team identity only, no roster or contacts
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TeamCodePreview" }
+
+  /team-codes/join:
+    post:
+      operationId: joinWithTeamCode
+      tags: [people]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TeamCodeJoinInput" }
+      responses:
+        "200":
+          description: Joined, or awaiting guardian approval
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TeamCodeJoinResult" }
+
+  /teams/{teamId}/join-requests:
+    get:
+      operationId: getTeamJoinRequests
+      tags: [people]
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      responses:
+        "200":
+          description: Guardian requests for staff review
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/TeamJoinRequest" }
+
+  /teams/{teamId}/join-requests/{requestId}:
+    post:
+      operationId: reviewTeamJoinRequest
+      tags: [people]
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+        - name: requestId
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TeamJoinReviewInput" }
+      responses:
+        "200":
+          description: Request reviewed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: { type: string, enum: [approved, rejected] }
+
   /team-invitations:
     post:
       operationId: createTeamInvitation
@@ -2586,6 +2687,54 @@ components:
         phone: { type: string }
         dateOfBirth: { type: string }
         teamId: { type: integer, minimum: 1, description: "Optionally add a new email-less player to this team's roster atomically." }
+
+    TeamJoinCode:
+      type: object
+      required: [code, link]
+      properties:
+        code: { type: ["string", "null"] }
+        link: { type: ["string", "null"] }
+    TeamCodeInput:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string, minLength: 1, maxLength: 40 }
+    TeamCodePreview:
+      type: object
+      required: [teamName, clubName]
+      properties:
+        teamName: { type: string }
+        clubName: { type: string }
+    TeamCodeJoinInput:
+      type: object
+      required: [code, role, firstName, lastName]
+      properties:
+        code: { type: string, minLength: 1, maxLength: 40 }
+        role: { type: string, enum: [player, guardian] }
+        firstName: { type: string, minLength: 1, maxLength: 100 }
+        lastName: { type: string, minLength: 1, maxLength: 100 }
+        childName: { type: string, maxLength: 200 }
+    TeamCodeJoinResult:
+      type: object
+      required: [status, teamId, clubId]
+      properties:
+        status: { type: string, enum: [joined, pending, rejected] }
+        teamId: { type: integer }
+        clubId: { type: integer }
+    TeamJoinRequest:
+      type: object
+      required: [id, name, childName, createdAt]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        childName: { type: string }
+        createdAt: { type: string, format: date-time }
+    TeamJoinReviewInput:
+      type: object
+      required: [decision]
+      properties:
+        decision: { type: string, enum: [approve, reject] }
+        playerId: { type: integer, minimum: 1 }
 
     TeamInvitationInput:
       type: object

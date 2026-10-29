@@ -1014,6 +1014,91 @@ export interface PersonInput {
   teamId?: number;
 }
 
+export interface TeamJoinCode {
+  /** @nullable */
+  code: string | null;
+  /** @nullable */
+  link: string | null;
+}
+
+export interface TeamCodeInput {
+  /**
+     * @minLength 1
+     * @maxLength 40
+     */
+  code: string;
+}
+
+export interface TeamCodePreview {
+  teamName: string;
+  clubName: string;
+}
+
+export type TeamCodeJoinInputRole = typeof TeamCodeJoinInputRole[keyof typeof TeamCodeJoinInputRole];
+
+
+export const TeamCodeJoinInputRole = {
+  player: 'player',
+  guardian: 'guardian',
+} as const;
+
+export interface TeamCodeJoinInput {
+  /**
+     * @minLength 1
+     * @maxLength 40
+     */
+  code: string;
+  role: TeamCodeJoinInputRole;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  firstName: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  lastName: string;
+  /** @maxLength 200 */
+  childName?: string;
+}
+
+export type TeamCodeJoinResultStatus = typeof TeamCodeJoinResultStatus[keyof typeof TeamCodeJoinResultStatus];
+
+
+export const TeamCodeJoinResultStatus = {
+  joined: 'joined',
+  pending: 'pending',
+  rejected: 'rejected',
+} as const;
+
+export interface TeamCodeJoinResult {
+  status: TeamCodeJoinResultStatus;
+  teamId: number;
+  clubId: number;
+}
+
+export interface TeamJoinRequest {
+  id: number;
+  name: string;
+  childName: string;
+  createdAt: string;
+}
+
+export type TeamJoinReviewInputDecision = typeof TeamJoinReviewInputDecision[keyof typeof TeamJoinReviewInputDecision];
+
+
+export const TeamJoinReviewInputDecision = {
+  approve: 'approve',
+  reject: 'reject',
+} as const;
+
+export interface TeamJoinReviewInput {
+  decision: TeamJoinReviewInputDecision;
+  /** @minimum 1 */
+  playerId?: number;
+}
+
 export type TeamInvitationInputRole = typeof TeamInvitationInputRole[keyof typeof TeamInvitationInputRole];
 
 
@@ -1584,6 +1669,18 @@ export const ListPeopleRole = {
   player: 'player',
   parent: 'parent',
 } as const;
+
+export type ReviewTeamJoinRequest200Status = typeof ReviewTeamJoinRequest200Status[keyof typeof ReviewTeamJoinRequest200Status];
+
+
+export const ReviewTeamJoinRequest200Status = {
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export type ReviewTeamJoinRequest200 = {
+  status: ReviewTeamJoinRequest200Status;
+};
 
 export type PreviewTeamInvitationParams = {
 token: string;
