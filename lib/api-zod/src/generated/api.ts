@@ -1781,6 +1781,74 @@ export const SetPostReactionResponse = zod.object({
 export const DeletePostCommentResponse = zod.void()
 
 
+
+export const listPastEventsQueryOffsetDefault = 0;
+export const listPastEventsQueryOffsetMin = 0;
+
+
+
+export const ListPastEventsQueryParams = zod.object({
+  "teamId": zod.coerce.number().min(1).optional(),
+  "offset": zod.coerce.number().min(listPastEventsQueryOffsetMin).default(listPastEventsQueryOffsetDefault)
+})
+
+export const ListPastEventsResponse = zod.object({
+  "events": zod.array(zod.object({
+  "id": zod.number(),
+  "teamId": zod.number(),
+  "teamName": zod.string(),
+  "type": zod.enum(['training', 'game', 'social', 'other']),
+  "title": zod.string(),
+  "location": zod.string().nullish(),
+  "opponent": zod.string().nullish(),
+  "startsAt": zod.string(),
+  "endsAt": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "goingCount": zod.number(),
+  "maybeCount": zod.number(),
+  "outCount": zod.number(),
+  "noResponseCount": zod.number(),
+  "myRsvp": zod.union([zod.literal('going'),zod.literal('maybe'),zod.literal('out'),zod.literal(null)]).nullish(),
+  "invitedRoles": zod.array(zod.enum(['coaches', 'players', 'parents'])).optional(),
+  "cancelledAt": zod.string().nullish(),
+  "cancelReason": zod.string().nullish()
+})),
+  "nextOffset": zod.number().nullable()
+})
+
+
+export const getTeamAttendanceQueryTypeDefault = `all`;
+
+export const GetTeamAttendanceQueryParams = zod.object({
+  "from": zod.date(),
+  "to": zod.date(),
+  "timeZone": zod.coerce.string(),
+  "type": zod.enum(['all', 'training', 'game']).default(getTeamAttendanceQueryTypeDefault)
+})
+
+export const GetTeamAttendanceResponse = zod.object({
+  "teamId": zod.number(),
+  "teamName": zod.string(),
+  "from": zod.string(),
+  "to": zod.string(),
+  "timeZone": zod.string(),
+  "type": zod.enum(['all', 'training', 'game']),
+  "totalSessions": zod.number(),
+  "generatedAt": zod.coerce.date(),
+  "notice": zod.string(),
+  "players": zod.array(zod.object({
+  "personId": zod.number(),
+  "fullName": zod.string(),
+  "going": zod.number(),
+  "out": zod.number(),
+  "maybe": zod.number(),
+  "noResponse": zod.number(),
+  "totalSessions": zod.number(),
+  "goingPercent": zod.number().nullable()
+}))
+})
+
+
 /**
  * @summary Upcoming events across the user's teams
  */
@@ -1885,6 +1953,12 @@ export const CreateEventResponse = zod.object({
  * @summary Get an event with availability detail
  */
 export const GetEventResponse = zod.object({
+  "canManageRsvps": zod.boolean(),
+  "rsvpPlayers": zod.array(zod.object({
+  "personId": zod.number(),
+  "fullName": zod.string(),
+  "status": zod.union([zod.literal('going'),zod.literal('maybe'),zod.literal('out'),zod.literal(null)]).nullable()
+})),
   "event": zod.object({
   "id": zod.number(),
   "teamId": zod.number(),

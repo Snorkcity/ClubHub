@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Save, UserCircle, Sun, Moon, MonitorSmartphone, Palette, Bell, Camera, Images, Loader2 } from "lucide-react";
+import { Save, UserCircle, Sun, Moon, MonitorSmartphone, Palette, Bell, Camera, Images, Loader2, Database } from "lucide-react";
+import { Link } from "wouter";
 import { useTheme, type ThemePref } from "@/lib/theme";
 import {
   useGetMe, useUpdateMe, getGetMeQueryKey,
@@ -383,10 +384,23 @@ export default function Settings() {
         </header>
 
         <div className="space-y-10">
+          <section aria-labelledby="team-membership-heading" className="space-y-4">
+            <h2 id="team-membership-heading" className="border-b pb-2 text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Team membership</h2>
           <ClubAccessSettings />
           <TeamMembershipSettings />
-          {me.isClubAdmin && <ClubRoleSettings currentPersonId={me.person.id} isClubAdmin={me.isClubAdmin} />}
-          {me.isClubAdmin && club && <ClubLogoSettings club={club} />}
+          </section>
+          {me.isClubAdmin && (
+            <section aria-labelledby="club-administration-heading" className="space-y-4">
+              <h2 id="club-administration-heading" className="border-b pb-2 text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Club administration</h2>
+              <ClubRoleSettings currentPersonId={me.person.id} isClubAdmin={me.isClubAdmin} />
+              {club && <ClubLogoSettings club={club} />}
+              <Link href="/admin/photo-storage" data-testid="link-settings-photo-storage" className="flex min-h-12 items-center gap-3 rounded-2xl border bg-card px-4 text-sm font-semibold hover:bg-muted/50">
+            <Database className="h-4 w-4 text-muted-foreground" /> Photo storage
+              </Link>
+            </section>
+          )}
+          <section aria-labelledby="preferences-heading" className="space-y-4">
+            <h2 id="preferences-heading" className="border-b pb-2 text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">My profile & preferences</h2>
           <AppearanceCard />
 
           <NotificationsCard me={me} />
@@ -525,6 +539,7 @@ export default function Settings() {
               </Button>
             </div>
           </Card>
+          </section>
           
           <Card className="p-6 md:p-8 rounded-3xl border shadow-sm">
             <h2 className="text-xl font-bold mb-4 text-destructive">Account Management</h2>

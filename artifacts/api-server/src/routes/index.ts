@@ -9,6 +9,7 @@ import teamsRouter from "./teams";
 import peopleRouter from "./people";
 import feedRouter from "./feed";
 import eventsRouter from "./events";
+import attendanceRouter from "./attendance";
 import chatsRouter from "./chats";
 import monitoringRouter from "./monitoring";
 import timekeepingRouter from "./timekeeping";
@@ -21,6 +22,7 @@ import platformRouter from "./platform";
 import leaveTeamRouter from "./leave-team";
 
 const router: IRouter = Router();
+router.use(attendanceRouter);
 
 router.use(healthRouter);
 router.use(onboardingRouter);

@@ -8,8 +8,11 @@
 import type { Event } from './event';
 import type { Person } from './person';
 import type { Rsvp } from './rsvp';
+import type { RsvpRosterPlayer } from './rsvpRosterPlayer';
 
 export interface EventDetail {
+  canManageRsvps: boolean;
+  rsvpPlayers: RsvpRosterPlayer[];
   event: Event;
   /** Players on this event's team whom the signed-in guardian is authorised to manage, including players who have not responded yet. */
   managedPlayers: Person[];

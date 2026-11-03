@@ -65,6 +65,7 @@ import type {
   ForbiddenResponse,
   GetCheckinStatusParams,
   GetOnboardingStatusParams,
+  GetTeamAttendanceParams,
   GetTeamMonitoringParams,
   Guardianship,
   GuardianshipInput,
@@ -73,6 +74,7 @@ import type {
   LearningPreferencesInput,
   LeaveTeam200,
   ListNotificationsParams,
+  ListPastEventsParams,
   ListPeopleParams,
   ListUpcomingEventsParams,
   Message,
@@ -83,6 +85,7 @@ import type {
   OnboardingInput,
   OnboardingResult,
   OnboardingStatus,
+  PastEventsPage,
   PendingTeamInvitations,
   Person,
   PersonDetail,
@@ -108,6 +111,7 @@ import type {
   SeasonMinutes,
   StartPeriodInput,
   Team,
+  TeamAttendanceReport,
   TeamBannerInput,
   TeamCodeInput,
   TeamCodeJoinInput,
@@ -5631,6 +5635,167 @@ export const useDeletePostComment = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getDeletePostCommentMutationOptions(options));
     }
+
+export const getListPastEventsUrl = (params?: ListPastEventsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/events/past?${stringifiedParams}` : `/api/events/past`
+}
+
+export const listPastEvents = async (params?: ListPastEventsParams, options?: RequestInit): Promise<PastEventsPage> => {
+
+  return customFetch<PastEventsPage>(getListPastEventsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPastEventsQueryKey = (params?: ListPastEventsParams,) => {
+    return [
+    `/api/events/past`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListPastEventsQueryOptions = <TData = Awaited<ReturnType<typeof listPastEvents>>, TError = ErrorType<unknown>>(params?: ListPastEventsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPastEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPastEventsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPastEvents>>> = ({ signal }) => listPastEvents(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPastEvents>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPastEventsQueryResult = NonNullable<Awaited<ReturnType<typeof listPastEvents>>>
+export type ListPastEventsQueryError = ErrorType<unknown>
+
+
+
+export function useListPastEvents<TData = Awaited<ReturnType<typeof listPastEvents>>, TError = ErrorType<unknown>>(
+ params?: ListPastEventsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPastEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPastEventsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetTeamAttendanceUrl = (teamId: number,
+    params: GetTeamAttendanceParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/teams/${teamId}/attendance?${stringifiedParams}` : `/api/teams/${teamId}/attendance`
+}
+
+export const getTeamAttendance = async (teamId: number,
+    params: GetTeamAttendanceParams, options?: RequestInit): Promise<TeamAttendanceReport> => {
+
+  return customFetch<TeamAttendanceReport>(getGetTeamAttendanceUrl(teamId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTeamAttendanceQueryKey = (teamId: number,
+    params?: GetTeamAttendanceParams,) => {
+    return [
+    `/api/teams/${teamId}/attendance`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetTeamAttendanceQueryOptions = <TData = Awaited<ReturnType<typeof getTeamAttendance>>, TError = ErrorType<unknown>>(teamId: number,
+    params: GetTeamAttendanceParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTeamAttendance>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTeamAttendanceQueryKey(teamId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTeamAttendance>>> = ({ signal }) => getTeamAttendance(teamId,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: teamId !== null && teamId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTeamAttendance>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTeamAttendanceQueryResult = NonNullable<Awaited<ReturnType<typeof getTeamAttendance>>>
+export type GetTeamAttendanceQueryError = ErrorType<unknown>
+
+
+
+export function useGetTeamAttendance<TData = Awaited<ReturnType<typeof getTeamAttendance>>, TError = ErrorType<unknown>>(
+ teamId: number,
+    params: GetTeamAttendanceParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTeamAttendance>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTeamAttendanceQueryOptions(teamId,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListUpcomingEventsUrl = (params?: ListUpcomingEventsParams,) => {
   const normalizedParams = new URLSearchParams();

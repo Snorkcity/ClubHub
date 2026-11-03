@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, asc, eq, gte, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lt, inArray } from "drizzle-orm";
 import { db, eventsTable, rsvpsTable, teamMembersTable, guardianshipsTable, usersTable } from "@workspace/db";
 import { CreateEventBody, UpdateEventBody, SetRsvpBody, CancelEventBody, ListUpcomingEventsQueryParams } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
@@ -10,6 +10,28 @@ import { toPerson, iso } from "../lib/serialize";
 import { createNotification, resolveTeamRecipients } from "../lib/notifications";
 
 const router: IRouter = Router();
+
+router.get("/events/past", requireAuth, async (req, res) => {
+  const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
+  const teamId = req.query.teamId === undefined ? undefined : Number(req.query.teamId);
+  const offset = req.query.offset === undefined ? 0 : Number(req.query.offset);
+  if ((teamId !== undefined && (!Number.isSafeInteger(teamId) || teamId <= 0)) ||
+      !Number.isSafeInteger(offset) || offset < 0 || offset > 100000 ||
+      (req.query.teamId !== undefined && typeof req.query.teamId !== "string") ||
+      (req.query.offset !== undefined && typeof req.query.offset !== "string"))
+    return res.status(400).json({ error: "Choose a valid team and page." });
+  if (teamId !== undefined && !(await canAccessTeam(localUser.id, teamId, clubId, isClubAdmin)))
+    return res.status(403).json({ error: "You cannot view this team's events" });
+  const visible = teamId === undefined ? await getVisibleTeamIds(clubId, localUser.id, isClubAdmin) : [teamId];
+  if (!visible.length) return res.json({ events: [], nextOffset: null });
+  const events = await db.select().from(eventsTable)
+    .where(and(inArray(eventsTable.teamId, visible), lt(eventsTable.startsAt, new Date())))
+    .orderBy(desc(eventsTable.startsAt), desc(eventsTable.id)).limit(51).offset(offset);
+  return res.json({
+    events: await buildEvents(events.slice(0, 50), localUser.id),
+    nextOffset: events.length > 50 ? offset + 50 : null,
+  });
+});
 
 router.get("/events/upcoming", requireAuth, async (req, res) => {
   const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
@@ -156,6 +178,15 @@ router.get("/events/:eventId", requireAuth, async (req, res) => {
 
   return res.json({
     event: built,
+    canManageRsvps: viewerIsStaff,
+    rsvpPlayers: viewerIsStaff ? (await db.select({
+      personId: usersTable.id, firstName: usersTable.firstName, lastName: usersTable.lastName,
+    }).from(teamMembersTable).innerJoin(usersTable, eq(usersTable.id, teamMembersTable.userId))
+      .where(and(eq(teamMembersTable.teamId, event.teamId), eq(teamMembersTable.role, "player"))))
+      .map((p) => ({
+        personId: p.personId, fullName: `${p.firstName} ${p.lastName}`.trim(),
+        status: rows.find(({ r }) => r.userId === p.personId)?.r.status ?? null,
+      })) : [],
     managedPlayers: manageable.map(({ person }) => toPerson(person)),
     teamPlayerCount,
     teamStaffCount,

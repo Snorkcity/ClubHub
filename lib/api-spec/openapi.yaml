@@ -1246,6 +1246,35 @@ paths:
         "204":
           description: Deleted
 
+  /events/past:
+    get:
+      operationId: listPastEvents
+      tags: [events]
+      parameters:
+        - { name: teamId, in: query, schema: { type: integer, minimum: 1 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200":
+          description: Past sessions, newest first, in pages of 50
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PastEventsPage" }
+  /teams/{teamId}/attendance:
+    get:
+      operationId: getTeamAttendance
+      tags: [events]
+      parameters:
+        - { name: teamId, in: path, required: true, schema: { type: integer, minimum: 1 } }
+        - { name: from, in: query, required: true, schema: { type: string, format: date } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date } }
+        - { name: timeZone, in: query, required: true, schema: { type: string } }
+        - { name: type, in: query, schema: { type: string, enum: [all, training, game], default: all } }
+      responses:
+        "200":
+          description: RSVP-based report for club administrators or this team's coaches only
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TeamAttendanceReport" }
   /events/upcoming:
     get:
       operationId: listUpcomingEvents
@@ -2607,6 +2636,38 @@ components:
         createdAt: { type: string }
         author: { $ref: "#/components/schemas/Person" }
 
+    PastEventsPage:
+      type: object
+      required: [events, nextOffset]
+      properties:
+        events: { type: array, items: { $ref: "#/components/schemas/Event" } }
+        nextOffset: { type: [integer, "null"] }
+    AttendancePlayer:
+      type: object
+      required: [personId, fullName, going, out, maybe, noResponse, totalSessions, goingPercent]
+      properties:
+        personId: { type: integer }
+        fullName: { type: string }
+        going: { type: integer }
+        out: { type: integer }
+        maybe: { type: integer }
+        noResponse: { type: integer }
+        totalSessions: { type: integer }
+        goingPercent: { type: [number, "null"] }
+    TeamAttendanceReport:
+      type: object
+      required: [teamId, teamName, from, to, timeZone, type, totalSessions, players, generatedAt, notice]
+      properties:
+        teamId: { type: integer }
+        teamName: { type: string }
+        from: { type: string }
+        to: { type: string }
+        timeZone: { type: string }
+        type: { type: string, enum: [all, training, game] }
+        totalSessions: { type: integer }
+        generatedAt: { type: string, format: date-time }
+        notice: { type: string }
+        players: { type: array, items: { $ref: "#/components/schemas/AttendancePlayer" } }
     Event:
       type: object
       required: [id, teamId, teamName, type, title, startsAt, goingCount, maybeCount, outCount, noResponseCount]
@@ -2632,10 +2693,21 @@ components:
         cancelledAt: { type: ["string", "null"] }
         cancelReason: { type: ["string", "null"] }
 
+    RsvpRosterPlayer:
+      type: object
+      required: [personId, fullName, status]
+      properties:
+        personId: { type: integer }
+        fullName: { type: string }
+        status: { type: [string, "null"], enum: [going, maybe, out, null] }
     EventDetail:
       type: object
-      required: [event, rsvps, managedPlayers]
+      required: [event, rsvps, managedPlayers, canManageRsvps, rsvpPlayers]
       properties:
+        canManageRsvps: { type: boolean }
+        rsvpPlayers:
+          type: array
+          items: { $ref: "#/components/schemas/RsvpRosterPlayer" }
         event: { $ref: "#/components/schemas/Event" }
         managedPlayers:
           type: array

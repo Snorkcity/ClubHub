@@ -18,6 +18,7 @@ import { queryClient } from "@/lib/queryClient";
 import { LoadingScreen, ErrorState, EmptyState } from "@/components/ui/states";
 import { EventEditorDialog, initialFromEvent } from "@/components/schedule/new-event-dialog";
 import { GuardianRsvp } from "@/components/schedule/guardian-rsvp";
+import { RsvpCorrection } from "@/components/schedule/rsvp-correction";
 import {
   Dialog,
   DialogContent,
@@ -391,6 +392,11 @@ export default function EventDetail() {
         <GuardianRsvp eventId={eventId} teamId={event.teamId}
           players={eventData.managedPlayers ?? []} rsvps={rsvps}
           enabled={!isCancelled && invited.includes("players")} />
+
+        {eventData.canManageRsvps && isStaff && (
+          <RsvpCorrection eventId={eventId} teamId={event.teamId}
+            players={eventData.rsvpPlayers ?? []} disabled={isCancelled} />
+        )}
 
         {/* Availability Section */}
         <div className="space-y-6">

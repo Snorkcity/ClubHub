@@ -42,6 +42,8 @@ import JoinTeamByCode from "@/pages/join-team";
 import TeamDevelopment from "@/pages/teams/development";
 import DevelopmentCycle from "@/pages/development/cycle";
 import DevelopmentReport from "@/pages/development/report";
+import Reports from "@/pages/reports";
+import AttendanceReport from "@/pages/reports/attendance";
 import Shell from "@/components/layout/shell";
 import GetStarted from "@/pages/get-started";
 import { useGetOnboardingStatus, useGetPlatformAccess, getGetPlatformAccessQueryKey } from "@workspace/api-client-react";
@@ -306,8 +308,9 @@ function ProtectedRoute({ component: Component, ...rest }: any) {
 }
 
 function GetStartedRoute() {
+  const invitation = getSetupInvitation();
   const { data: status, isLoading, isError, refetch } =
-    useGetOnboardingStatus({ invitation: getSetupInvitation() });
+    useGetOnboardingStatus(invitation ? { invitation } : undefined);
 
   if (isLoading) {
     return (
@@ -418,6 +421,8 @@ function ClerkProviderWithRoutes() {
           <ProtectedRoute path="/events/:eventId" component={EventDetail} />
           <ProtectedRoute path="/events/:eventId/timekeeping" component={() => <FeaturePage feature="timekeeping"><EventTimekeeping /></FeaturePage>} />
           <ProtectedRoute path="/schedule" component={Schedule} />
+          <ProtectedRoute path="/reports" component={Reports} />
+          <ProtectedRoute path="/reports/attendance" component={AttendanceReport} />
           <ProtectedRoute path="/messages" component={Messages} />
           <ProtectedRoute path="/messages/:chatId" component={ChatPage} />
           <ProtectedRoute path="/people" component={PeopleList} />

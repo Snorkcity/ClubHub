@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { addDays, format, startOfWeek } from "date-fns";
-import { Link } from "wouter";
-import { CalendarDays, Check, ChevronDown, MapPin, X } from "lucide-react";
+import { Link, useLocation, useSearch } from "wouter";
+import { CalendarDays, Check, ChevronDown, MapPin, X, History } from "lucide-react";
 import { 
-  useListUpcomingEvents, getListUpcomingEventsQueryKey,
+  useListUpcomingEvents, getListUpcomingEventsQueryKey, useListPastEvents, getListPastEventsQueryKey,
   useSetRsvp, getGetEventQueryKey, getGetTeamSummaryQueryKey
 } from "@workspace/api-client-react";
+import type { Event } from "@workspace/api-client-react";
 import { queryClient } from "@/lib/queryClient";
 import { useActiveTeam } from "@/lib/active-team";
 
@@ -15,6 +16,38 @@ import { NewEventDialog } from "@/components/schedule/new-event-dialog";
 import { Button } from "@/components/ui/button";
 
 export default function Schedule() {
+  const [, setLocation] = useLocation();
+  const search = useSearch();
+  const { activeTeamId } = useActiveTeam();
+  const view = new URLSearchParams(search).get("view") === "past" ? "past" : "upcoming";
+
+  const changeView = (next: "upcoming" | "past") => {
+    setLocation(next === "past" ? "/schedule?view=past" : "/schedule");
+  };
+
+  return (
+    <div className="flex-1 overflow-y-auto overflow-x-hidden bg-muted/10">
+      <header className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur">
+        <div className="container mx-auto flex h-12 max-w-4xl items-center justify-between px-4 md:px-8">
+          <h1 className="font-display text-xl font-bold tracking-tight">Schedule</h1>
+          <NewEventDialog />
+        </div>
+        <div className="container mx-auto flex max-w-4xl gap-1 px-4 pb-2 md:px-8" role="tablist" aria-label="Schedule view">
+          {(["upcoming", "past"] as const).map((item) => (
+            <button key={item} role="tab" aria-selected={view === item} data-testid={`button-schedule-${item}`}
+              onClick={() => changeView(item)}
+              className={`min-h-9 rounded-full px-4 text-sm font-bold capitalize transition-colors ${view === item ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}>
+              {item === "upcoming" ? "Upcoming" : "Past"}
+            </button>
+          ))}
+        </div>
+      </header>
+      {view === "upcoming" ? <UpcomingSchedule /> : <PastSchedule key={activeTeamId ?? "all"} />}
+    </div>
+  );
+}
+
+function UpcomingSchedule() {
   const { activeTeamId } = useActiveTeam();
   const params = activeTeamId == null ? undefined : { teamId: activeTeamId };
   const { data: events, isLoading, error, refetch } = useListUpcomingEvents(params, {
@@ -40,15 +73,7 @@ export default function Schedule() {
   );
 
   return (
-    <div className="flex-1 overflow-y-auto overflow-x-hidden bg-muted/10">
-      {/* Compact sticky header, like Chats — stays put while the list scrolls. */}
-      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b">
-        <div className="container mx-auto px-4 md:px-8 lg:max-w-4xl h-12 flex items-center justify-between">
-          <h1 className="text-xl font-display font-bold tracking-tight">Schedule</h1>
-          <NewEventDialog />
-        </div>
-      </header>
-      <div className="container mx-auto p-4 md:p-8 lg:max-w-4xl">
+      <div className="container mx-auto max-w-4xl p-4 md:p-8">
         {events.length === 0 ? (
           <EmptyState 
             title="Your schedule is clear" 
@@ -98,11 +123,65 @@ export default function Schedule() {
           </div>
         )}
       </div>
+  );
+}
+
+function PastSchedule() {
+  const { activeTeamId } = useActiveTeam();
+  const params = useMemo(() => ({
+    ...(activeTeamId == null ? {} : { teamId: activeTeamId }),
+    offset: 0,
+  }), [activeTeamId]);
+  const [offset, setOffset] = useState(0);
+  const [pages, setPages] = useState<Record<number, Event[]>>({});
+  const queryParams = useMemo(() => ({ ...params, offset }), [params, offset]);
+  const { data: page, isLoading, error, refetch } = useListPastEvents(queryParams, {
+    query: { queryKey: getListPastEventsQueryKey(queryParams), refetchOnWindowFocus: true },
+  });
+
+  useEffect(() => {
+    if (page) setPages((current) => ({ ...current, [offset]: page.events }));
+  }, [page, offset]);
+
+  const loadedEvents = [...new Map(Object.entries(pages)
+    .sort(([a], [b]) => Number(a) - Number(b))
+    .flatMap(([, events]) => events).map((event) => [event.id, event])).values()];
+  if (isLoading && loadedEvents.length === 0) {
+    return <div className="container mx-auto max-w-4xl space-y-3 p-4 md:p-8" aria-label="Loading past sessions">
+      {[0, 1, 2].map((item) => <div key={item} className="h-20 animate-pulse rounded-2xl bg-muted" />)}
+    </div>;
+  }
+  if (error && loadedEvents.length === 0) return <div className="container mx-auto max-w-4xl p-4 md:p-8"><ErrorState onRetry={() => void refetch()} /></div>;
+
+  return (
+    <div className="container mx-auto max-w-4xl p-4 md:p-8">
+      {loadedEvents.length === 0 ? (
+        <EmptyState title="No past sessions yet" message={activeTeamId == null
+          ? "Completed sessions across your teams will appear here."
+          : "Completed sessions for this team will appear here."} icon={History} />
+      ) : (
+        <div className="space-y-2">
+          <p className="mb-3 px-1 text-sm text-muted-foreground">Most recent sessions first</p>
+          <EventList events={loadedEvents} newestFirst />
+        </div>
+      )}
+      {page?.nextOffset != null && (
+        <div className="mt-5 flex justify-center">
+          <Button variant="outline" className="min-h-11 rounded-xl px-5" disabled={isLoading}
+            onClick={() => setOffset(page.nextOffset!)}>
+            {isLoading ? "Loading sessions…" : "Load more"}
+          </Button>
+        </div>
+      )}
+      {error && loadedEvents.length > 0 && <div role="alert" className="mt-4 flex items-center justify-between rounded-xl border bg-card p-3 text-sm">
+        Could not load more past sessions.
+        <Button variant="outline" size="sm" onClick={() => void refetch()}>Try again</Button>
+      </div>}
     </div>
   );
 }
 
-function EventList({ events }: { events: any[] }) {
+function EventList({ events, newestFirst = false }: { events: any[]; newestFirst?: boolean }) {
   const groupedEvents: Record<string, any[]> = {};
 
   events.forEach((event) => {
@@ -114,7 +193,7 @@ function EventList({ events }: { events: any[] }) {
   return (
     <div className="flex flex-col gap-2 md:gap-3">
       {Object.keys(groupedEvents)
-        .sort()
+        .sort((a, b) => newestFirst ? b.localeCompare(a) : a.localeCompare(b))
         .flatMap((day) => groupedEvents[day])
         .map((event) => <ScheduleCard key={event.id} event={event} />)}
     </div>

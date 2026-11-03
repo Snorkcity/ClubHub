@@ -3,8 +3,8 @@ import { Link, useLocation } from "wouter";
 import { useClerk, useUser } from "@clerk/react";
 import { 
   Home, Users, CalendarDays, MessageSquare, Settings, 
-  LogOut, ChevronDown, UserSquare2, ClipboardCheck, Activity, Bell, TrendingUp,
-  PanelLeftClose, PanelLeftOpen, Database
+  LogOut, ChevronDown, UserSquare2, ClipboardCheck, Activity, Bell,
+  PanelLeftClose, PanelLeftOpen, BarChart3
 } from "lucide-react";
 import {
   useGetMe, useGetClub, useListNotifications,
@@ -105,11 +105,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     ...(isPlayer && playerEligible ? [{ label: "Check-in", href: "/checkin", icon: ClipboardCheck }] : []),
     { label: "Messages", href: "/messages", icon: MessageSquare },
     ...(isStaff ? [{ label: "Team Members", href: "/people", icon: UserSquare2 }] : []),
+    ...(isStaff ? [{ label: "Reports", href: "/reports", icon: BarChart3 }] : []),
     ...(isStaff && staffTeamId != null
       ? [
           ...(featuresFor(staffTeamId).monitoring && (activeTeamId === null || activeTeamId === staffTeamId)
             ? [{ label: "Monitoring", href: `/teams/${staffTeamId}/monitoring`, icon: Activity }] : []),
-          { label: "Player Feedback", href: `/teams/${staffTeamId}/development`, icon: TrendingUp }
         ]
       : []),
   ];
@@ -119,8 +119,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   // Parents: Home/Schedule/Messages. Staff: Home/Schedule/Messages/Monitoring.
   const tabItems = navItems.filter((i) =>
     isStaff
-      ? i.label !== "Check-in" && i.label !== "Team Members" && i.label !== "Player Feedback"
-      : i.label !== "Monitoring" && i.label !== "Team Members" && i.label !== "Player Feedback",
+     ? i.label !== "Check-in" && i.label !== "Team Members" && i.label !== "Player Feedback" && i.label !== "Reports"
+       : i.label !== "Monitoring" && i.label !== "Team Members" && i.label !== "Player Feedback" && i.label !== "Reports",
   );
 
   return (
@@ -225,7 +225,6 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             avatarOnly={isNavCollapsed}
             isStaff={isStaff}
             notificationsUnread={notificationsUnread}
-            staffTeamId={staffTeamId}
           />
         </div>
       </aside>
@@ -258,7 +257,6 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               avatarOnly
               isStaff={isStaff}
               notificationsUnread={notificationsUnread}
-              staffTeamId={staffTeamId}
             />
           </div>
         </div>
@@ -314,7 +312,7 @@ function roleLabel(me: any) {
   return "Member";
 }
 
-function UserMenu({ me, clerkUser, onSignOut, avatarOnly = false, isStaff = false, notificationsUnread = 0, staffTeamId = null }: { me: any, clerkUser: any, onSignOut: () => void, avatarOnly?: boolean, isStaff?: boolean, notificationsUnread?: number, staffTeamId?: number | null }) {
+function UserMenu({ me, clerkUser, onSignOut, avatarOnly = false, isStaff = false, notificationsUnread = 0 }: { me: any, clerkUser: any, onSignOut: () => void, avatarOnly?: boolean, isStaff?: boolean, notificationsUnread?: number }) {
   const avatarUrl = me?.person?.avatarUrl || clerkUser?.imageUrl;
   const name = me?.person?.fullName || clerkUser?.fullName || "Loading...";
 
@@ -411,20 +409,11 @@ function UserMenu({ me, clerkUser, onSignOut, avatarOnly = false, isStaff = fals
           </DropdownMenuItem>
         )}
 
-        {me?.isClubAdmin === true && (
-          <DropdownMenuItem asChild className="min-h-11 rounded-xl py-2.5 cursor-pointer text-base">
-            <Link href="/admin/photo-storage" className="flex items-center w-full" data-testid="link-photo-storage">
-              <Database className="mr-2 h-4 w-4 text-muted-foreground" />
-              <span>Photo storage</span>
-            </Link>
-          </DropdownMenuItem>
-        )}
-
-        {isStaff && staffTeamId != null && (
+        {isStaff && (
           <DropdownMenuItem asChild className="min-h-11 rounded-xl py-2.5 cursor-pointer text-base md:hidden">
-            <Link href={`/teams/${staffTeamId}/development`} className="flex items-center w-full">
-              <TrendingUp className="mr-2 h-4 w-4 text-muted-foreground" />
-              <span>Player Feedback</span>
+            <Link href="/reports" className="flex items-center w-full">
+              <BarChart3 className="mr-2 h-4 w-4 text-muted-foreground" />
+              <span>Reports</span>
             </Link>
           </DropdownMenuItem>
         )}

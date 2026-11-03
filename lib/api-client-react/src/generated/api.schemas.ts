@@ -837,6 +837,65 @@ export interface PostDetail {
   comments: Comment[];
 }
 
+export interface PastEventsPage {
+  events: Event[];
+  /** @nullable */
+  nextOffset: number | null;
+}
+
+export interface AttendancePlayer {
+  personId: number;
+  fullName: string;
+  going: number;
+  out: number;
+  maybe: number;
+  noResponse: number;
+  totalSessions: number;
+  /** @nullable */
+  goingPercent: number | null;
+}
+
+export type TeamAttendanceReportType = typeof TeamAttendanceReportType[keyof typeof TeamAttendanceReportType];
+
+
+export const TeamAttendanceReportType = {
+  all: 'all',
+  training: 'training',
+  game: 'game',
+} as const;
+
+export interface TeamAttendanceReport {
+  teamId: number;
+  teamName: string;
+  from: string;
+  to: string;
+  timeZone: string;
+  type: TeamAttendanceReportType;
+  totalSessions: number;
+  generatedAt: string;
+  notice: string;
+  players: AttendancePlayer[];
+}
+
+/**
+ * @nullable
+ */
+export type RsvpRosterPlayerStatus = typeof RsvpRosterPlayerStatus[keyof typeof RsvpRosterPlayerStatus] | null;
+
+
+export const RsvpRosterPlayerStatus = {
+  going: 'going',
+  maybe: 'maybe',
+  out: 'out',
+} as const;
+
+export interface RsvpRosterPlayer {
+  personId: number;
+  fullName: string;
+  /** @nullable */
+  status: RsvpRosterPlayerStatus;
+}
+
 export type RsvpStatus = typeof RsvpStatus[keyof typeof RsvpStatus];
 
 
@@ -872,6 +931,8 @@ export interface Rsvp {
 }
 
 export interface EventDetail {
+  canManageRsvps: boolean;
+  rsvpPlayers: RsvpRosterPlayer[];
   event: Event;
   /** Players on this event's team whom the signed-in guardian is authorised to manage, including players who have not responded yet. */
   managedPlayers: Person[];
@@ -1776,6 +1837,33 @@ export type AcceptTeamInvitation200 = {
 export type CreateClubPost201 = {
   created: number;
 };
+
+export type ListPastEventsParams = {
+/**
+ * @minimum 1
+ */
+teamId?: number;
+/**
+ * @minimum 0
+ */
+offset?: number;
+};
+
+export type GetTeamAttendanceParams = {
+from: string;
+to: string;
+timeZone: string;
+type?: GetTeamAttendanceType;
+};
+
+export type GetTeamAttendanceType = typeof GetTeamAttendanceType[keyof typeof GetTeamAttendanceType];
+
+
+export const GetTeamAttendanceType = {
+  all: 'all',
+  training: 'training',
+  game: 'game',
+} as const;
 
 export type ListUpcomingEventsParams = {
 /**
