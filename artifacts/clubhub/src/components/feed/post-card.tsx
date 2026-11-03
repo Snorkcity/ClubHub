@@ -75,7 +75,7 @@ function PhotoGrid({ photos }: { photos: { id: number; url: string }[] }) {
 export function PostCard({ post }: { post: any }) {
   const [expanded, setExpanded] = useState(false);
   // Rough check for whether the body is long enough to need a "Read more".
-  const isLong = post.body.length > 400 || post.body.split("\n").length > 8;
+  const isLong = post.body.length > 400 || post.body.split("\n").length > 10;
   return (
     <Card
       data-testid={`card-post-${post.id}`}
@@ -108,7 +108,7 @@ export function PostCard({ post }: { post: any }) {
       <p
         className={
           "text-sm text-foreground/90 leading-normal md:leading-relaxed whitespace-pre-line" +
-          (isLong && !expanded ? " line-clamp-[8]" : "")
+          (isLong && !expanded ? " line-clamp-[10]" : "")
         }
       >
         {post.body}
