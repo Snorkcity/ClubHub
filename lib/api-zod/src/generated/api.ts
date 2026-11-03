@@ -435,6 +435,11 @@ export const GetClubOverviewResponse = zod.object({
   "hasLogin": zod.boolean().optional()
 }),
   "commentCount": zod.number(),
+  "reactions": zod.array(zod.object({
+  "emoji": zod.string(),
+  "count": zod.number(),
+  "reacted": zod.boolean()
+})),
   "photos": zod.array(zod.object({
   "id": zod.number(),
   "url": zod.string().describe('Signed, expiring relative URL for the photo')
@@ -1403,6 +1408,11 @@ export const GetFeedResponseItem = zod.object({
   "hasLogin": zod.boolean().optional()
 }),
   "commentCount": zod.number(),
+  "reactions": zod.array(zod.object({
+  "emoji": zod.string(),
+  "count": zod.number(),
+  "reacted": zod.boolean()
+})),
   "photos": zod.array(zod.object({
   "id": zod.number(),
   "url": zod.string().describe('Signed, expiring relative URL for the photo')
@@ -1460,6 +1470,11 @@ export const ListTeamPostsResponseItem = zod.object({
   "hasLogin": zod.boolean().optional()
 }),
   "commentCount": zod.number(),
+  "reactions": zod.array(zod.object({
+  "emoji": zod.string(),
+  "count": zod.number(),
+  "reacted": zod.boolean()
+})),
   "photos": zod.array(zod.object({
   "id": zod.number(),
   "url": zod.string().describe('Signed, expiring relative URL for the photo')
@@ -1509,6 +1524,11 @@ export const CreatePostResponse = zod.object({
   "hasLogin": zod.boolean().optional()
 }),
   "commentCount": zod.number(),
+  "reactions": zod.array(zod.object({
+  "emoji": zod.string(),
+  "count": zod.number(),
+  "reacted": zod.boolean()
+})),
   "photos": zod.array(zod.object({
   "id": zod.number(),
   "url": zod.string().describe('Signed, expiring relative URL for the photo')
@@ -1545,6 +1565,11 @@ export const GetPostResponse = zod.object({
   "hasLogin": zod.boolean().optional()
 }),
   "commentCount": zod.number(),
+  "reactions": zod.array(zod.object({
+  "emoji": zod.string(),
+  "count": zod.number(),
+  "reacted": zod.boolean()
+})),
   "photos": zod.array(zod.object({
   "id": zod.number(),
   "url": zod.string().describe('Signed, expiring relative URL for the photo')
@@ -1553,6 +1578,7 @@ export const GetPostResponse = zod.object({
   "comments": zod.array(zod.object({
   "id": zod.number(),
   "postId": zod.number(),
+  "canDelete": zod.boolean(),
   "body": zod.string(),
   "createdAt": zod.string(),
   "author": zod.object({
@@ -1612,6 +1638,11 @@ export const UpdatePostResponse = zod.object({
   "hasLogin": zod.boolean().optional()
 }),
   "commentCount": zod.number(),
+  "reactions": zod.array(zod.object({
+  "emoji": zod.string(),
+  "count": zod.number(),
+  "reacted": zod.boolean()
+})),
   "photos": zod.array(zod.object({
   "id": zod.number(),
   "url": zod.string().describe('Signed, expiring relative URL for the photo')
@@ -1628,16 +1659,18 @@ export const DeletePostResponse = zod.void()
 /**
  * @summary Comment on a post
  */
+export const addCommentBodyBodyMax = 2000;
 
 
 
 export const AddCommentBody = zod.object({
-  "body": zod.string().min(1)
+  "body": zod.string().min(1).max(addCommentBodyBodyMax)
 })
 
 export const AddCommentResponse = zod.object({
   "id": zod.number(),
   "postId": zod.number(),
+  "canDelete": zod.boolean(),
   "body": zod.string(),
   "createdAt": zod.string(),
   "author": zod.object({
@@ -1657,6 +1690,56 @@ export const AddCommentResponse = zod.object({
   "hasLogin": zod.boolean().optional()
 })
 })
+
+
+/**
+ * @summary Set, replace or remove your reaction to a post
+ */
+export const SetPostReactionBody = zod.object({
+  "emoji": zod.union([zod.literal('👍'),zod.literal('❤️'),zod.literal('👏'),zod.literal('💪'),zod.literal('😂'),zod.literal(null)]).nullable()
+})
+
+export const SetPostReactionResponse = zod.object({
+  "id": zod.number(),
+  "teamId": zod.number(),
+  "teamName": zod.string(),
+  "title": zod.string().nullish(),
+  "body": zod.string(),
+  "pinned": zod.boolean(),
+  "createdAt": zod.string(),
+  "author": zod.object({
+  "id": zod.number(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "fullName": zod.string(),
+  "email": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "bio": zod.string().nullish(),
+  "phonePrivacy": zod.enum(['everyone', 'admins', 'private']).optional(),
+  "emailPrivacy": zod.enum(['everyone', 'admins', 'private']).optional(),
+  "bioPrivacy": zod.enum(['everyone', 'admins', 'private']).optional(),
+  "dateOfBirth": zod.string().nullish(),
+  "isMinor": zod.boolean(),
+  "hasLogin": zod.boolean().optional()
+}),
+  "commentCount": zod.number(),
+  "reactions": zod.array(zod.object({
+  "emoji": zod.string(),
+  "count": zod.number(),
+  "reacted": zod.boolean()
+})),
+  "photos": zod.array(zod.object({
+  "id": zod.number(),
+  "url": zod.string().describe('Signed, expiring relative URL for the photo')
+})).optional()
+})
+
+
+/**
+ * @summary Remove your own comment or moderate as team staff
+ */
+export const DeletePostCommentResponse = zod.void()
 
 
 /**

@@ -88,6 +88,7 @@ import type {
   Post,
   PostDetail,
   PostInput,
+  PostReactionInput,
   PostUpdate,
   PreviewTeamInvitationParams,
   ProfileUpdate,
@@ -5278,6 +5279,151 @@ export const useAddComment = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getAddCommentMutationOptions(options));
+    }
+
+export const getSetPostReactionUrl = (postId: number,) => {
+
+
+
+
+  return `/api/posts/${postId}/reaction`
+}
+
+/**
+ * @summary Set, replace or remove your reaction to a post
+ */
+export const setPostReaction = async (postId: number,
+    postReactionInput: PostReactionInput, options?: RequestInit): Promise<Post> => {
+
+  return customFetch<Post>(getSetPostReactionUrl(postId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(postReactionInput)
+  }
+);}
+
+
+
+
+
+export const getSetPostReactionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setPostReaction>>, TError,{postId: number;data: BodyType<PostReactionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setPostReaction>>, TError,{postId: number;data: BodyType<PostReactionInput>}, TContext> => {
+
+const mutationKey = ['setPostReaction'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setPostReaction>>, {postId: number;data: BodyType<PostReactionInput>}> = (props) => {
+          const {postId,data} = props ?? {};
+
+          return  setPostReaction(postId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetPostReactionMutationResult = NonNullable<Awaited<ReturnType<typeof setPostReaction>>>
+    export type SetPostReactionMutationBody = BodyType<PostReactionInput>
+    export type SetPostReactionMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Set, replace or remove your reaction to a post
+ */
+export const useSetPostReaction = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setPostReaction>>, TError,{postId: number;data: BodyType<PostReactionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setPostReaction>>,
+        TError,
+        {postId: number;data: BodyType<PostReactionInput>},
+        TContext
+      > => {
+      return useMutation(getSetPostReactionMutationOptions(options));
+    }
+
+export const getDeletePostCommentUrl = (postId: number,
+    commentId: number,) => {
+
+
+
+
+  return `/api/posts/${postId}/comments/${commentId}`
+}
+
+/**
+ * @summary Remove your own comment or moderate as team staff
+ */
+export const deletePostComment = async (postId: number,
+    commentId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeletePostCommentUrl(postId,commentId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeletePostCommentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePostComment>>, TError,{postId: number;commentId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deletePostComment>>, TError,{postId: number;commentId: number}, TContext> => {
+
+const mutationKey = ['deletePostComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deletePostComment>>, {postId: number;commentId: number}> = (props) => {
+          const {postId,commentId} = props ?? {};
+
+          return  deletePostComment(postId,commentId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeletePostCommentMutationResult = NonNullable<Awaited<ReturnType<typeof deletePostComment>>>
+
+    export type DeletePostCommentMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Remove your own comment or moderate as team staff
+ */
+export const useDeletePostComment = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePostComment>>, TError,{postId: number;commentId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deletePostComment>>,
+        TError,
+        {postId: number;commentId: number},
+        TContext
+      > => {
+      return useMutation(getDeletePostCommentMutationOptions(options));
     }
 
 export const getListUpcomingEventsUrl = (params?: ListUpcomingEventsParams,) => {

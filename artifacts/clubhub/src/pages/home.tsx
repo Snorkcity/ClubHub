@@ -141,39 +141,61 @@ function UnreadActivityBanner() {
 }
 
 function AdminDashboard() {
+  const { activeTeamId } = useActiveTeam();
   const { data: overview, isLoading, error, refetch } = useGetClubOverview({ 
-    query: { queryKey: getGetClubOverviewQueryKey() } 
+    query: {
+      queryKey: getGetClubOverviewQueryKey(),
+      refetchInterval: 30_000,
+      refetchOnWindowFocus: true,
+    }
+  });
+  const eventParams = activeTeamId == null ? undefined : { teamId: activeTeamId };
+  const { data: events, isLoading: eventsLoading, error: eventsError, refetch: refetchEvents } = useListUpcomingEvents(eventParams, {
+    query: {
+      queryKey: getListUpcomingEventsQueryKey(eventParams),
+      refetchInterval: 30_000,
+      refetchOnWindowFocus: true,
+    },
   });
 
   if (isLoading) return <LoadingScreen message="Loading club overview..." />;
   if (error || !overview) return <ErrorState onRetry={() => refetch()} />;
 
+  const nextEvent = (events ?? [])
+    .filter((event) => !event.cancelledAt && new Date(event.startsAt).getTime() >= Date.now())
+    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())[0];
+  const recentPosts = activeTeamId == null
+    ? overview.recentPosts
+    : overview.recentPosts.filter((post) => post.teamId === activeTeamId);
+
   return (
     <div className="space-y-8">
-      <section className="space-y-4" data-testid="home-upcoming-club-events">
+      <section className="space-y-4" data-testid="home-next-session">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-display font-bold">Upcoming Club Events</h2>
+            <h2 className="text-xl font-display font-bold">Next session</h2>
             <Button variant="ghost" size="sm" asChild>
-              <Link href="/schedule">View All <ChevronRight className="h-4 w-4 ml-1" /></Link>
+              <Link href="/schedule">View schedule <ChevronRight className="h-4 w-4 ml-1" /></Link>
             </Button>
           </div>
-          
-          {overview.upcomingEvents.length === 0 ? (
+          {eventsLoading ? (
+            <div className="h-24 animate-pulse rounded-2xl bg-muted/50" aria-label="Loading next session" />
+          ) : eventsError ? (
+            <Card className="flex items-center justify-between gap-3 border-destructive/30 bg-destructive/5 p-4">
+              <p className="text-sm text-muted-foreground">Couldn’t load the next session.</p>
+              <Button variant="outline" size="sm" onClick={() => void refetchEvents()}>Retry</Button>
+            </Card>
+          ) : !nextEvent ? (
             <Card className="p-8 text-center border-dashed bg-muted/20">
-              <p className="text-muted-foreground text-sm">No upcoming events this week.</p>
+              <p className="text-muted-foreground text-sm">No upcoming sessions for this team.</p>
             </Card>
           ) : (
-            <div className="flex flex-col gap-3">
-              {overview.upcomingEvents.map((event) => (
-                <EventCard key={event.id} event={event} />
-              ))}
-            </div>
+            <EventCard event={nextEvent} />
           )}
       </section>
 
       <section className="space-y-4" data-testid="home-club-news">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-display font-bold">Club News</h2>
+            <h2 className="text-xl font-display font-bold">Team News</h2>
           </div>
           
           {/* Mobile uses the floating pencil button instead of this card. */}
@@ -181,13 +203,13 @@ function AdminDashboard() {
             <PostComposer variant="card" />
           </div>
 
-          {overview.recentPosts.length === 0 ? (
+          {recentPosts.length === 0 ? (
             <Card className="p-8 text-center border-dashed bg-muted/20">
-              <p className="text-muted-foreground text-sm">No recent activity.</p>
+              <p className="text-muted-foreground text-sm">No recent team news.</p>
             </Card>
           ) : (
             <div className="flex flex-col gap-4">
-              {overview.recentPosts.map((post) => (
+              {recentPosts.map((post) => (
                 <PostCard key={post.id} post={post} />
               ))}
             </div>
@@ -217,12 +239,22 @@ function useMarkActiveTeamSeen(teamId: number | null) {
 }
 
 function MemberDashboard({ me }: { me: any }) {
-  const { data: events, isLoading: eventsLoading } = useListUpcomingEvents(undefined, {
-    query: { queryKey: getListUpcomingEventsQueryKey() } 
+  const { activeTeamId } = useActiveTeam();
+  const eventParams = activeTeamId == null ? undefined : { teamId: activeTeamId };
+  const { data: events, isLoading: eventsLoading, error: eventsError, refetch: refetchEvents } = useListUpcomingEvents(eventParams, {
+    query: {
+      queryKey: getListUpcomingEventsQueryKey(eventParams),
+      refetchInterval: 30_000,
+      refetchOnWindowFocus: true,
+    }
   });
   
-  const { data: feed, isLoading: feedLoading } = useGetFeed({
-    query: { queryKey: getGetFeedQueryKey() }
+  const { data: feed, isLoading: feedLoading, error: feedError, refetch: refetchFeed } = useGetFeed({
+    query: {
+      queryKey: getGetFeedQueryKey(),
+      refetchInterval: 30_000,
+      refetchOnWindowFocus: true,
+    }
   });
 
   const { data: teams, isLoading: teamsLoading } = useListTeams({
@@ -230,7 +262,6 @@ function MemberDashboard({ me }: { me: any }) {
   });
 
   // Active team: filter the feed and mark that team's content as seen.
-  const { activeTeamId } = useActiveTeam();
   useMarkActiveTeamSeen(activeTeamId);
 
   if (eventsLoading || feedLoading || teamsLoading) return <LoadingScreen message="Loading dashboard..." />;
@@ -240,14 +271,30 @@ function MemberDashboard({ me }: { me: any }) {
       ? feed
       : feed?.filter((p: any) => p.teamId === activeTeamId);
 
-  const nextEvent = events?.find((event) => !event.cancelledAt);
+  const nextEvent = (events ?? [])
+    .filter((event) => !event.cancelledAt && new Date(event.startsAt).getTime() >= Date.now())
+    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())[0];
 
   return (
-    <div className="grid lg:grid-cols-3 gap-8">
-      <div className="lg:col-span-2 space-y-8 min-w-0">
+    <div className="grid gap-8 lg:grid-cols-3">
+      <div className="min-w-0 space-y-8 lg:col-span-2">
         
         {/* Next Event — compact banner so posts stay visible below it */}
-        {nextEvent && (
+        <section className="space-y-3" data-testid="home-next-session">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-display font-bold">Next session</h2>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/schedule">View schedule <ChevronRight className="h-4 w-4 ml-1" /></Link>
+            </Button>
+          </div>
+          {eventsLoading ? (
+            <div className="h-24 animate-pulse rounded-2xl bg-muted/50" aria-label="Loading next session" />
+          ) : eventsError ? (
+            <Card className="flex items-center justify-between gap-3 border-destructive/30 bg-destructive/5 p-4">
+              <p className="text-sm text-muted-foreground">Couldn’t load the next session.</p>
+              <Button variant="outline" size="sm" onClick={() => void refetchEvents()}>Retry</Button>
+            </Card>
+          ) : nextEvent ? (
           <Link
             href={`/events/${nextEvent.id}`}
             className="block bg-primary text-primary-foreground rounded-2xl px-4 py-3 shadow-md relative overflow-hidden active:scale-[0.99] transition-transform"
@@ -277,7 +324,12 @@ function MemberDashboard({ me }: { me: any }) {
               <ChevronRight className="h-5 w-5 opacity-70 shrink-0" />
             </div>
           </Link>
-        )}
+          ) : (
+            <Card className="p-6 text-center border-dashed bg-muted/20">
+              <p className="text-sm text-muted-foreground">No upcoming sessions for this team.</p>
+            </Card>
+          )}
+        </section>
 
         {/* Team Feed */}
         <div className="space-y-6">
@@ -290,7 +342,9 @@ function MemberDashboard({ me }: { me: any }) {
             <PostComposer variant="card" />
           </div>
 
-          {!visibleFeed || visibleFeed.length === 0 ? (
+          {feedError ? (
+            <ErrorState onRetry={() => void refetchFeed()} />
+          ) : !visibleFeed || visibleFeed.length === 0 ? (
             <EmptyState 
               title="No updates yet" 
               message="When coaches or managers post updates to your teams, they will appear here."
@@ -305,7 +359,6 @@ function MemberDashboard({ me }: { me: any }) {
           )}
         </div>
       </div>
-
       <div className="hidden min-w-0 space-y-8 lg:block">
         {/* Teams List */}
         <div className="bg-card border rounded-3xl p-6 shadow-sm">
@@ -338,22 +391,6 @@ function MemberDashboard({ me }: { me: any }) {
           )}
         </div>
 
-        {/* Upcoming Events List */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-display font-bold">Upcoming</h3>
-          
-          {!events || events.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 border rounded-2xl p-4 text-center border-dashed bg-muted/20">
-              No upcoming events
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {events.slice(nextEvent ? 1 : 0, 5).map((event) => (
-                <EventCard key={event.id} event={event} compact />
-              ))}
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );

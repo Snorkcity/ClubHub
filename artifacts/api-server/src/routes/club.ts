@@ -147,7 +147,7 @@ router.get("/club/overview", requireAuth, async (req, res) => {
     coachCount,
     parentCount,
     upcomingEvents: await buildEvents(upcoming, localUser.id),
-    recentPosts: await buildPosts(recent),
+    recentPosts: await buildPosts(recent, localUser.id),
   });
 });
 

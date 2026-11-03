@@ -726,6 +726,12 @@ export interface LearningPreferencesInput {
   answers: LearningPreferenceAnswer[];
 }
 
+export interface PostReaction {
+  emoji: string;
+  count: number;
+  reacted: boolean;
+}
+
 export interface PostPhoto {
   id: number;
   /** Signed, expiring relative URL for the photo */
@@ -743,12 +749,33 @@ export interface Post {
   createdAt: string;
   author: Person;
   commentCount: number;
+  reactions: PostReaction[];
   photos?: PostPhoto[];
+}
+
+/**
+ * @nullable
+ */
+export type PostReactionInputEmoji = typeof PostReactionInputEmoji[keyof typeof PostReactionInputEmoji] | null;
+
+
+export const PostReactionInputEmoji = {
+  '👍': '👍',
+  '❤️': '❤️',
+  '👏': '👏',
+  '💪': '💪',
+  '😂': '😂',
+} as const;
+
+export interface PostReactionInput {
+  /** @nullable */
+  emoji: PostReactionInputEmoji;
 }
 
 export interface Comment {
   id: number;
   postId: number;
+  canDelete: boolean;
   body: string;
   createdAt: string;
   author: Person;
@@ -1252,7 +1279,10 @@ export interface PostUpdate {
 }
 
 export interface CommentInput {
-  /** @minLength 1 */
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
   body: string;
 }
 

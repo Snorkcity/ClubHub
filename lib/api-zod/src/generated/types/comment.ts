@@ -10,6 +10,7 @@ import type { Person } from './person';
 export interface Comment {
   id: number;
   postId: number;
+  canDelete: boolean;
   body: string;
   createdAt: string;
   author: Person;

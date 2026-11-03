@@ -1168,6 +1168,42 @@ paths:
               schema:
                 $ref: "#/components/schemas/Comment"
 
+  /posts/{postId}/reaction:
+    put:
+      operationId: setPostReaction
+      tags: [feed]
+      summary: Set, replace or remove your reaction to a post
+      parameters:
+        - $ref: "#/components/parameters/PostId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostReactionInput"
+      responses:
+        "200":
+          description: Updated post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+
+  /posts/{postId}/comments/{commentId}:
+    delete:
+      operationId: deletePostComment
+      tags: [feed]
+      summary: Remove your own comment or moderate as team staff
+      parameters:
+        - $ref: "#/components/parameters/PostId"
+        - in: path
+          name: commentId
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+
   /events/upcoming:
     get:
       operationId: listUpcomingEvents
@@ -2434,7 +2470,7 @@ components:
 
     Post:
       type: object
-      required: [id, teamId, teamName, body, pinned, createdAt, author, commentCount]
+      required: [id, teamId, teamName, body, pinned, createdAt, author, commentCount, reactions]
       properties:
         id: { type: integer }
         teamId: { type: integer }
@@ -2445,9 +2481,28 @@ components:
         createdAt: { type: string }
         author: { $ref: "#/components/schemas/Person" }
         commentCount: { type: integer }
+        reactions:
+          type: array
+          items: { $ref: "#/components/schemas/PostReaction" }
         photos:
           type: array
           items: { $ref: "#/components/schemas/PostPhoto" }
+
+    PostReaction:
+      type: object
+      required: [emoji, count, reacted]
+      properties:
+        emoji: { type: string }
+        count: { type: integer }
+        reacted: { type: boolean }
+
+    PostReactionInput:
+      type: object
+      required: [emoji]
+      properties:
+        emoji:
+          type: ["string", "null"]
+          enum: ["👍", "❤️", "👏", "💪", "😂", null]
 
     PostPhoto:
       type: object
@@ -2469,10 +2524,11 @@ components:
 
     Comment:
       type: object
-      required: [id, postId, body, createdAt, author]
+      required: [id, postId, body, createdAt, author, canDelete]
       properties:
         id: { type: integer }
         postId: { type: integer }
+        canDelete: { type: boolean }
         body: { type: string }
         createdAt: { type: string }
         author: { $ref: "#/components/schemas/Person" }
@@ -2869,7 +2925,7 @@ components:
       type: object
       required: [body]
       properties:
-        body: { type: string, minLength: 1 }
+        body: { type: string, minLength: 1, maxLength: 2000 }
 
     EventInput:
       type: object

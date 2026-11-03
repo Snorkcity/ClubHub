@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { format } from "date-fns";
-import { MessageSquare, Pin, PinOff } from "lucide-react";
+import { Pin, PinOff } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetMe,
@@ -19,6 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { apiImageUrl } from "@/lib/team-banner";
 import { PhotoLightbox } from "@/components/feed/photo-lightbox";
+import { PostInteractions } from "@/components/feed/post-interactions";
 
 /** Photo attachments: single photo full-width, several in a tight grid. Tap to view full-screen. */
 function PhotoGrid({ photos }: { photos: { id: number; url: string }[] }) {
@@ -27,8 +28,6 @@ function PhotoGrid({ photos }: { photos: { id: number; url: string }[] }) {
   if (photos.length === 0) return null;
 
   const openAt = (i: number) => (e: React.MouseEvent) => {
-    // Cards can be wrapped in a Link; don't navigate when opening a photo.
-    e.preventDefault();
     e.stopPropagation();
     setLightboxIndex(i);
   };
@@ -78,12 +77,10 @@ export function PostCard({ post, linkToTeam = true }: { post: any; linkToTeam?: 
   const [expanded, setExpanded] = useState(false);
   // Rough check for whether the body is long enough to need a "Read more".
   const isLong = post.body.length > 400 || post.body.split("\n").length > 8;
-  const card = (
+  return (
     <Card
-      className={
-        "p-5 rounded-2xl" +
-        (linkToTeam ? " hover:shadow-md transition-all cursor-pointer" : "")
-      }
+      data-testid={`card-post-${post.id}`}
+      className="p-5 rounded-2xl"
     >
       <div className="flex items-start gap-3 mb-3">
         <Avatar className="h-10 w-10 border shadow-sm">
@@ -132,18 +129,16 @@ export function PostCard({ post, linkToTeam = true }: { post: any; linkToTeam?: 
       )}
 
       <PhotoGrid photos={post.photos ?? []} />
-
-      {post.commentCount > 0 && (
-        <div className="mt-4 flex items-center text-xs font-medium text-muted-foreground">
-          <MessageSquare className="h-4 w-4 mr-1.5" />
-          {post.commentCount} {post.commentCount === 1 ? "comment" : "comments"}
+      <PostInteractions post={post} />
+      {linkToTeam && (
+        <div className="mt-3 border-t pt-2">
+          <Link href={`/teams/${post.teamId}#post-${post.id}`} className="text-xs font-semibold text-muted-foreground hover:text-primary">
+            View team
+          </Link>
         </div>
       )}
     </Card>
   );
-
-  if (!linkToTeam) return card;
-  return <Link href={`/teams/${post.teamId}#post-${post.id}`}>{card}</Link>;
 }
 
 /** Staff-only pin/unpin toggle. Re-pinning restarts the 2-day pin window. */

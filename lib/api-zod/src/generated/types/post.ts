@@ -7,6 +7,7 @@
  */
 import type { Person } from './person';
 import type { PostPhoto } from './postPhoto';
+import type { PostReaction } from './postReaction';
 
 export interface Post {
   id: number;
@@ -19,5 +20,6 @@ export interface Post {
   createdAt: string;
   author: Person;
   commentCount: number;
+  reactions: PostReaction[];
   photos?: PostPhoto[];
 }

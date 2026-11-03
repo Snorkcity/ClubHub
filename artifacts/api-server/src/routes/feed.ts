@@ -5,6 +5,7 @@ import {
   postsTable,
   postPhotosTable,
   commentsTable,
+  postReactionsTable,
   usersTable,
   teamsTable,
   teamReadsTable,
@@ -13,7 +14,7 @@ import {
   messagesTable,
 } from "@workspace/db";
 import { and, gt, ne } from "drizzle-orm";
-import { CreatePostBody, CreateClubPostBody, UpdatePostBody, AddCommentBody } from "@workspace/api-zod";
+import { CreatePostBody, CreateClubPostBody, UpdatePostBody, AddCommentBody, SetPostReactionBody } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
 import { buildPosts } from "../lib/build";
 import { getVisibleTeamIds } from "../lib/queries";
@@ -169,7 +170,7 @@ router.get("/feed", requireAuth, async (req, res) => {
     .where(inArray(postsTable.teamId, visible))
     .orderBy(desc(activePin), desc(postsTable.createdAt))
     .limit(30);
-  return res.json(await buildPosts(posts));
+  return res.json(await buildPosts(posts, localUser.id));
 });
 
 router.get("/teams/:teamId/posts", requireAuth, async (req, res) => {
@@ -182,7 +183,7 @@ router.get("/teams/:teamId/posts", requireAuth, async (req, res) => {
     .from(postsTable)
     .where(eq(postsTable.teamId, teamId))
     .orderBy(desc(activePin), desc(postsTable.createdAt));
-  return res.json(await buildPosts(posts));
+  return res.json(await buildPosts(posts, localUser.id));
 });
 
 router.post("/teams/:teamId/posts", requireAuth, async (req, res) => {
@@ -218,7 +219,7 @@ router.post("/teams/:teamId/posts", requireAuth, async (req, res) => {
     body: post.body, deepLink: `/teams/${teamId}#post-${post.id}`,
     recipientIds: await resolvePostRecipients(clubId, [teamId], localUser.id),
   });
-  const [built] = await buildPosts([post]);
+  const [built] = await buildPosts([post], localUser.id);
   return res.status(201).json(built);
 });
 
@@ -274,7 +275,8 @@ router.get("/posts/:postId", requireAuth, async (req, res) => {
   if (!post) return res.status(404).json({ error: "Post not found" });
   if (!(await canAccessTeam(localUser.id, post.teamId, clubId, isClubAdmin)))
     return res.status(403).json({ error: "You cannot view this post" });
-  const [built] = await buildPosts([post]);
+  const [built] = await buildPosts([post], localUser.id);
+  const canModerate = await isTeamStaff(localUser.id, post.teamId, clubId, isClubAdmin);
 
   const rows = await db
     .select({ c: commentsTable, u: usersTable })
@@ -288,6 +290,7 @@ router.get("/posts/:postId", requireAuth, async (req, res) => {
     comments: rows.map(({ c, u }) => ({
       id: c.id,
       postId: c.postId,
+      canDelete: c.authorId === localUser.id || canModerate,
       body: c.body,
       createdAt: iso(c.createdAt) as string,
       author: toPerson(u),
@@ -318,7 +321,7 @@ router.patch("/posts/:postId", requireAuth, async (req, res) => {
     })
     .where(eq(postsTable.id, postId))
     .returning();
-  const [built] = await buildPosts([post]);
+  const [built] = await buildPosts([post], localUser.id);
   return res.json(built);
 });
 
@@ -375,7 +378,9 @@ router.post("/posts/:postId/comments", requireAuth, async (req, res) => {
   if (!post) return res.status(404).json({ error: "Post not found" });
   if (!(await canAccessTeam(localUser.id, post.teamId, clubId, isClubAdmin)))
     return res.status(403).json({ error: "You cannot comment on this post" });
-  const body = AddCommentBody.parse(req.body);
+  const parsed = AddCommentBody.safeParse({ ...req.body, body: typeof req.body?.body === "string" ? req.body.body.trim() : req.body?.body });
+  if (!parsed.success) return res.status(400).json({ error: "Write a comment between 1 and 2000 characters." });
+  const body = parsed.data;
   const [comment] = await db
     .insert(commentsTable)
     .values({ postId, authorId: localUser.id, body: body.body })
@@ -383,10 +388,50 @@ router.post("/posts/:postId/comments", requireAuth, async (req, res) => {
   return res.status(201).json({
     id: comment.id,
     postId: comment.postId,
+    canDelete: true,
     body: comment.body,
     createdAt: iso(comment.createdAt) as string,
     author: toPerson(localUser),
   });
+});
+
+router.put("/posts/:postId/reaction", requireAuth, async (req, res) => {
+  const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
+  const postId = Number(req.params.postId);
+  if (!Number.isSafeInteger(postId) || postId <= 0)
+    return res.status(400).json({ error: "Invalid post" });
+  const [post] = await db.select().from(postsTable).where(eq(postsTable.id, postId));
+  if (!post) return res.status(404).json({ error: "Post not found" });
+  if (!(await canAccessTeam(localUser.id, post.teamId, clubId, isClubAdmin)))
+    return res.status(403).json({ error: "You cannot react to this post" });
+  const body = SetPostReactionBody.safeParse(req.body);
+  if (!body.success) return res.status(400).json({ error: "Choose a supported reaction" });
+  if (body.data.emoji === null) {
+    await db.delete(postReactionsTable).where(and(eq(postReactionsTable.postId, postId), eq(postReactionsTable.userId, localUser.id)));
+  } else {
+    await db.insert(postReactionsTable).values({ postId, userId: localUser.id, emoji: body.data.emoji })
+      .onConflictDoUpdate({ target: [postReactionsTable.postId, postReactionsTable.userId], set: { emoji: body.data.emoji } });
+  }
+  const [built] = await buildPosts([post], localUser.id);
+  return res.json(built);
+});
+
+router.delete("/posts/:postId/comments/:commentId", requireAuth, async (req, res) => {
+  const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
+  const postId = Number(req.params.postId);
+  const commentId = Number(req.params.commentId);
+  if (!Number.isSafeInteger(postId) || !Number.isSafeInteger(commentId) || postId <= 0 || commentId <= 0)
+    return res.status(400).json({ error: "Invalid comment" });
+  const [post] = await db.select().from(postsTable).where(eq(postsTable.id, postId));
+  if (!post) return res.status(404).json({ error: "Post not found" });
+  if (!(await canAccessTeam(localUser.id, post.teamId, clubId, isClubAdmin)))
+    return res.status(403).json({ error: "You cannot view this post" });
+  const [comment] = await db.select().from(commentsTable).where(and(eq(commentsTable.id, commentId), eq(commentsTable.postId, postId)));
+  if (!comment) return res.status(404).json({ error: "Comment not found" });
+  if (comment.authorId !== localUser.id && !(await isTeamStaff(localUser.id, post.teamId, clubId, isClubAdmin)))
+    return res.status(403).json({ error: "You cannot delete this comment" });
+  await db.delete(commentsTable).where(and(eq(commentsTable.id, commentId), eq(commentsTable.postId, postId)));
+  return res.status(204).end();
 });
 
 export default router;

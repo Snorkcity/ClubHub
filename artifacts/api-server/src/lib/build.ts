@@ -11,7 +11,7 @@ import {
   type Event,
   type Post,
 } from "@workspace/db";
-import { postPhotosTable } from "@workspace/db";
+import { postPhotosTable, postReactionsTable } from "@workspace/db";
 import { iso, toPerson } from "./serialize";
 import { signedBannerPath } from "./bannerToken";
 import { signedPostPhotoPath } from "./photoToken";
@@ -120,12 +120,12 @@ export async function buildEvents(events: Event[], myUserId?: number) {
   });
 }
 
-export async function buildPosts(posts: Post[]) {
+export async function buildPosts(posts: Post[], viewerId?: number) {
   if (posts.length === 0) return [];
   const teamIds = Array.from(new Set(posts.map((p) => p.teamId)));
   const authorIds = Array.from(new Set(posts.map((p) => p.authorId)));
   const postIds = posts.map((p) => p.id);
-  const [authors, comments, names, photos] = await Promise.all([
+  const [authors, comments, names, photos, reactions] = await Promise.all([
     db.select().from(usersTable).where(inArray(usersTable.id, authorIds)),
     db
       .select()
@@ -140,7 +140,15 @@ export async function buildPosts(posts: Post[]) {
       })
       .from(postPhotosTable)
       .where(inArray(postPhotosTable.postId, postIds)),
+    db.select().from(postReactionsTable).where(inArray(postReactionsTable.postId, postIds)),
   ]);
+  const reactionsByPost: Record<number, Record<string, { emoji: string; count: number; reacted: boolean }>> = {};
+  for (const r of reactions) {
+    const grouped = reactionsByPost[r.postId] ??= {};
+    const summary = grouped[r.emoji] ??= { emoji: r.emoji, count: 0, reacted: false };
+    summary.count++;
+    if (r.userId === viewerId) summary.reacted = true;
+  }
   const photosByPost: Record<number, { id: number; position: number }[]> = {};
   for (const ph of photos)
     (photosByPost[ph.postId] ??= []).push({ id: ph.id, position: ph.position });
@@ -164,6 +172,7 @@ export async function buildPosts(posts: Post[]) {
     createdAt: iso(p.createdAt) as string,
     author: toPerson(authorById[p.authorId]),
     commentCount: countByPost[p.id] ?? 0,
+    reactions: Object.values(reactionsByPost[p.id] ?? {}).sort((a, b) => a.emoji.localeCompare(b.emoji)),
     photos: (photosByPost[p.id] ?? [])
       .sort((a, b) => a.position - b.position)
       .map((ph) => ({ id: ph.id, url: signedPostPhotoPath(p.id, ph.id) })),

@@ -7,6 +7,9 @@
  */
 
 export interface CommentInput {
-  /** @minLength 1 */
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
   body: string;
 }
