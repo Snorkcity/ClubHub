@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Link } from "wouter";
 import { format } from "date-fns";
 import { Pin, PinOff } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -73,7 +72,7 @@ function PhotoGrid({ photos }: { photos: { id: number; url: string }[] }) {
   );
 }
 
-export function PostCard({ post, linkToTeam = true }: { post: any; linkToTeam?: boolean }) {
+export function PostCard({ post }: { post: any }) {
   const [expanded, setExpanded] = useState(false);
   // Rough check for whether the body is long enough to need a "Read more".
   const isLong = post.body.length > 400 || post.body.split("\n").length > 8;
@@ -130,13 +129,6 @@ export function PostCard({ post, linkToTeam = true }: { post: any; linkToTeam?: 
 
       <PhotoGrid photos={post.photos ?? []} />
       <PostInteractions post={post} />
-      {linkToTeam && (
-        <div className="mt-3 border-t pt-2">
-          <Link href={`/teams/${post.teamId}#post-${post.id}`} className="text-xs font-semibold text-muted-foreground hover:text-primary">
-            View team
-          </Link>
-        </div>
-      )}
     </Card>
   );
 }

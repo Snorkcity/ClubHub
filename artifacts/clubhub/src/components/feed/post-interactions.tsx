@@ -232,20 +232,19 @@ function CommentRow({ comment, deleting, onDelete }: { comment: Comment; deletin
         <AvatarFallback className="text-[10px]">{initials(comment.author.firstName, comment.author.lastName)}</AvatarFallback>
       </Avatar>
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-          <span className="text-xs font-semibold">{comment.author.fullName}</span>
-          <time className="text-[10px] text-muted-foreground" dateTime={comment.createdAt}>
+        <p className="whitespace-pre-wrap break-words text-xs leading-relaxed">
+          <span className="mr-1.5 font-semibold">{comment.author.fullName}</span>
+          {comment.body}
+          <time className="ml-2 inline-block text-[10px] text-muted-foreground" dateTime={comment.createdAt}>
             {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
           </time>
-          {comment.canDelete && (
-            <button type="button" aria-label="Delete comment" data-testid={`button-delete-comment-${comment.id}`} disabled={deleting} onClick={onDelete} className="ml-auto inline-flex min-h-8 items-center gap-1 rounded-md px-2 text-xs text-muted-foreground hover:bg-background hover:text-destructive disabled:opacity-50">
-              {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-              <span className="sr-only sm:not-sr-only">Delete</span>
-            </button>
-          )}
-        </div>
-        <p className="mt-0.5 whitespace-pre-wrap break-words text-xs leading-relaxed">{comment.body}</p>
+        </p>
       </div>
+      {comment.canDelete && (
+        <button type="button" aria-label="Delete comment" title="Delete comment" data-testid={`button-delete-comment-${comment.id}`} disabled={deleting} onClick={onDelete} className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50">
+          {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+        </button>
+      )}
     </article>
   );
 }

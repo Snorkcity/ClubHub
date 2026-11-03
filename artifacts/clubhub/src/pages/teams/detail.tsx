@@ -328,7 +328,7 @@ function TeamPosts({ teamId }: { teamId: number }) {
           id={`post-${post.id}`}
           className={window.location.hash === `#post-${post.id}` ? "rounded-2xl ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}
         >
-          <PostCard post={post} linkToTeam={false} />
+          <PostCard post={post} />
         </div>
       ))}
     </div>
