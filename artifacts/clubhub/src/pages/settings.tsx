@@ -44,7 +44,7 @@ function PrivacySelect({ value, onChange }: { value: string; onChange: (v: strin
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="h-10 rounded-full border bg-muted/50 px-3 text-sm font-semibold text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
+      className="h-11 rounded-full border bg-muted/50 px-3 text-sm font-semibold text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
       aria-label="Who can see this"
     >
       <option value="everyone">Everyone</option>
@@ -63,11 +63,11 @@ function AppearanceCard() {
     { value: "system", label: "Auto", icon: MonitorSmartphone, hint: "Match my device" },
   ];
   return (
-    <Card className="p-6 md:p-8 rounded-3xl border shadow-sm">
-      <h2 className="text-xl font-bold mb-1 flex items-center gap-2">
+    <Card className="rounded-3xl border p-4 shadow-sm sm:p-5 md:p-6">
+      <h2 className="mb-1 flex items-center gap-2 text-lg font-bold sm:text-xl">
         <Palette className="h-5 w-5 text-primary" /> Appearance
       </h2>
-      <p className="text-sm text-muted-foreground mb-5">Choose how Nahreo looks on this device.</p>
+      <p className="mb-4 text-sm text-muted-foreground">Choose how Nahreo looks on this device.</p>
       <div className="grid grid-cols-3 gap-2 md:gap-3">
         {options.map(({ value, label, icon: Icon, hint }) => {
           const active = theme === value;
@@ -77,7 +77,7 @@ function AppearanceCard() {
               type="button"
               onClick={() => setTheme(value)}
               aria-pressed={active}
-              className={`min-h-20 rounded-2xl border p-4 text-center transition-colors ${
+              className={`min-h-20 rounded-2xl border p-3 text-center transition-colors sm:p-4 ${
                 active
                   ? "border-primary bg-primary/10 ring-2 ring-primary/30"
                   : "hover:bg-muted/50"
@@ -200,16 +200,16 @@ function NotificationsCard({ me }: { me: any }) {
   const showIosWarning = pushSupport.isIos && !pushSupport.isStandalone;
 
   return (
-    <Card className="p-6 md:p-8 rounded-3xl border shadow-sm">
-      <h2 className="text-xl font-bold mb-1 flex items-center gap-2">
+    <Card className="rounded-3xl border p-4 shadow-sm sm:p-5 md:p-6">
+      <h2 className="mb-1 flex items-center gap-2 text-lg font-bold sm:text-xl">
         <Bell className="h-5 w-5 text-primary" /> Notifications
       </h2>
-      <p className="text-sm text-muted-foreground mb-5">
+      <p className="mb-4 text-sm text-muted-foreground">
         Manage how you receive updates. In-app notifications are always available from the Bell icon.
       </p>
 
-      <div className="space-y-4">
-        <div className="flex min-h-20 items-center justify-between gap-4 border rounded-2xl p-5">
+      <div className="space-y-3">
+        <div className="flex min-h-20 items-center justify-between gap-3 rounded-2xl border p-4 sm:gap-4 sm:p-5">
           <div className="min-w-0">
             <h3 className="font-semibold">Push Notifications</h3>
             <p className="text-sm text-muted-foreground">Receive alerts on this device when you're away.</p>
@@ -377,21 +377,21 @@ export default function Settings() {
 
   return (
     <div className="flex-1 overflow-y-auto overflow-x-hidden bg-muted/10">
-      <div className="container mx-auto p-4 md:p-8 lg:max-w-3xl">
-        <header className="mb-8">
+      <div className="container mx-auto max-w-3xl p-3 sm:p-4 md:p-6">
+        <header className="mb-5 sm:mb-6">
           <h1 className="text-3xl font-display font-bold tracking-tight">Settings</h1>
           <p className="text-muted-foreground mt-1">Manage your profile and account preferences.</p>
         </header>
 
-        <div className="space-y-10">
-          <section aria-labelledby="team-membership-heading" className="space-y-4">
-            <h2 id="team-membership-heading" className="border-b pb-2 text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Team membership</h2>
+        <div className="space-y-6 sm:space-y-8">
+          <section aria-labelledby="team-membership-heading" className="space-y-3 sm:space-y-4">
+            <h2 id="team-membership-heading" className="border-b pb-1.5 text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Team membership</h2>
           <ClubAccessSettings />
           <TeamMembershipSettings />
           </section>
           {me.isClubAdmin && (
-            <section aria-labelledby="club-administration-heading" className="space-y-4">
-              <h2 id="club-administration-heading" className="border-b pb-2 text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Club administration</h2>
+            <section aria-labelledby="club-administration-heading" className="space-y-3 sm:space-y-4">
+              <h2 id="club-administration-heading" className="border-b pb-1.5 text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Club administration</h2>
               <ClubRoleSettings currentPersonId={me.person.id} isClubAdmin={me.isClubAdmin} />
               {club && <ClubLogoSettings club={club} />}
               <Link href="/admin/photo-storage" data-testid="link-settings-photo-storage" className="flex min-h-12 items-center gap-3 rounded-2xl border bg-card px-4 text-sm font-semibold hover:bg-muted/50">
@@ -399,8 +399,8 @@ export default function Settings() {
               </Link>
             </section>
           )}
-          <section aria-labelledby="preferences-heading" className="space-y-4">
-            <h2 id="preferences-heading" className="border-b pb-2 text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">My profile & preferences</h2>
+          <section aria-labelledby="preferences-heading" className="space-y-3 sm:space-y-4">
+            <h2 id="preferences-heading" className="border-b pb-1.5 text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">My profile & preferences</h2>
           <AppearanceCard />
 
           <NotificationsCard me={me} />
@@ -408,14 +408,14 @@ export default function Settings() {
           {isPlayer && playerEligible && <PlayerLearningPreferences key={activeTeamId ?? "all"} />}
           {isCoach && <CoachLearningPreferences />}
 
-          <Card className="p-6 md:p-8 rounded-3xl border shadow-sm">
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+          <Card className="rounded-3xl border p-4 shadow-sm sm:p-5 md:p-6">
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-bold sm:text-xl">
               <UserCircle className="h-5 w-5 text-primary" /> Personal Information
             </h2>
             
-            <div className="flex flex-col md:flex-row gap-8 items-start mb-8">
-              <div className="flex w-full flex-col items-center gap-4 md:w-auto">
-                <Avatar className="h-28 w-28 border shadow-sm">
+            <div className="mb-5 flex flex-col items-start gap-5 sm:mb-6 sm:gap-6 md:flex-row md:gap-8">
+              <div className="flex w-full flex-col items-center gap-3 md:w-auto md:gap-4">
+                <Avatar className="h-20 w-20 shrink-0 border shadow-sm sm:h-24 sm:w-24 md:h-28 md:w-28">
                   <AvatarImage src={avatarUrl || undefined} />
                   <AvatarFallback className="text-2xl bg-primary/10 text-primary font-bold">
                     {firstName.charAt(0)}{lastName.charAt(0)}
@@ -436,7 +436,7 @@ export default function Settings() {
                   className="hidden"
                   onChange={(event) => handleAvatarFile(event.target.files?.[0])}
                 />
-                <div className="grid w-full grid-cols-2 gap-3 md:w-64">
+                <div className="grid w-full grid-cols-2 gap-2 sm:gap-3 md:w-64">
                   <Button
                     type="button"
                     variant="outline"
@@ -460,9 +460,9 @@ export default function Settings() {
                 </div>
               </div>
 
-              <div className="flex-1 w-full space-y-6">
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div className="space-y-3">
+              <div className="w-full min-w-0 flex-1 space-y-4 sm:space-y-5">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
                     <Label htmlFor="firstName">First Name</Label>
                     <Input 
                       id="firstName" 
@@ -471,7 +471,7 @@ export default function Settings() {
                       className="rounded-xl h-12"
                     />
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <Label htmlFor="lastName">Last Name</Label>
                     <Input 
                       id="lastName" 
@@ -482,7 +482,7 @@ export default function Settings() {
                   </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="email">Email Address</Label>
                     <PrivacySelect value={emailPrivacy} onChange={setEmailPrivacy} />
@@ -496,7 +496,7 @@ export default function Settings() {
                   <p className="text-[10px] text-muted-foreground">Email is managed by your authentication provider.</p>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="phone">Phone Number</Label>
                     <PrivacySelect value={phonePrivacy} onChange={setPhonePrivacy} />
@@ -511,7 +511,7 @@ export default function Settings() {
                   />
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="bio">Bio</Label>
                     <PrivacySelect value={bioPrivacy} onChange={setBioPrivacy} />
@@ -522,13 +522,13 @@ export default function Settings() {
                     onChange={(e) => setBio(e.target.value)}
                     placeholder="Describe yourself — position, favourite team, anything you like."
                     rows={3}
-                    className="min-h-28 w-full rounded-xl border bg-background px-3 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="min-h-24 w-full rounded-xl border bg-background px-3 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end pt-4 border-t">
+            <div className="flex justify-end border-t pt-3">
               <Button
                 onClick={handleSave} 
                 disabled={!hasChanges || updateMe.isPending}
@@ -541,9 +541,9 @@ export default function Settings() {
           </Card>
           </section>
           
-          <Card className="p-6 md:p-8 rounded-3xl border shadow-sm">
-            <h2 className="text-xl font-bold mb-4 text-destructive">Account Management</h2>
-            <p className="text-sm text-muted-foreground mb-6">
+          <Card className="rounded-3xl border p-4 shadow-sm sm:p-5 md:p-6">
+            <h2 className="mb-3 text-lg font-bold text-destructive sm:text-xl">Account Management</h2>
+            <p className="mb-4 text-sm text-muted-foreground">
               Authentication settings, password resets, and account deletion are handled by your identity provider.
             </p>
             <Button variant="outline" className="text-destructive border-destructive/20 hover:bg-destructive/10 rounded-xl" onClick={() => window.open(import.meta.env.BASE_URL.replace(/\/$/, "") + "/settings", "_self")}>

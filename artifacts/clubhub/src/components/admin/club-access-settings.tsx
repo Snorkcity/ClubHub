@@ -143,9 +143,9 @@ export function ClubAccessSettings() {
   };
 
   return (
-    <div className="space-y-5" data-testid="club-access-settings">
+    <div className="space-y-3 sm:space-y-4" data-testid="club-access-settings">
       {access?.clubs && access.clubs.length > 1 && (
-        <Card className="space-y-5 rounded-3xl p-6 md:p-8">
+        <Card className="space-y-4 rounded-3xl p-4 sm:p-5 md:p-6">
           <div className="flex items-start gap-3">
             <div className="mt-0.5 rounded-xl bg-primary/10 p-2.5 text-primary">
               <ArrowLeftRight className="h-5 w-5" aria-hidden="true" />
@@ -162,7 +162,7 @@ export function ClubAccessSettings() {
             {access.clubs.map((club) => (
               <div
                 key={club.id}
-                className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5"
+                className="flex flex-col gap-2.5 p-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-4"
               >
                 <div className="min-w-0">
                   <p className="break-words font-semibold">{club.name}</p>
@@ -218,7 +218,7 @@ export function ClubAccessSettings() {
 
       {isOwner && (
         <Card
-          className="space-y-6 rounded-3xl border-primary/20 bg-primary/[0.025] p-6 md:p-8"
+          className="space-y-4 rounded-3xl border-primary/20 bg-primary/[0.025] p-4 sm:p-5 md:p-6"
           data-testid="nahreo-administration"
         >
           <div className="flex items-start gap-3">
@@ -237,8 +237,8 @@ export function ClubAccessSettings() {
             </div>
           </div>
 
-          <div className="rounded-2xl border bg-background p-4 sm:p-5">
-            <form className="space-y-4" onSubmit={createLink}>
+          <div className="rounded-2xl border bg-background p-3.5 sm:p-4">
+            <form className="space-y-3" onSubmit={createLink}>
               <div className="space-y-2">
                 <Label htmlFor="club-setup-email">Administrator email</Label>
                 <Input
@@ -250,7 +250,7 @@ export function ClubAccessSettings() {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   placeholder="name@example.com"
-                  className="h-12 rounded-xl"
+                  className="h-11 rounded-xl"
                   aria-describedby="club-setup-email-help"
                 />
                 <p id="club-setup-email-help" className="text-xs leading-relaxed text-muted-foreground">
@@ -279,7 +279,7 @@ export function ClubAccessSettings() {
             )}
 
             {createdLink && (
-              <div className="mt-5 space-y-3 border-t pt-5" aria-live="polite">
+              <div className="mt-4 space-y-2.5 border-t pt-4" aria-live="polite">
                 <div className="flex items-center gap-2 text-sm font-semibold text-primary">
                   <Check className="h-4 w-4" aria-hidden="true" />
                   Setup link created
@@ -333,7 +333,7 @@ export function ClubAccessSettings() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="min-h-10 rounded-xl"
+                  className="min-h-11 rounded-xl"
                   onClick={() => void invitationsQuery.refetch()}
                 >
                   <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
@@ -405,7 +405,7 @@ export function ClubAccessSettings() {
             )}
           </section>
 
-          <div className="flex flex-col gap-3 rounded-2xl border border-primary/15 bg-background p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+          <div className="flex flex-col gap-2.5 rounded-2xl border border-primary/15 bg-background p-3.5 sm:flex-row sm:items-center sm:justify-between sm:p-4">
             <div>
               <p className="font-semibold">Setting up another club yourself?</p>
               <p className="mt-1 text-sm text-muted-foreground">

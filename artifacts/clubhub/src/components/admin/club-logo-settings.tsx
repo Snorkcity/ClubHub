@@ -24,7 +24,7 @@ export function ClubLogoSettings({ club }: { club: Club }) {
   const busy = processing || upload.isPending || remove.isPending;
 
   return (
-    <Card className="space-y-5 rounded-3xl p-6 md:p-8" data-testid="club-logo-settings">
+    <Card className="space-y-4 rounded-3xl p-4 sm:p-5 md:p-6" data-testid="club-logo-settings">
       <div>
         <h2 className="text-xl font-display font-bold">Club branding</h2>
         <p className="mt-1 text-sm leading-relaxed text-muted-foreground">The logo for {club.name}, shared by all your teams. Only club admins can change it. The phone app icon stays Nahreo.</p>

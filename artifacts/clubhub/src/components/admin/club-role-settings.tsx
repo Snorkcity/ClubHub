@@ -26,7 +26,7 @@ function Initials({ name }: { name: string }) {
 
 function MemberRow({ member, children }: { member: ClubAccessMember; children?: ReactNode }) {
   return (
-    <div className="flex min-h-[68px] items-center gap-3 rounded-2xl border border-border/70 bg-background/50 px-3 py-3 sm:px-4">
+    <div className="flex min-h-[60px] items-center gap-2.5 rounded-2xl border border-border/70 bg-background/50 px-3 py-2.5 sm:gap-3 sm:px-4">
       <Initials name={member.name} />
       <div className="min-w-0 flex-1">
         <p className="truncate font-semibold">{member.name}</p>
@@ -144,9 +144,9 @@ export function ClubRoleSettings({ currentPersonId, isClubAdmin }: Props) {
 
   return (
     <Card className="overflow-hidden rounded-3xl border border-border/80 shadow-sm" data-testid="club-role-settings">
-      <div className="border-b border-border/70 bg-primary/[0.045] px-5 py-5 sm:px-7 sm:py-6">
+      <div className="border-b border-border/70 bg-primary/[0.045] px-4 py-4 sm:px-5 sm:py-5">
         <div className="flex items-start gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Shield className="h-5 w-5" /></span>
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Shield className="h-5 w-5" /></span>
           <div className="min-w-0 flex-1">
             <h2 className="text-xl font-display font-bold">Club roles</h2>
             <p className="mt-1 max-w-xl text-sm leading-relaxed text-muted-foreground">Choose who manages the club and shares announcements. Announcer access does not grant access to private player records.</p>
@@ -155,22 +155,22 @@ export function ClubRoleSettings({ currentPersonId, isClubAdmin }: Props) {
         </div>
       </div>
 
-      <div className="space-y-7 p-5 sm:p-7">
+      <div className="space-y-5 p-4 sm:space-y-6 sm:p-5">
         {accessQuery.isLoading ? (
           <div className="space-y-3" aria-label="Loading club roles">
-            <div className="h-[68px] animate-pulse rounded-2xl bg-muted/70" />
-            <div className="h-[68px] animate-pulse rounded-2xl bg-muted/70" />
+            <div className="h-[60px] animate-pulse rounded-2xl bg-muted/70" />
+            <div className="h-[60px] animate-pulse rounded-2xl bg-muted/70" />
           </div>
         ) : accessQuery.isError ? (
           <div role="alert" className="rounded-2xl border border-destructive/25 bg-destructive/5 p-4">
             <p className="font-semibold">Club roles couldn’t be loaded.</p>
             <p className="mt-1 text-sm text-muted-foreground">Your settings haven’t been changed.</p>
-            <Button type="button" variant="outline" className="mt-3 min-h-10 rounded-xl" onClick={() => void accessQuery.refetch()}>Try again</Button>
+            <Button type="button" variant="outline" className="mt-3 min-h-11 rounded-xl" onClick={() => void accessQuery.refetch()}>Try again</Button>
           </div>
         ) : (
           <>
             <section aria-labelledby="club-admin-heading">
-              <div className="mb-3 flex items-end justify-between gap-3">
+              <div className="mb-2 flex items-end justify-between gap-3">
                 <div>
                   <h3 id="club-admin-heading" className="font-bold">Club administrators</h3>
                   <p className="mt-0.5 text-xs text-muted-foreground">Club-wide admin access includes private club records.</p>
@@ -191,7 +191,7 @@ export function ClubRoleSettings({ currentPersonId, isClubAdmin }: Props) {
                 <div className="rounded-2xl border border-dashed p-4 text-sm text-muted-foreground">No administrator is listed. Refresh to check current club access.</div>
               )}
               {admins.length > 1 && (
-                <div className="mt-3 rounded-2xl border border-amber-500/25 bg-amber-500/[0.06] p-4">
+                <div className="mt-2.5 rounded-2xl border border-amber-500/25 bg-amber-500/[0.06] p-3.5">
                   <p className="text-sm font-semibold">Legacy access: {admins.length} administrators currently have club-wide powers.</p>
                   <p className="mt-1 text-sm leading-relaxed text-muted-foreground">No one has been changed. These administrators retain their access until a current admin confirms a handover or chooses to keep themselves as the sole admin.</p>
                   {currentAdmin && (
@@ -210,7 +210,7 @@ export function ClubRoleSettings({ currentPersonId, isClubAdmin }: Props) {
             </section>
 
             <section aria-labelledby="announcer-heading">
-              <div className="mb-3 flex items-end justify-between gap-3">
+              <div className="mb-2 flex items-end justify-between gap-3">
                 <div>
                   <h3 id="announcer-heading" className="font-bold">Club announcers</h3>
                   <p className="mt-0.5 text-xs text-muted-foreground">Can share club-wide updates. No junior records.</p>
@@ -221,14 +221,14 @@ export function ClubRoleSettings({ currentPersonId, isClubAdmin }: Props) {
                 <div className="space-y-2">
                   {announcers.map((member) => (
                     <MemberRow key={member.personId} member={member}>
-                      <Button type="button" variant="ghost" size="sm" aria-label={`Remove ${member.name} as club announcer`} className="min-h-10 shrink-0 rounded-xl px-3 text-muted-foreground hover:text-destructive" disabled={updateAnnouncer.isPending || transferAdmin.isPending} onClick={() => setRemoveCandidate(member)}>
+                      <Button type="button" variant="ghost" size="sm" aria-label={`Remove ${member.name} as club announcer`} className="min-h-11 shrink-0 rounded-xl px-3 text-muted-foreground hover:text-destructive" disabled={updateAnnouncer.isPending || transferAdmin.isPending} onClick={() => setRemoveCandidate(member)}>
                         <UserRoundMinus className="mr-1.5 h-4 w-4" /><span className="hidden sm:inline">Remove</span>
                       </Button>
                     </MemberRow>
                   ))}
                 </div>
               ) : (
-                <div className="flex items-center gap-3 rounded-2xl border border-dashed border-border/80 bg-muted/20 p-4">
+                <div className="flex items-center gap-3 rounded-2xl border border-dashed border-border/80 bg-muted/20 p-3.5">
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground"><Megaphone className="h-4 w-4" /></span>
                   <p className="text-sm text-muted-foreground">No announcers yet. Add a trusted club member below.</p>
                 </div>
@@ -258,7 +258,7 @@ export function ClubRoleSettings({ currentPersonId, isClubAdmin }: Props) {
               <p className="mt-2 text-xs text-muted-foreground">Only current registered members of this club are listed. This panel does not send invitations.</p>
             </section>
 
-            <section className="border-t border-border/70 pt-6" aria-labelledby="handover-heading">
+            <section className="border-t border-border/70 pt-5" aria-labelledby="handover-heading">
               <div className="mb-3 flex items-start gap-3">
                 <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-300"><ArrowRightLeft className="h-4 w-4" /></span>
                 <div>

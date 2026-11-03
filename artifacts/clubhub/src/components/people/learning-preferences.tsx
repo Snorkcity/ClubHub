@@ -224,31 +224,31 @@ function LearningPreferencesQuestionnaire({
   };
 
   if (isLoading) {
-    return <Card className="space-y-4 rounded-3xl p-6 md:p-8"><div className="h-6 w-48 animate-pulse rounded-lg bg-muted" /><div className="h-4 w-full animate-pulse rounded bg-muted" /><div className="h-24 animate-pulse rounded-2xl bg-muted" /></Card>;
+    return <Card className="space-y-4 rounded-3xl p-4 sm:p-5 md:p-6"><div className="h-6 w-48 animate-pulse rounded-lg bg-muted" /><div className="h-4 w-full animate-pulse rounded bg-muted" /><div className="h-24 animate-pulse rounded-2xl bg-muted" /></Card>;
   }
 
   return (
     <Card className="overflow-hidden rounded-3xl border shadow-sm">
-      <div className="border-b bg-gradient-to-br from-primary/[0.08] via-transparent to-emerald-500/[0.07] p-6 md:p-8">
-        <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Activity className="h-5 w-5" /></div>
+      <div className="border-b bg-gradient-to-br from-primary/[0.08] via-transparent to-emerald-500/[0.07] p-4 sm:p-5 md:p-6">
+        <div className="mb-2.5 flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Activity className="h-5 w-5" /></div>
         <h2 className="text-xl font-bold tracking-tight">How I like to take in new information</h2>
-        <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
+        <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-muted-foreground">
           A short check-in about how you approach everyday situations. Choose any options that feel true for you, or choose “It depends.” There are no right or wrong answers; {audience === "player" ? "your responses help coaches find useful ways to explain new things." : "your responses help club admins find useful ways to support you as a coach."}
         </p>
-        <p className="mt-3 text-xs font-medium text-muted-foreground">
+        <p className="mt-2 text-xs font-medium text-muted-foreground">
           15 everyday questions · about 3 minutes · only you can answer for yourself
           {audience === "coach" ? " · only you and club admins can see your result" : ""}
         </p>
       </div>
-      <div className="p-6 md:p-8">
+      <div className="p-4 sm:p-5 md:p-6">
         {isError ? (
           <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-5">
             <p className="font-semibold">Your preferences could not be loaded.</p>
-            <Button variant="outline" className="mt-3 rounded-xl" onClick={() => void refetch()}>Try again</Button>
+            <Button variant="outline" className="mt-3 min-h-11 rounded-xl" onClick={() => void refetch()}>Try again</Button>
           </div>
         ) : active ? (
           <div>
-            <div className="mb-6">
+            <div className="mb-4">
               <div className="mb-2 flex items-center justify-between text-xs font-semibold text-muted-foreground">
                 <span>Question {step + 1} of {questions.length}</span><span>{Math.round(((step + 1) / questions.length) * 100)}%</span>
               </div>
@@ -291,7 +291,7 @@ function LearningPreferencesQuestionnaire({
                 </button>
               </div>
             </fieldset>
-            <div className="mt-6 flex items-center justify-between gap-3 border-t pt-5">
+            <div className="mt-5 flex items-center justify-between gap-3 border-t pt-4">
               <Button variant="ghost" className="h-11 rounded-xl" onClick={() => setStep((current) => Math.max(0, current - 1))} disabled={step === 0}><ArrowLeft className="mr-2 h-4 w-4" />Back</Button>
               {step < questions.length - 1 ? (
                 <Button className="h-11 rounded-xl px-5" onClick={() => setStep((current) => Math.min(questions.length - 1, current + 1))} disabled={answers[step] === undefined}>Next<ArrowRight className="ml-2 h-4 w-4" /></Button>

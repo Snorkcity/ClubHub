@@ -40,18 +40,18 @@ export function TeamMembershipSettings() {
   };
 
   return (
-    <Card className="space-y-5 rounded-3xl p-6 md:p-8" data-testid="team-membership-settings">
+    <Card className="space-y-4 rounded-3xl p-4 sm:p-5 md:p-6" data-testid="team-membership-settings">
       <div>
         <h2 className="text-xl font-bold">Your teams</h2>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
           Teams you belong to in this club. Leaving does not delete your Nahreo account or past records.
         </p>
       </div>
       <div className="divide-y rounded-2xl border">
         {teams.map((team) => (
-          <div key={team.id} className="flex flex-wrap items-center justify-between gap-4 p-4">
+          <div key={team.id} className="flex flex-wrap items-center justify-between gap-3 p-3 sm:p-4">
             <span className="min-w-0 break-words font-semibold">{team.name}</span>
-            <Button variant="outline" className="min-h-12 shrink-0 rounded-xl px-4"
+          <Button variant="outline" className="min-h-11 shrink-0 rounded-xl px-4"
               onClick={() => { setError(""); setSelected(team); }}
               aria-label={`Leave ${team.name}`}>
               <LogOut className="mr-2 h-4 w-4" /> Leave team
