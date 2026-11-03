@@ -18,8 +18,10 @@ import { isTeamStaff } from "../lib/authz";
 const router = Router();
 const APP_URL = (process.env.WEB_APP_URL ?? "https://app.nahreo.com").replace(/\/$/, "");
 const normalize = (code: string) => code.replace(/[\s-]/g, "").toUpperCase();
+const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
-// Bound in-memory abuse protection complements the unguessable 64-bit codes.
+// Eight unambiguous base-32 characters give 40 bits of randomness.
+// Bound in-memory abuse protection limits repeated guesses.
 // Key by Clerk account for authenticated joins, IP for public lookups.
 const attempts = new Map<string, { count: number; reset: number }>();
 const codeLimit: RequestHandler = (req, res, next) => {
@@ -67,10 +69,19 @@ router.get("/teams/:teamId/join-code", requireAuth, staff, async (req, res) => {
 });
 
 router.post("/teams/:teamId/join-code", requireAuth, staff, async (req, res) => {
-  const code = randomBytes(8).toString("hex").toUpperCase();
-  await db.insert(teamJoinCodesTable).values({ teamId: Number(req.params.teamId), code })
-    .onConflictDoUpdate({ target: teamJoinCodesTable.teamId, set: { code, updatedAt: new Date() } });
-  res.json(codeResult(code));
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const code = Array.from(randomBytes(8), (byte) => CODE_ALPHABET[byte & 31]).join("");
+    try {
+      await db.insert(teamJoinCodesTable).values({ teamId: Number(req.params.teamId), code })
+        .onConflictDoUpdate({ target: teamJoinCodesTable.teamId, set: { code, updatedAt: new Date() } });
+      res.json(codeResult(code));
+      return;
+    } catch (error) {
+      const pgError = error as { code?: string; cause?: { code?: string } };
+      if ((pgError.cause?.code ?? pgError.code) !== "23505") throw error;
+    }
+  }
+  res.status(503).json({ error: "Could not generate a unique code. Please try again." });
 });
 
 router.delete("/teams/:teamId/join-code", requireAuth, staff, async (req, res) => {

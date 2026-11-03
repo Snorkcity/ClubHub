@@ -72,11 +72,24 @@ describe("Reusable team codes", () => {
     const made = await request(app).post(`/api/teams/${teamId}/join-code`).set(as("coach"));
     expect(made.status).toBe(200);
     code = made.body.code;
-    expect(code).toMatch(/^[A-F0-9]{16}$/);
+    expect(code).toMatch(/^[A-HJ-NP-Z2-9]{8}$/);
     expect(made.body.link).toContain(`/join-team?code=${code}`);
     const preview = await request(app).post("/api/team-codes/preview").send({ code: code.toLowerCase().match(/.{4}/g).join("-") });
     expect(preview.status).toBe(200);
     expect(preview.body).toEqual({ teamName: "Code U14", clubName: "Code Club" });
+  });
+  it("keeps existing longer codes and links working until staff replace them", async () => {
+    const legacyCode = "DEADBEEF1234ABCD";
+    await db.update(teamJoinCodesTable).set({ code: legacyCode }).where(eq(teamJoinCodesTable.teamId, teamId));
+    try {
+      expect((await request(app).get(`/api/teams/${teamId}/join-code`).set(as("coach"))).body.code).toBe(legacyCode);
+      const preview = await request(app).post("/api/team-codes/preview").send({ code: legacyCode.toLowerCase() });
+      expect(preview.status).toBe(200);
+      expect(preview.body.teamName).toBe("Code U14");
+      expect((await join("legacy", "player", { code: legacyCode })).body.status).toBe("joined");
+    } finally {
+      await db.update(teamJoinCodesTable).set({ code }).where(eq(teamJoinCodesTable.teamId, teamId));
+    }
   });
   it("denies member and cross-club code management and unauthenticated joins", async () => {
     for (const login of ["member", "outsider"]) {
@@ -200,6 +213,7 @@ describe("Reusable team codes", () => {
   it("invalidates old codes on rotation and disables joining without removing existing access", async () => {
     const old = code;
     code = (await request(app).post(`/api/teams/${teamId}/join-code`).set(as("admin"))).body.code;
+    expect(code).toMatch(/^[A-HJ-NP-Z2-9]{8}$/);
     expect(code).not.toBe(old);
     expect((await request(app).post("/api/team-codes/preview").send({ code: old })).status).toBe(404);
     expect((await join("revoked", "player", { code: old })).status).toBe(404);

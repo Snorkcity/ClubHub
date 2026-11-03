@@ -114,18 +114,17 @@ export function TeamJoinAccess({ teams, initialTeamId }: { teams: Team[]; initia
   }
 
   return (
-    <section className="mb-7 rounded-3xl border bg-card p-5 shadow-sm sm:p-6" data-testid="team-join-access">
+    <section className="mt-6 rounded-2xl border bg-card p-4 shadow-sm" data-testid="team-join-access">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="max-w-xl">
-          <div className="flex items-center gap-2 text-primary"><Link2 className="h-4 w-4" /><p className="text-xs font-bold uppercase tracking-[0.14em]">Reusable team access</p></div>
-          <h2 className="mt-2 font-display text-xl font-bold">Join code & guardian requests</h2>
-          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">Code holders can join as players. Staff are still invited individually. Guardian links require staff review before a child is connected.</p>
+          <h2 className="flex items-center gap-2 font-display text-lg font-bold"><Link2 className="h-4 w-4 shrink-0" />Reusable team access</h2>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Share a code or link for players to join. Invite staff individually; guardian connections need staff approval.</p>
         </div>
         {teams.length > 1 && <div className="w-full sm:w-56"><Label className="sr-only" htmlFor="join-access-team">Team for join settings</Label><Select value={String(teamId ?? "")} onValueChange={(v) => { setSelectedTeamId(Number(v)); setMessage(""); setCopied(false); }}><SelectTrigger id="join-access-team"><SelectValue placeholder="Choose a team" /></SelectTrigger><SelectContent>{teams.map((team) => <SelectItem key={team.id} value={String(team.id)}>{team.name}</SelectItem>)}</SelectContent></Select></div>}
       </div>
       {!teamId ? <div className="mt-5 rounded-xl border border-dashed p-5 text-sm text-muted-foreground">Choose an eligible team to manage its joining code and guardian requests.</div> : (
         <>
-          <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_auto]">
+          <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto]">
             <div className="min-w-0 rounded-2xl border bg-muted/20 p-4">
               <div className="mb-3 flex items-center justify-between gap-3"><p className="font-semibold">{teams.find((team) => team.id === teamId)?.name || "Selected team"}</p><span className="rounded-full bg-background px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Staff only</span></div>
               {codeQuery.isLoading ? <div className="h-10 animate-pulse rounded-lg bg-muted" /> : codeQuery.isError ? <div className="space-y-2"><p role="alert" className="text-sm text-destructive">Could not load this team&apos;s code.</p><Button variant="outline" size="sm" onClick={() => void codeQuery.refetch()}>Retry</Button></div> : code?.code ? (
@@ -141,9 +140,9 @@ export function TeamJoinAccess({ teams, initialTeamId }: { teams: Team[]; initia
               {code?.code && <Button variant="outline" onClick={disableCode} disabled={disable.isPending} className="flex-1 rounded-xl text-destructive hover:text-destructive lg:flex-none">{disable.isPending ? "Disabling…" : "Disable code"}</Button>}
             </div>
           </div>
-          <div className="mt-7 border-t pt-5">
-            <div className="mb-4 flex items-center justify-between gap-3"><div><h3 className="font-display text-lg font-bold">Guardian requests</h3><p className="text-sm text-muted-foreground">Match each child to a player already on this team.</p></div><span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">{requestsQuery.data?.length ?? 0} waiting</span></div>
-            {requestsQuery.isLoading ? <div className="space-y-2"><div className="h-16 animate-pulse rounded-xl bg-muted" /><div className="h-16 animate-pulse rounded-xl bg-muted" /></div> : requestsQuery.isError ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed p-4 text-sm"><span className="text-muted-foreground">Could not load guardian requests.</span><Button variant="outline" size="sm" onClick={() => void requestsQuery.refetch()}>Retry</Button></div> : !requestsQuery.data?.length ? <div className="rounded-xl border border-dashed p-5 text-center text-sm text-muted-foreground">No guardian requests need review.</div> : (
+          <div className="mt-4 border-t pt-3">
+            <div className="mb-2 flex items-center justify-between gap-3"><h3 className="text-sm font-semibold">Guardian requests</h3><span className="rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">{requestsQuery.data?.length ?? 0} waiting</span></div>
+            {requestsQuery.isLoading ? <div className="space-y-2"><div className="h-16 animate-pulse rounded-xl bg-muted" /><div className="h-16 animate-pulse rounded-xl bg-muted" /></div> : requestsQuery.isError ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed p-4 text-sm"><span className="text-muted-foreground">Could not load guardian requests.</span><Button variant="outline" size="sm" onClick={() => void requestsQuery.refetch()}>Retry</Button></div> : !requestsQuery.data?.length ? <p className="text-xs text-muted-foreground">No guardian requests need review.</p> : (
               <div className="space-y-3">
                 {requestsQuery.data.map((request) => (
                   <article key={request.id} className="rounded-2xl border p-4" data-testid={`guardian-request-${request.id}`}>
@@ -159,7 +158,7 @@ export function TeamJoinAccess({ teams, initialTeamId }: { teams: Team[]; initia
               </div>
             )}
           </div>
-          <div className="mt-5 flex items-start gap-2 rounded-xl bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" /><p>Approval connects the guardian to a selected existing player. It does not add a child or grant staff permissions.</p></div>
+          {!!requestsQuery.data?.length && <div className="mt-3 flex items-start gap-2 text-xs leading-relaxed text-muted-foreground"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" /><p>Match each child to an existing player. Approval connects their guardian; it does not add a child or grant staff permissions.</p></div>}
         </>
       )}
     </section>

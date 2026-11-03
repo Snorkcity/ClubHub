@@ -114,8 +114,6 @@ export default function PeopleList() {
           {canInvite && <InvitePersonDialog teamId={teamId} teams={inviteTeams} />}
         </header>
 
-        {canInvite && <TeamJoinAccess teams={inviteTeams} initialTeamId={teamId} />}
-
         <section
           aria-label={teamId != null ? "Team member summary" : "Club member summary"}
           data-testid="team-members-summary"
@@ -202,6 +200,7 @@ export default function PeopleList() {
               ))}
             </div>
           )}
+          {canInvite && <TeamJoinAccess teams={inviteTeams} initialTeamId={teamId} />}
         </div>
       </div>
     </div>
