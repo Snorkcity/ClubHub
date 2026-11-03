@@ -14,5 +14,6 @@ export type CurrentUserClubRole = typeof CurrentUserClubRole[keyof typeof Curren
 
 export const CurrentUserClubRole = {
   admin: 'admin',
+  announcer: 'announcer',
   member: 'member',
 } as const;

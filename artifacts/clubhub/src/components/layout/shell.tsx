@@ -274,7 +274,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           Hidden inside a chat, where it would cover the message composer. */}
       {/* New-post button: staff only (server rejects non-staff posts anyway),
           and only on the Home feed. */}
-      {isStaff && location === "/home" && <PostComposer variant="fab" />}
+      {(isStaff || me?.clubRole === "announcer") && location === "/home" && <PostComposer variant="fab" />}
 
       {/* Mobile Bottom Tab Bar (Heja-style) */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-background border-t flex items-stretch pb-[env(safe-area-inset-bottom)]">
@@ -308,6 +308,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 /** Managers and coaches share the same permissions; managers show as "Team Admin". */
 function roleLabel(me: any) {
   if (me?.isClubAdmin) return "Club Admin";
+  if (me?.clubRole === "announcer") return "Club Announcer";
   if (me?.memberships?.some((m: any) => m.role === "manager")) return "Team Admin";
   if (me?.memberships?.some((m: any) => m.role === "coach")) return "Coach";
   return "Member";

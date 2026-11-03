@@ -27,6 +27,7 @@ import { phonePlaceholder } from "@/lib/localisation";
 import { fileToAvatarDataUrl } from "@/lib/profile-photo";
 import { ClubLogoSettings } from "@/components/admin/club-logo-settings";
 import { ClubAccessSettings } from "@/components/admin/club-access-settings";
+import { ClubRoleSettings } from "@/components/admin/club-role-settings";
 import { TeamMembershipSettings } from "@/components/people/team-membership-settings";
 import { useTeamFeatures } from "@/lib/team-features";
 import {
@@ -384,6 +385,7 @@ export default function Settings() {
         <div className="space-y-10">
           <ClubAccessSettings />
           <TeamMembershipSettings />
+          {me.isClubAdmin && <ClubRoleSettings currentPersonId={me.person.id} isClubAdmin={me.isClubAdmin} />}
           {me.isClubAdmin && club && <ClubLogoSettings club={club} />}
           <AppearanceCard />
 

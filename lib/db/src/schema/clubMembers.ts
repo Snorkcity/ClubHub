@@ -11,7 +11,7 @@ import { z } from "zod/v4";
 import { clubsTable } from "./clubs";
 import { usersTable } from "./users";
 
-// Club-level role. "admin" runs the whole club; "member" is everyone else.
+// Club-level role. Announcers can broadcast news without administration access.
 export const clubMembersTable = pgTable(
   "club_members",
   {
@@ -22,7 +22,7 @@ export const clubMembersTable = pgTable(
     userId: integer("user_id")
       .notNull()
       .references(() => usersTable.id),
-    role: text("role").notNull().default("member"), // admin | member
+    role: text("role").notNull().default("member"), // admin | announcer | member
   },
   (t) => [
     uniqueIndex("club_members_club_id_user_id_unique").on(t.clubId, t.userId),

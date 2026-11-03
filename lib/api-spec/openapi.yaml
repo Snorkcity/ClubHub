@@ -30,6 +30,48 @@ tags:
     description: Player development assessment cycles and family reports
 
 paths:
+  /club/access:
+    get:
+      operationId: getClubAccess
+      tags: [club]
+      responses:
+        "200":
+          description: Club access settings, visible only to the club administrator
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ClubAccess" }
+  /club/access/{personId}:
+    patch:
+      operationId: updateClubAnnouncer
+      tags: [club]
+      parameters:
+        - { name: personId, in: path, required: true, schema: { type: integer, minimum: 1 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ClubAnnouncerUpdate" }
+      responses:
+        "200":
+          description: Updated club access
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ClubAccess" }
+  /club/access/transfer:
+    post:
+      operationId: transferClubAdmin
+      tags: [club]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ClubAdminTransfer" }
+      responses:
+        "200":
+          description: Administrator transferred; the previous administrator retains ordinary membership and team roles
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ClubAdminTransferResult" }
   /healthz:
     get:
       operationId: healthCheck
@@ -1912,6 +1954,38 @@ components:
             $ref: "#/components/schemas/Error"
 
   schemas:
+    ClubAccessMember:
+      type: object
+      required: [personId, name, role]
+      properties:
+        personId: { type: integer }
+        name: { type: string }
+        role: { type: string, enum: [admin, announcer, member] }
+    ClubAccess:
+      type: object
+      required: [members, maxAdmins, maxAnnouncers]
+      properties:
+        members:
+          type: array
+          items: { $ref: "#/components/schemas/ClubAccessMember" }
+        maxAdmins: { type: integer }
+        maxAnnouncers: { type: integer }
+    ClubAnnouncerUpdate:
+      type: object
+      required: [role]
+      properties:
+        role: { type: string, enum: [announcer, member] }
+    ClubAdminTransfer:
+      type: object
+      required: [personId, confirmation]
+      properties:
+        personId: { type: integer, minimum: 1 }
+        confirmation: { type: string, enum: [TRANSFER] }
+    ClubAdminTransferResult:
+      type: object
+      required: [personId]
+      properties:
+        personId: { type: integer }
     HealthStatus:
       type: object
       properties:
@@ -2331,7 +2405,7 @@ components:
       required: [person, isClubAdmin, memberships, guardianOf, pushNotificationsEnabled]
       properties:
         person: { $ref: "#/components/schemas/Person" }
-        clubRole: { type: ["string", "null"], enum: [admin, member, null] }
+        clubRole: { type: ["string", "null"], enum: [admin, announcer, member, null] }
         isClubAdmin: { type: boolean }
         pushNotificationsEnabled: { type: boolean }
         memberships:

@@ -8,6 +8,45 @@
 import * as zod from 'zod';
 
 
+export const GetClubAccessResponse = zod.object({
+  "members": zod.array(zod.object({
+  "personId": zod.number(),
+  "name": zod.string(),
+  "role": zod.enum(['admin', 'announcer', 'member'])
+})),
+  "maxAdmins": zod.number(),
+  "maxAnnouncers": zod.number()
+})
+
+
+export const UpdateClubAnnouncerBody = zod.object({
+  "role": zod.enum(['announcer', 'member'])
+})
+
+export const UpdateClubAnnouncerResponse = zod.object({
+  "members": zod.array(zod.object({
+  "personId": zod.number(),
+  "name": zod.string(),
+  "role": zod.enum(['admin', 'announcer', 'member'])
+})),
+  "maxAdmins": zod.number(),
+  "maxAnnouncers": zod.number()
+})
+
+
+
+
+
+export const TransferClubAdminBody = zod.object({
+  "personId": zod.number().min(1),
+  "confirmation": zod.enum(['TRANSFER'])
+})
+
+export const TransferClubAdminResponse = zod.object({
+  "personId": zod.number()
+})
+
+
 /**
  * @summary Health check
  */
@@ -36,7 +75,7 @@ export const GetMeResponse = zod.object({
   "isMinor": zod.boolean(),
   "hasLogin": zod.boolean().optional()
 }),
-  "clubRole": zod.union([zod.literal('admin'),zod.literal('member'),zod.literal(null)]).nullish(),
+  "clubRole": zod.union([zod.literal('admin'),zod.literal('announcer'),zod.literal('member'),zod.literal(null)]).nullish(),
   "isClubAdmin": zod.boolean(),
   "pushNotificationsEnabled": zod.boolean(),
   "memberships": zod.array(zod.object({

@@ -13,6 +13,7 @@ export interface AuthedRequest extends Request {
   localUser: User;
   clubId: number;
   isClubAdmin: boolean;
+  isClubAnnouncer: boolean;
 }
 
 export interface ClerkIdentity {
@@ -135,6 +136,7 @@ export const requireAccount: RequestHandler = async (req, res, next) => {
   authed.localUser = user;
   authed.clubId = user.clubId;
   authed.isClubAdmin = false;
+  authed.isClubAnnouncer = false;
   next();
 };
 
@@ -187,6 +189,7 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
     authed.localUser = { ...user, clubId };
     authed.clubId = clubId;
     authed.isClubAdmin = membership.role === "admin";
+    authed.isClubAnnouncer = membership.role === "announcer";
     next();
   } catch (err) {
     req.log.error({ err }, "Authentication failed");

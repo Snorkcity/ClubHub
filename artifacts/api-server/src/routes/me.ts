@@ -20,7 +20,7 @@ const router: IRouter = Router();
 const AVATAR_DATA_URL_RE = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/;
 
 router.get("/me", requireAuth, async (req, res) => {
-  const { localUser, isClubAdmin, clubId } = req as AuthedRequest;
+  const { localUser, isClubAdmin, isClubAnnouncer, clubId } = req as AuthedRequest;
 
   const memberships = await db
     .select({ m: teamMembersTable, t: teamsTable })
@@ -36,7 +36,7 @@ router.get("/me", requireAuth, async (req, res) => {
 
   return res.json({
     person: toPerson(localUser, undefined, { full: true }),
-    clubRole: isClubAdmin ? "admin" : "member",
+    clubRole: isClubAdmin ? "admin" : isClubAnnouncer ? "announcer" : "member",
     isClubAdmin,
     pushNotificationsEnabled: localUser.pushNotificationsEnabled,
     memberships: memberships.map(({ m, t }) => ({

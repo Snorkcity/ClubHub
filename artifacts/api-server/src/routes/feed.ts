@@ -224,9 +224,9 @@ router.post("/teams/:teamId/posts", requireAuth, async (req, res) => {
 });
 
 router.post("/posts/club", requireAuth, async (req, res) => {
-  const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
-  if (!isClubAdmin)
-    return res.status(403).json({ error: "Only club admins can post to every team" });
+  const { clubId, localUser, isClubAdmin, isClubAnnouncer } = req as AuthedRequest;
+  if (!isClubAdmin && !isClubAnnouncer)
+    return res.status(403).json({ error: "Only the club admin and club announcers can post to every team" });
   // Check the count before zod so an over-limit array yields a clean 400.
   if (Array.isArray(req.body?.photos) && req.body.photos.length > MAX_PHOTOS_PER_POST)
     return res

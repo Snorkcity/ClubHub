@@ -5,6 +5,56 @@
  * Nahreo API — multi-team sports club management
  * OpenAPI spec version: 0.1.0
  */
+export type ClubAccessMemberRole = typeof ClubAccessMemberRole[keyof typeof ClubAccessMemberRole];
+
+
+export const ClubAccessMemberRole = {
+  admin: 'admin',
+  announcer: 'announcer',
+  member: 'member',
+} as const;
+
+export interface ClubAccessMember {
+  personId: number;
+  name: string;
+  role: ClubAccessMemberRole;
+}
+
+export interface ClubAccess {
+  members: ClubAccessMember[];
+  maxAdmins: number;
+  maxAnnouncers: number;
+}
+
+export type ClubAnnouncerUpdateRole = typeof ClubAnnouncerUpdateRole[keyof typeof ClubAnnouncerUpdateRole];
+
+
+export const ClubAnnouncerUpdateRole = {
+  announcer: 'announcer',
+  member: 'member',
+} as const;
+
+export interface ClubAnnouncerUpdate {
+  role: ClubAnnouncerUpdateRole;
+}
+
+export type ClubAdminTransferConfirmation = typeof ClubAdminTransferConfirmation[keyof typeof ClubAdminTransferConfirmation];
+
+
+export const ClubAdminTransferConfirmation = {
+  TRANSFER: 'TRANSFER',
+} as const;
+
+export interface ClubAdminTransfer {
+  /** @minimum 1 */
+  personId: number;
+  confirmation: ClubAdminTransferConfirmation;
+}
+
+export interface ClubAdminTransferResult {
+  personId: number;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -563,6 +613,7 @@ export type CurrentUserClubRole = typeof CurrentUserClubRole[keyof typeof Curren
 
 export const CurrentUserClubRole = {
   admin: 'admin',
+  announcer: 'announcer',
   member: 'member',
 } as const;
 

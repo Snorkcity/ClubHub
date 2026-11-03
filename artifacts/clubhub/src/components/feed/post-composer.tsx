@@ -55,6 +55,7 @@ export function PostComposer({
 }) {
   const { data: me } = useGetMe({ query: { queryKey: getGetMeQueryKey() } });
   const isClubAdmin = !!me?.isClubAdmin;
+  const canPostClubWide = fixedTeamId == null && (isClubAdmin || me?.clubRole === "announcer");
   const { data: allTeams } = useListTeams({
     query: { queryKey: getListTeamsQueryKey(), enabled: isClubAdmin },
   });
@@ -70,7 +71,7 @@ export function PostComposer({
 
   const [open, setOpen] = useState(false);
 
-  if (!me || postableTeams.length === 0) return null;
+  if (!me || (postableTeams.length === 0 && !canPostClubWide)) return null;
 
   const trigger =
     variant === "card" ? (
@@ -125,7 +126,7 @@ export function PostComposer({
         <DialogHeader>
           <DialogTitle>New post</DialogTitle>
         </DialogHeader>
-        <ComposeForm teams={postableTeams} isClubAdmin={isClubAdmin} onDone={() => setOpen(false)} />
+        <ComposeForm teams={postableTeams} canPostClubWide={canPostClubWide} onDone={() => setOpen(false)} />
       </DialogContent>
     </Dialog>
   );
@@ -133,15 +134,15 @@ export function PostComposer({
 
 function ComposeForm({
   teams,
-  isClubAdmin,
+  canPostClubWide,
   onDone,
 }: {
   teams: { id: number; name: string }[];
-  isClubAdmin?: boolean;
+  canPostClubWide?: boolean;
   onDone: () => void;
 }) {
   const [teamId, setTeamId] = useState<string>(
-    teams.length === 1 && !isClubAdmin ? String(teams[0].id) : "",
+    teams.length === 1 && !canPostClubWide ? String(teams[0].id) : canPostClubWide && teams.length === 0 ? "all" : "",
   );
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -233,7 +234,7 @@ function ComposeForm({
         else createPost.mutate({ teamId: Number(teamId), data });
       }}
     >
-      {teams.length > 1 || isClubAdmin ? (
+      {teams.length > 1 || canPostClubWide ? (
         <div className="space-y-2">
           <Label>Team</Label>
           <Select value={teamId} onValueChange={setTeamId}>
@@ -241,7 +242,7 @@ function ComposeForm({
               <SelectValue placeholder="Choose a team" />
             </SelectTrigger>
             <SelectContent>
-              {isClubAdmin && (
+              {canPostClubWide && (
                 <SelectItem value="all">All teams (whole club)</SelectItem>
               )}
               {teams.map((t) => (

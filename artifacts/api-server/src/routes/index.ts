@@ -1,4 +1,5 @@
 import teamCodesRouter from "./team-codes";
+import clubAccessRouter from "./club-access";
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
 import meRouter from "./me";
@@ -26,6 +27,7 @@ router.use(onboardingRouter);
 router.use(platformRouter);
 router.use(meRouter);
 router.use(clubRouter);
+router.use(clubAccessRouter);
 router.use(seasonsRouter);
 router.use(teamsRouter);
 router.use(leaveTeamRouter);
