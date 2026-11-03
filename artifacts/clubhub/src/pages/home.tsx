@@ -173,7 +173,7 @@ function AdminDashboard() {
       <section className="space-y-2 md:space-y-4" data-testid="home-next-session">
           <div className="flex items-center justify-between">
             <h2 className="text-lg md:text-xl font-display font-bold">Next session</h2>
-            <Button variant="ghost" size="sm" asChild>
+            <Button variant="ghost" size="sm" className="hidden md:inline-flex" asChild>
               <Link href="/schedule">View schedule <ChevronRight className="h-4 w-4 ml-1" /></Link>
             </Button>
           </div>
@@ -283,7 +283,7 @@ function MemberDashboard({ me }: { me: any }) {
         <section className="space-y-2 md:space-y-3" data-testid="home-next-session">
           <div className="flex items-center justify-between">
             <h2 className="text-lg md:text-xl font-display font-bold">Next session</h2>
-            <Button variant="ghost" size="sm" asChild>
+            <Button variant="ghost" size="sm" className="hidden md:inline-flex" asChild>
               <Link href="/schedule">View schedule <ChevronRight className="h-4 w-4 ml-1" /></Link>
             </Button>
           </div>
