@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Loader2, MessageSquare, RotateCw, Send, Trash2 } from "lucide-react";
+import { Loader2, MessageSquare, RotateCw, Send, SmilePlus, Trash2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   getGetClubOverviewQueryKey,
@@ -15,6 +15,7 @@ import {
 import type { Comment, Post } from "@workspace/api-client-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { apiImageUrl } from "@/lib/team-banner";
 
 const REACTIONS = ["👍", "❤️", "👏", "💪", "😂"] as const;
@@ -47,13 +48,15 @@ function refreshRelated(queryClient: ReturnType<typeof useQueryClient>, postId: 
 
 export function PostInteractions({ post }: { post: PostLike }) {
   const [expanded, setExpanded] = useState(false);
+  const [reactionPickerOpen, setReactionPickerOpen] = useState(false);
   const [lastReaction, setLastReaction] = useState<ReactionEmoji | null>(null);
   const queryClient = useQueryClient();
+  const loadComments = expanded || post.commentCount > 0;
   const detail = useGetPost(post.id, {
     query: {
-      enabled: expanded,
+      enabled: loadComments,
       queryKey: getGetPostQueryKey(post.id),
-      refetchInterval: expanded ? 30_000 : false,
+      refetchInterval: loadComments ? 30_000 : false,
       refetchOnWindowFocus: true,
     },
   });
@@ -95,15 +98,29 @@ export function PostInteractions({ post }: { post: PostLike }) {
     },
   });
 
-  const currentPost = expanded && detail.data ? detail.data.post : post;
+  const currentPost = loadComments && detail.data ? detail.data.post : post;
   const selectedEmoji = currentPost.reactions?.find((reaction) => reaction.reacted)?.emoji;
-  const displayedComments = detail.data?.comments ?? [];
+  const displayedComments = loadComments ? detail.data?.comments ?? [] : [];
   const count = currentPost.commentCount ?? 0;
 
   return (
     <section className="mt-4 border-t pt-3" aria-label="Post reactions and comments" data-testid={`post-interactions-${post.id}`}>
       <div className="flex flex-wrap items-center gap-1.5">
-        {REACTIONS.map((emoji) => {
+        <Popover open={reactionPickerOpen} onOpenChange={setReactionPickerOpen}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              data-testid={`button-reaction-picker-${post.id}`}
+              aria-label={selectedEmoji ? "Change or remove your reaction" : "React to this post"}
+              disabled={setReaction.isPending}
+              className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors disabled:opacity-60 ${selectedEmoji ? "bg-primary/10 text-primary" : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+            >
+              <SmilePlus className="h-4 w-4" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" side="top" className="w-auto max-w-[calc(100vw-2rem)] rounded-full p-1.5">
+            <div className="flex gap-1" role="group" aria-label="Choose a reaction">
+              {REACTIONS.map((emoji) => {
           const reaction = currentPost.reactions?.find((item) => item.emoji === emoji);
           const selected = selectedEmoji === emoji;
           return (
@@ -117,25 +134,35 @@ export function PostInteractions({ post }: { post: PostLike }) {
               onClick={() => {
                 const nextEmoji = selected ? null : emoji;
                 setLastReaction(nextEmoji);
+                setReactionPickerOpen(false);
                 setReaction.mutate({ postId: post.id, data: { emoji: nextEmoji } });
               }}
-              className={`inline-flex min-h-9 items-center gap-1.5 rounded-full border px-2.5 text-sm transition-colors disabled:opacity-60 ${selected ? "border-primary/50 bg-primary/10 text-primary" : "border-border/70 bg-muted/30 hover:bg-muted"}`}
+              className={`inline-flex h-10 min-w-10 items-center justify-center gap-1 rounded-full px-2 text-lg transition-colors disabled:opacity-60 ${selected ? "bg-primary/10" : "hover:bg-muted"}`}
             >
               <span aria-hidden="true">{emoji}</span>
               {reaction?.count ? <span className="text-xs font-semibold">{reaction.count}</span> : null}
             </button>
           );
-        })}
+              })}
+            </div>
+          </PopoverContent>
+        </Popover>
+        {currentPost.reactions?.filter((reaction) => reaction.count > 0).map((reaction) => (
+          <span key={reaction.emoji} className="inline-flex items-center gap-1 rounded-full bg-muted/50 px-2 py-1 text-xs" aria-label={`${reaction.count} ${reaction.emoji} reactions`}>
+            <span aria-hidden="true">{reaction.emoji}</span>
+            <span>{reaction.count}</span>
+          </span>
+        ))}
         <button
           type="button"
           data-testid={`button-toggle-comments-${post.id}`}
           aria-expanded={expanded}
-          aria-label={`${count ? `${count} ` : ""}${count === 1 ? "comment" : "comments"} on post`}
+          aria-label={expanded ? "Close comment editor" : "Add a comment"}
           onClick={() => setExpanded((open) => !open)}
           className="ml-auto inline-flex min-h-9 items-center gap-2 rounded-full px-3 text-sm font-medium text-muted-foreground hover:bg-muted/70 hover:text-foreground"
         >
           <MessageSquare className="h-4 w-4" />
-          <span>{count} {count === 1 ? "comment" : "comments"}</span>
+          <span className="text-xs">{expanded ? "Close editor" : "Add a comment"}</span>
         </button>
       </div>
       {setReaction.isError && (
@@ -152,8 +179,9 @@ export function PostInteractions({ post }: { post: PostLike }) {
         </div>
       )}
 
-      {expanded && (
-        <div className="mt-4 space-y-4 rounded-xl bg-muted/25 p-3 sm:p-4" data-testid={`discussion-${post.id}`}>
+      {loadComments && (
+        <div className="mt-3 space-y-2.5" data-testid={`discussion-${post.id}`}>
+          {count > 0 && <p className="text-xs text-muted-foreground">{count} {count === 1 ? "comment" : "comments"}</p>}
           {detail.isLoading ? (
             <div className="space-y-3" aria-label="Loading comments">
               {[0, 1].map((item) => <div key={item} className="flex gap-3"><div className="h-8 w-8 animate-pulse rounded-full bg-muted" /><div className="h-10 flex-1 animate-pulse rounded-lg bg-muted" /></div>)}
@@ -168,7 +196,7 @@ export function PostInteractions({ post }: { post: PostLike }) {
           ) : displayedComments.length === 0 ? (
             <p className="py-1 text-sm text-muted-foreground">No replies yet. Add the first one.</p>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-2.5">
               {displayedComments.map((comment) => (
                 <CommentRow
                   key={comment.id}
@@ -184,12 +212,12 @@ export function PostInteractions({ post }: { post: PostLike }) {
             </div>
           )}
           {deleteComment.isError && <p role="alert" className="text-sm text-destructive">Couldn’t delete that comment. Please try again.</p>}
-          <CommentForm
+          {expanded && <CommentForm
             postId={post.id}
             pending={addComment.isPending}
             error={addComment.isError}
             onSubmit={(body) => addComment.mutateAsync({ postId: post.id, data: { body } })}
-          />
+          />}
         </div>
       )}
     </section>
@@ -198,15 +226,15 @@ export function PostInteractions({ post }: { post: PostLike }) {
 
 function CommentRow({ comment, deleting, onDelete }: { comment: Comment; deleting: boolean; onDelete: () => void }) {
   return (
-    <article className="flex gap-2.5" data-testid={`comment-${comment.id}`}>
-      <Avatar className="h-8 w-8 shrink-0">
+    <article className="flex gap-2" data-testid={`comment-${comment.id}`}>
+      <Avatar className="h-6 w-6 shrink-0">
         <AvatarImage src={comment.author.avatarUrl ? apiImageUrl(comment.author.avatarUrl) : undefined} />
         <AvatarFallback className="text-[10px]">{initials(comment.author.firstName, comment.author.lastName)}</AvatarFallback>
       </Avatar>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-          <span className="text-sm font-semibold">{comment.author.fullName}</span>
-          <time className="text-xs text-muted-foreground" dateTime={comment.createdAt}>
+          <span className="text-xs font-semibold">{comment.author.fullName}</span>
+          <time className="text-[10px] text-muted-foreground" dateTime={comment.createdAt}>
             {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
           </time>
           {comment.canDelete && (
@@ -216,7 +244,7 @@ function CommentRow({ comment, deleting, onDelete }: { comment: Comment; deletin
             </button>
           )}
         </div>
-        <p className="mt-0.5 whitespace-pre-wrap break-words text-sm leading-relaxed">{comment.body}</p>
+        <p className="mt-0.5 whitespace-pre-wrap break-words text-xs leading-relaxed">{comment.body}</p>
       </div>
     </article>
   );
