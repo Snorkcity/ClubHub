@@ -38,12 +38,12 @@ export default function Home() {
 
   return (
     <div className="flex-1 overflow-y-auto overflow-x-hidden">
-      <div className="container mx-auto p-4 md:p-8 lg:max-w-6xl space-y-6">
+      <div className="container mx-auto px-3 py-2.5 md:p-8 lg:max-w-6xl space-y-3 md:space-y-6">
         {/* Header: team photo banner when the active team has one, else the
             compact name chip. Both show today's date. */}
         <header>
           {activeTeam?.bannerUrl ? (
-            <div className="relative rounded-2xl overflow-hidden shadow-md mb-2 h-36 md:h-48">
+            <div className="relative rounded-2xl overflow-hidden shadow-md mb-2 h-28 md:h-48">
               <img
                 src={teamBannerUrl(activeTeam.bannerUrl)}
                 alt={`${activeTeam.name} team photo`}
@@ -68,7 +68,7 @@ export default function Home() {
           ) : (
             <>
               {activeTeam && (
-                <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 text-primary px-3 py-1 text-sm font-display font-bold mb-1.5">
+                <div className="hidden md:inline-flex items-center gap-2 rounded-full bg-primary/10 text-primary px-3 py-1 text-sm font-display font-bold mb-1.5">
                   <span
                     className="h-2.5 w-2.5 rounded-full"
                     style={{ backgroundColor: (activeTeam as any).colorHex || "currentColor" }}
@@ -76,7 +76,7 @@ export default function Home() {
                   {activeTeam.name}
                 </div>
               )}
-              <p className="text-muted-foreground text-sm font-medium">
+              <p className="text-muted-foreground text-xs md:text-sm font-medium">
                 {format(new Date(), "EEEE, MMMM do")}
               </p>
             </>
@@ -169,10 +169,10 @@ function AdminDashboard() {
     : overview.recentPosts.filter((post) => post.teamId === activeTeamId);
 
   return (
-    <div className="space-y-8">
-      <section className="space-y-4" data-testid="home-next-session">
+    <div className="space-y-4 md:space-y-8">
+      <section className="space-y-2 md:space-y-4" data-testid="home-next-session">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-display font-bold">Next session</h2>
+            <h2 className="text-lg md:text-xl font-display font-bold">Next session</h2>
             <Button variant="ghost" size="sm" asChild>
               <Link href="/schedule">View schedule <ChevronRight className="h-4 w-4 ml-1" /></Link>
             </Button>
@@ -193,9 +193,9 @@ function AdminDashboard() {
           )}
       </section>
 
-      <section className="space-y-4" data-testid="home-club-news">
+      <section className="space-y-2 md:space-y-4" data-testid="home-club-news">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-display font-bold">Team News</h2>
+            <h2 className="text-lg md:text-xl font-display font-bold">Team News</h2>
           </div>
           
           {/* Mobile uses the floating pencil button instead of this card. */}
@@ -208,7 +208,7 @@ function AdminDashboard() {
               <p className="text-muted-foreground text-sm">No recent team news.</p>
             </Card>
           ) : (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2.5 md:gap-4">
               {recentPosts.map((post) => (
                 <PostCard key={post.id} post={post} />
               ))}
@@ -276,13 +276,13 @@ function MemberDashboard({ me }: { me: any }) {
     .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())[0];
 
   return (
-    <div className="grid gap-8 lg:grid-cols-3">
-      <div className="min-w-0 space-y-8 lg:col-span-2">
+    <div className="grid gap-4 md:gap-8 lg:grid-cols-3">
+      <div className="min-w-0 space-y-4 md:space-y-8 lg:col-span-2">
         
         {/* Next Event — compact banner so posts stay visible below it */}
-        <section className="space-y-3" data-testid="home-next-session">
+        <section className="space-y-2 md:space-y-3" data-testid="home-next-session">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-display font-bold">Next session</h2>
+            <h2 className="text-lg md:text-xl font-display font-bold">Next session</h2>
             <Button variant="ghost" size="sm" asChild>
               <Link href="/schedule">View schedule <ChevronRight className="h-4 w-4 ml-1" /></Link>
             </Button>
@@ -332,9 +332,9 @@ function MemberDashboard({ me }: { me: any }) {
         </section>
 
         {/* Team Feed */}
-        <div className="space-y-6">
+        <div className="space-y-2 md:space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-display font-bold">Team News</h2>
+            <h2 className="text-lg md:text-2xl font-display font-bold">Team News</h2>
           </div>
           
           {/* Mobile uses the floating pencil button instead of this card. */}
@@ -351,7 +351,7 @@ function MemberDashboard({ me }: { me: any }) {
               icon={MessageSquare}
             />
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-2.5 md:space-y-4">
               {visibleFeed.map((post) => (
                 <PostCard key={post.id} post={post} />
               ))}

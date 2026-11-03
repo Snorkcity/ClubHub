@@ -79,10 +79,10 @@ export function PostCard({ post }: { post: any }) {
   return (
     <Card
       data-testid={`card-post-${post.id}`}
-      className="p-5 rounded-2xl"
+      className="p-3 md:p-5 rounded-xl md:rounded-2xl"
     >
-      <div className="flex items-start gap-3 mb-3">
-        <Avatar className="h-10 w-10 border shadow-sm">
+      <div className="flex items-start gap-2.5 md:gap-3 mb-2 md:mb-3">
+        <Avatar className="h-8 w-8 md:h-10 md:w-10 border shadow-sm">
           <AvatarImage src={post.author.avatarUrl} />
           <AvatarFallback>{post.author.firstName?.charAt(0)}</AvatarFallback>
         </Avatar>
@@ -101,13 +101,13 @@ export function PostCard({ post }: { post: any }) {
       </div>
 
       {post.title && (
-        <h3 className="mb-1.5 font-display text-lg font-bold leading-snug text-foreground">
+        <h3 className="mb-1 md:mb-1.5 font-display text-base md:text-lg font-bold leading-snug text-foreground">
           {post.title}
         </h3>
       )}
       <p
         className={
-          "text-sm text-foreground/90 leading-relaxed whitespace-pre-line" +
+          "text-sm text-foreground/90 leading-normal md:leading-relaxed whitespace-pre-line" +
           (isLong && !expanded ? " line-clamp-[8]" : "")
         }
       >

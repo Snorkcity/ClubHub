@@ -104,7 +104,7 @@ export function PostInteractions({ post }: { post: PostLike }) {
   const count = currentPost.commentCount ?? 0;
 
   return (
-    <section className="mt-4 border-t pt-3" aria-label="Post reactions and comments" data-testid={`post-interactions-${post.id}`}>
+    <section className="mt-2 md:mt-4 border-t pt-1.5 md:pt-3" aria-label="Post reactions and comments" data-testid={`post-interactions-${post.id}`}>
       <div className="flex flex-wrap items-center gap-1.5">
         <Popover open={reactionPickerOpen} onOpenChange={setReactionPickerOpen}>
           <PopoverTrigger asChild>
