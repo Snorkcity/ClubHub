@@ -12,9 +12,9 @@ import { queryClient } from "@/lib/queryClient";
 import {
   getSubscription,
   usePushSupport,
-  subscribeToPush,
   unsubscribeFromPush,
 } from "@/lib/push";
+import { dismissPushPrompt, enableDevicePush, hasSavedPushRegistration } from "@/lib/push-enrollment";
 
 import { LoadingScreen, ErrorState } from "@/components/ui/states";
 import { Button } from "@/components/ui/button";
@@ -112,14 +112,16 @@ function NotificationsCard({ me }: { me: any }) {
       return;
     }
     void getSubscription(basePath).then((subscription) => {
-      const subscribed = Boolean(subscription);
+      const subscribed = Boolean(subscription && hasSavedPushRegistration(
+        me.person.id, subscription.endpoint, me.pushNotificationsEnabled, basePath,
+      ));
       setDeviceSubscribed(subscribed);
       setLocalEnabled(subscribed);
     }, () => {
       setDeviceSubscribed(false);
       setLocalEnabled(false);
     });
-  }, [pushSupport.isSupported]);
+  }, [pushSupport.isSupported, me.person.id, me.pushNotificationsEnabled]);
 
   const handleToggle = async (enabled: boolean) => {
     setIsSubscribing(true);
@@ -140,38 +142,12 @@ function NotificationsCard({ me }: { me: any }) {
           throw new Error("Push is not configured on the server.");
         }
 
-        let perm = pushSupport.permission;
-        if (perm === 'default') {
-          perm = await Notification.requestPermission();
-          pushSupport.setPermission(perm);
-        }
-
-        if (perm !== "granted") {
-          throw new Error(
-            perm === "denied"
-              ? "Notifications are blocked. Open iPhone Settings → Apps → Nahreo → Notifications and allow notifications, then try again."
-              : "Notification permission was not granted.",
-          );
-        }
-
-        const sub = await subscribeToPush(pushConfig.publicKey, basePath);
-        if (!sub) throw new Error("This device could not create a push subscription.");
-        const json = sub.toJSON();
-        if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
-          throw new Error("The browser returned an incomplete push subscription.");
-        }
-        await saveSub.mutateAsync({
-          data: {
-            endpoint: json.endpoint,
-            keys: {
-              p256dh: json.keys.p256dh,
-              auth: json.keys.auth,
-            },
-          },
-        });
+        await enableDevicePush(me.person.id, pushConfig.publicKey, basePath, (payload) =>
+          saveSub.mutateAsync({ data: payload }));
         setDeviceSubscribed(true);
         setLocalEnabled(true);
       } else {
+        dismissPushPrompt(me.person.id, "enable");
         const endpoint = await unsubscribeFromPush(basePath);
         if (endpoint) {
           await deleteSub.mutateAsync({ data: { endpoint } });
@@ -193,6 +169,7 @@ function NotificationsCard({ me }: { me: any }) {
         variant: "destructive",
       });
     } finally {
+      if (typeof Notification !== "undefined") pushSupport.setPermission(Notification.permission);
       setIsSubscribing(false);
     }
   };

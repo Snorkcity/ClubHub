@@ -41,10 +41,16 @@ export function usePushSupport() {
 
   useEffect(() => {
     if (!isSupported) return;
-    const checkPermission = async () => {
-      setPermission(Notification.permission);
+    const checkPermission = () => {
+      setPermission("Notification" in window ? Notification.permission : "denied");
     };
     checkPermission();
+    window.addEventListener("focus", checkPermission);
+    document.addEventListener("visibilitychange", checkPermission);
+    return () => {
+      window.removeEventListener("focus", checkPermission);
+      document.removeEventListener("visibilitychange", checkPermission);
+    };
   }, [isSupported]);
 
   return {
@@ -73,6 +79,31 @@ export async function subscribeToPush(publicKey: string, basePath: string = "") 
   const registration = await navigator.serviceWorker.register(`${scope}sw.js`, {
     scope,
   });
+
+  // A first-time registration may still be installing. PushManager.subscribe()
+  // requires an active worker; otherwise the first Enable click can fail.
+  if (registration.active?.state !== "activated") {
+    await new Promise<void>((resolve, reject) => {
+      const worker = registration.installing ?? registration.waiting ?? registration.active;
+      if (!worker) {
+        reject(new Error("The notification service could not start. Please try again."));
+        return;
+      }
+      const finish = (error?: Error) => {
+        clearTimeout(timeout);
+        worker.removeEventListener("statechange", check);
+        if (error) reject(error);
+        else resolve();
+      };
+      const check = () => {
+        if (worker.state === "activated") finish();
+        else if (worker.state === "redundant") finish(new Error("The notification service could not start. Please try again."));
+      };
+      const timeout = setTimeout(() => finish(new Error("Notification setup took too long. Please try again.")), 15_000);
+      worker.addEventListener("statechange", check);
+      check();
+    });
+  }
 
   const existing = await registration.pushManager.getSubscription();
   if (existing) return existing;

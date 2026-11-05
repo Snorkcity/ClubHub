@@ -26,6 +26,7 @@ import { PostCard } from "@/components/feed/post-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { PushNotificationPrompt } from "@/components/notifications/push-prompt";
 
 export default function Home() {
   const { data: me, isLoading: meLoading } = useGetMe({ query: { queryKey: getGetMeQueryKey() } });
@@ -82,6 +83,8 @@ export default function Home() {
             </>
           )}
         </header>
+
+        <PushNotificationPrompt key={me.person.id} personId={me.person.id} accountEnabled={me.pushNotificationsEnabled} />
 
         <UnreadActivityBanner />
 
