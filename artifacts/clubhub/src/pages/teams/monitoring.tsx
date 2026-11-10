@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useParams } from "wouter";
+import { monitoringProfileHref } from "@/lib/person-navigation";
 import { format } from "date-fns";
 import { Activity, AlertTriangle, ArrowLeft, Brain, ChevronDown, Eye } from "lucide-react";
 import {
@@ -385,7 +386,7 @@ function PlayerLearningPreferencesSummary({ personId }: { personId: number }) {
   );
 }
 
-function PlayerCard({ p, windowDays, squadNote }: { p: PlayerMonitoring; windowDays: number; squadNote: string | null }) {
+function PlayerCard({ p, teamId, windowDays, squadNote }: { p: PlayerMonitoring; teamId: number; windowDays: number; squadNote: string | null }) {
   const [open, setOpen] = useState<"wellness" | "acwr" | null>(null);
   const toggle = (which: "wellness" | "acwr") => setOpen((o) => (o === which ? null : which));
 
@@ -393,7 +394,7 @@ function PlayerCard({ p, windowDays, squadNote }: { p: PlayerMonitoring; windowD
     <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
       <div className="p-3 flex items-center gap-2">
         <div className="min-w-0 flex-1">
-          <Link href={`/people/${p.person.id}`} className="font-semibold text-sm hover:underline truncate block">
+          <Link href={monitoringProfileHref(p.person.id, teamId)} className="font-semibold text-sm hover:underline truncate block">
             {p.person.fullName}
           </Link>
           <p className="text-[11px] text-muted-foreground">
@@ -592,7 +593,7 @@ export default function TeamMonitoring() {
           {/* Mobile: tappable score cards */}
           <div className="space-y-3 md:hidden">
             {sortedPlayers.map((p) => (
-              <PlayerCard key={p.person.id} p={p} windowDays={windowDays} squadNote={squadLoadContext(p, data.players)} />
+              <PlayerCard key={p.person.id} p={p} teamId={teamId} windowDays={windowDays} squadNote={squadLoadContext(p, data.players)} />
             ))}
           </div>
 
@@ -670,7 +671,7 @@ export default function TeamMonitoring() {
                       {selected.wellnessCount} check-in{selected.wellnessCount === 1 ? "" : "s"} in this {windowLabel(windowDays)} window
                       {selected.lastWellnessDate ? ` · last ${format(new Date(selected.lastWellnessDate + "T12:00:00"), "d MMM")}` : ""}
                       {" · "}
-                      <Link href={`/people/${selected.person.id}`} className="underline hover:text-foreground">
+                      <Link href={monitoringProfileHref(selected.person.id, teamId)} className="underline hover:text-foreground">
                         view profile
                       </Link>
                     </p>

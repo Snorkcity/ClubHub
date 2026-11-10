@@ -1,4 +1,4 @@
-import { useParams, Link } from "wouter";
+import { useParams, useSearch, Link } from "wouter";
 import { Mail, Phone, ShieldCheck, Users, ArrowLeft, CalendarDays, Brain } from "lucide-react";
 import { useGetPerson, getGetPersonQueryKey, useGetMe, useListPlayerDevelopmentReports, getListPlayerDevelopmentReportsQueryKey, useGetPersonLearningPreferences, getGetPersonLearningPreferencesQueryKey, useGetCoachLearningPreferences, getGetCoachLearningPreferencesQueryKey } from "@workspace/api-client-react";
 import { format } from "date-fns";
@@ -11,9 +11,11 @@ import { LinkGuardianDialog, RemoveGuardianButton } from "@/components/admin/fam
 import { TrendingUp } from "lucide-react";
 import { LearningPreferenceResult } from "@/components/people/learning-preferences";
 import { useTeamFeatures } from "@/lib/team-features";
+import { personBackLink } from "@/lib/person-navigation";
 
 export default function PersonDetail() {
   const params = useParams();
+  const backLink = personBackLink(useSearch());
   const personId = Number(params.personId);
 
   const { data, isLoading, error, refetch } = useGetPerson(personId, {
@@ -82,8 +84,8 @@ export default function PersonDetail() {
       </div>
       
       <div className="container mx-auto px-4 md:px-8 pb-12 lg:max-w-4xl -mt-16 md:-mt-20">
-        <Link href="/people" className="inline-flex items-center text-sm font-bold text-white/80 hover:text-white mb-6 relative z-10 transition-colors drop-shadow-md">
-          <ArrowLeft className="h-4 w-4 mr-1" /> Back to Directory
+        <Link href={backLink.href} className="inline-flex items-center text-sm font-bold text-white/80 hover:text-white mb-6 relative z-10 transition-colors drop-shadow-md">
+          <ArrowLeft className="h-4 w-4 mr-1" /> {backLink.label}
         </Link>
         
         <div className="bg-card border rounded-3xl p-6 shadow-sm mb-8 relative">
