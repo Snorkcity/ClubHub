@@ -6,6 +6,7 @@ import {
   CheckCircle2, ChevronDown, HelpCircle, XCircle, FileQuestion, MessageSquare, Timer, ExternalLink
 } from "lucide-react";
 import { locationName, mapsUrl } from "@/lib/location";
+import { attendanceGroups } from "@/lib/attendance-groups";
 import { useTeamFeatures } from "@/lib/team-features";
 import { 
   useGetEvent, useSetRsvp, useCancelEvent, useCreatePost,
@@ -405,12 +406,11 @@ export default function EventDetail() {
           </div>
 
           {(() => {
-            const byName = (a: typeof rsvps[number], b: typeof rsvps[number]) =>
-              a.person.fullName.localeCompare(b.person.fullName);
-            const isStaffRole = (r: typeof rsvps[number]) => r.role === "coach" || r.role === "manager";
-            const staffGoing = rsvps.filter((r) => r.status === "going" && isStaffRole(r)).sort(byName);
-            const playersGoing = rsvps.filter((r) => r.status === "going" && !isStaffRole(r)).sort(byName);
-            const unavailable = rsvps.filter((r) => r.status !== "going").sort(byName);
+            const groups = attendanceGroups(rsvps);
+            const staffGoing = groups[0].coaches;
+            const playersGoing = groups[0].players;
+            const unavailable = groups[1].coaches.length + groups[1].players.length;
+            const maybe = groups[2].coaches.length + groups[2].players.length;
 
             const Row = ({ rsvp }: { rsvp: typeof rsvps[number] }) => {
               const isMe = myPersonId != null && rsvp.person.id === myPersonId;
@@ -475,13 +475,28 @@ export default function EventDetail() {
                   </span>
                   <span className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-xs font-bold text-red-600">
                     <span className="h-2 w-2 rounded-full bg-red-500" />
-                    {unavailable.length} not going
+                    {unavailable} not going
                   </span>
+                  {maybe > 0 && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-xs font-bold text-amber-700 dark:text-amber-400">
+                      {maybe} maybe
+                    </span>
+                  )}
                 </div>
                 <div className="bg-card border rounded-3xl overflow-hidden shadow-sm">
-                  <Section title={`Coaches going · ${staffGoing.length}${staffTotal ? ` of ${staffTotal}` : ""}`} items={staffGoing} accent="text-emerald-700" />
-                  <Section title={`Players going · ${playersGoing.length}${playerTotal ? ` of ${playerTotal}` : ""}`} items={playersGoing} accent="text-green-700" />
-                  <Section title={`Not going · ${unavailable.length}`} items={unavailable} accent="text-red-600" />
+                  {groups.map((group) => {
+                    const count = group.coaches.length + group.players.length;
+                    if (!count) return null;
+                    return (
+                      <section key={group.status} aria-label={group.title}>
+                        <h3 className={`px-4 py-2.5 font-bold text-sm border-t first:border-t-0 ${group.accent}`}>
+                          {group.title} · {count}
+                        </h3>
+                        <Section title={`Coaches · ${group.coaches.length}${staffTotal ? `/${staffTotal}` : ""}`} items={group.coaches} accent="text-muted-foreground" />
+                        <Section title={`Players · ${group.players.length}${playerTotal ? `/${playerTotal}` : ""}`} items={group.players} accent="text-muted-foreground" />
+                      </section>
+                    );
+                  })}
                   {rsvps.length === 0 && (
                     <EmptyState title="No RSVPs yet" message="Be the first to respond to this event." icon={FileQuestion} />
                   )}
