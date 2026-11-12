@@ -17,7 +17,8 @@ import {
   getGetFeedQueryKey, getListUpcomingEventsQueryKey, getListTeamsQueryKey
 } from "@workspace/api-client-react";
 
-import { LoadingScreen, ErrorState, EmptyState } from "@/components/ui/states";
+import { ErrorState, EmptyState } from "@/components/ui/states";
+import { ContentPlaceholder } from "@/components/ui/page-loader";
 import { locationName } from "@/lib/location";
 import { teamBannerUrl } from "@/lib/team-banner";
 import { useTeamUnreads } from "@/components/layout/team-switcher";
@@ -34,7 +35,7 @@ export default function Home() {
   const { data: teams } = useListTeams({ query: { queryKey: getListTeamsQueryKey() } });
   const activeTeam = teams?.find((t) => t.id === activeTeamId);
 
-  if (meLoading) return <LoadingScreen />;
+  if (meLoading) return <ContentPlaceholder label="Loading your Home screen" />;
   if (!me) return <ErrorState />;
 
   return (
@@ -161,15 +162,12 @@ function AdminDashboard() {
     },
   });
 
-  if (isLoading) return <LoadingScreen message="Loading club overview..." />;
-  if (error || !overview) return <ErrorState onRetry={() => refetch()} />;
-
   const nextEvent = (events ?? [])
     .filter((event) => !event.cancelledAt && new Date(event.startsAt).getTime() >= Date.now())
     .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())[0];
   const recentPosts = activeTeamId == null
-    ? overview.recentPosts
-    : overview.recentPosts.filter((post) => post.teamId === activeTeamId);
+    ? overview?.recentPosts ?? []
+    : (overview?.recentPosts ?? []).filter((post) => post.teamId === activeTeamId);
 
   return (
     <div className="space-y-4 md:space-y-8">
@@ -206,7 +204,11 @@ function AdminDashboard() {
             <PostComposer variant="card" />
           </div>
 
-          {recentPosts.length === 0 ? (
+          {isLoading ? (
+            <ContentPlaceholder label="Loading team news" />
+          ) : error || !overview ? (
+            <ErrorState onRetry={() => void refetch()} />
+          ) : recentPosts.length === 0 ? (
             <Card className="p-8 text-center border-dashed bg-muted/20">
               <p className="text-muted-foreground text-sm">No recent team news.</p>
             </Card>
@@ -260,14 +262,12 @@ function MemberDashboard({ me }: { me: any }) {
     }
   });
 
-  const { data: teams, isLoading: teamsLoading } = useListTeams({
+  const { data: teams, isLoading: teamsLoading, error: teamsError, refetch: refetchTeams } = useListTeams({
     query: { queryKey: getListTeamsQueryKey() }
   });
 
   // Active team: filter the feed and mark that team's content as seen.
   useMarkActiveTeamSeen(activeTeamId);
-
-  if (eventsLoading || feedLoading || teamsLoading) return <LoadingScreen message="Loading dashboard..." />;
 
   const visibleFeed =
     activeTeamId == null
@@ -345,7 +345,9 @@ function MemberDashboard({ me }: { me: any }) {
             <PostComposer variant="card" />
           </div>
 
-          {feedError ? (
+          {feedLoading ? (
+            <ContentPlaceholder label="Loading team news" />
+          ) : feedError ? (
             <ErrorState onRetry={() => void refetchFeed()} />
           ) : !visibleFeed || visibleFeed.length === 0 ? (
             <EmptyState 
@@ -369,7 +371,11 @@ function MemberDashboard({ me }: { me: any }) {
             <h3 className="text-lg font-display font-bold">My Teams</h3>
           </div>
           
-          {!teams || teams.length === 0 ? (
+          {teamsLoading ? (
+            <ContentPlaceholder label="Loading teams" />
+          ) : teamsError ? (
+            <ErrorState onRetry={() => void refetchTeams()} />
+          ) : !teams || teams.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">Not assigned to any teams yet.</p>
           ) : (
             <div className="space-y-3">

@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { lazy, useEffect, useRef } from "react";
+import { PageLoader } from "@/components/ui/page-loader";
 import { ClerkProvider, SignIn, SignUp, SignOutButton, Show, useClerk, useAuth } from '@clerk/react';
 import { setAuthTokenGetter, setBaseUrl, setClubIdGetter } from '@workspace/api-client-react';
 import { bindClubAccount, selectedClubId, switchClub } from "@/lib/active-club";
@@ -17,35 +18,35 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 
-import Landing from "@/pages/landing";
+const Landing = lazy(() => import("@/pages/landing"));
 import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
 import Home from "@/pages/home";
-import TeamsList from "@/pages/teams/index";
-import TeamDetail from "@/pages/teams/detail";
-import TeamMonitoring from "@/pages/teams/monitoring";
-import Checkin from "@/pages/checkin";
-import EventDetail from "@/pages/events/detail";
-import EventTimekeeping from "@/pages/events/timekeeping";
-import TeamMinutes from "@/pages/teams/minutes";
+const TeamsList = lazy(() => import("@/pages/teams/index"));
+const TeamDetail = lazy(() => import("@/pages/teams/detail"));
+const TeamMonitoring = lazy(() => import("@/pages/teams/monitoring"));
+const Checkin = lazy(() => import("@/pages/checkin"));
+const EventDetail = lazy(() => import("@/pages/events/detail"));
+const EventTimekeeping = lazy(() => import("@/pages/events/timekeeping"));
+const TeamMinutes = lazy(() => import("@/pages/teams/minutes"));
 import { FeaturePage } from "@/components/teams/feature-page";
-import Schedule from "@/pages/schedule";
-import Messages from "@/pages/messages/index";
-import ChatPage from "@/pages/messages/chat";
-import PeopleList from "@/pages/people/index";
-import PersonDetail from "@/pages/people/detail";
-import Settings from "@/pages/settings";
-import PhotoStoragePage from "@/pages/admin/photo-storage";
-import Notifications from "@/pages/notifications";
-import JoinTeam from "@/pages/join";
-import JoinTeamByCode from "@/pages/join-team";
-import TeamDevelopment from "@/pages/teams/development";
-import DevelopmentCycle from "@/pages/development/cycle";
-import DevelopmentReport from "@/pages/development/report";
-import Reports from "@/pages/reports";
-import AttendanceReport from "@/pages/reports/attendance";
+const Schedule = lazy(() => import("@/pages/schedule"));
+const Messages = lazy(() => import("@/pages/messages/index"));
+const ChatPage = lazy(() => import("@/pages/messages/chat"));
+const PeopleList = lazy(() => import("@/pages/people/index"));
+const PersonDetail = lazy(() => import("@/pages/people/detail"));
+const Settings = lazy(() => import("@/pages/settings"));
+const PhotoStoragePage = lazy(() => import("@/pages/admin/photo-storage"));
+const Notifications = lazy(() => import("@/pages/notifications"));
+const JoinTeam = lazy(() => import("@/pages/join"));
+const JoinTeamByCode = lazy(() => import("@/pages/join-team"));
+const TeamDevelopment = lazy(() => import("@/pages/teams/development"));
+const DevelopmentCycle = lazy(() => import("@/pages/development/cycle"));
+const DevelopmentReport = lazy(() => import("@/pages/development/report"));
+const Reports = lazy(() => import("@/pages/reports"));
+const AttendanceReport = lazy(() => import("@/pages/reports/attendance"));
 import Shell from "@/components/layout/shell";
-import GetStarted from "@/pages/get-started";
+const GetStarted = lazy(() => import("@/pages/get-started"));
 import { useGetOnboardingStatus, useGetPlatformAccess, getGetPlatformAccessQueryKey } from "@workspace/api-client-react";
 import { Loader2 } from "lucide-react";
 
@@ -199,6 +200,7 @@ function HomeRedirect() {
 }
 
 function ProtectedRouteInner({ component: Component }: { component: any }) {
+  const [route] = useLocation();
   const { data: status, isLoading, isError, refetch } =
     useGetOnboardingStatus();
   const pending = useGetPendingTeamInvitations({
@@ -285,7 +287,7 @@ function ProtectedRouteInner({ component: Component }: { component: any }) {
   return (
     <Shell>
       {pending.data && <PendingInvitations data={pending.data} />}
-      <Component />
+      <PageLoader key={route}><Component /></PageLoader>
     </Shell>
   );
 }
@@ -387,7 +389,7 @@ function ClerkProviderWithRoutes() {
         <ApiAuthBinder />
         <ClerkQueryClientCacheInvalidator />
         <ActiveTeamProvider>
-        <Switch>
+        <PageLoader><Switch>
           <Route path="/" component={HomeRedirect} />
           <Route path="/sign-in/*?" component={SignInPage} />
           <Route path="/sign-up/*?" component={SignUpPage} />
@@ -432,7 +434,7 @@ function ClerkProviderWithRoutes() {
           <ProtectedRoute path="/notifications" component={Notifications} />
           
           <Route component={NotFound} />
-        </Switch>
+        </Switch></PageLoader>
         </ActiveTeamProvider>
       </QueryClientProvider>
     </ClerkProvider>

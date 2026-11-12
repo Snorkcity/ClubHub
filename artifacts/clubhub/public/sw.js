@@ -1,9 +1,62 @@
+// Only immutable, content-hashed build assets. No HTML, API responses, Clerk
+// requests, uploaded photos, or personal data is stored in this cache.
+const STATIC_CACHE_PREFIX = "nahreo-static-";
+const STATIC_CACHE = `${STATIC_CACHE_PREFIX}v1`;
+const MAX_STATIC_ASSETS = 80;
+
+function isStaticAsset(request) {
+  const url = new URL(request.url);
+  const scope = new URL(self.registration.scope);
+  return request.method === "GET"
+    && url.origin === scope.origin
+    && !url.search
+    && url.pathname.startsWith(`${scope.pathname}assets/`)
+    && /\/[^/]+-[A-Za-z0-9_-]{8,}\.(?:js|css|woff2?)$/.test(url.pathname);
+}
+
+self.addEventListener("fetch", (event) => {
+  if (!isStaticAsset(event.request)) return;
+  event.respondWith((async () => {
+    let cache;
+    try {
+      cache = await caches.open(STATIC_CACHE);
+      const cached = await cache.match(event.request);
+      if (cached) return cached;
+    } catch (error) {
+      console.warn("Static cache unavailable", error);
+    }
+    const response = await fetch(event.request);
+    if (cache && response.ok && !response.redirected
+      && /(?:javascript|text\/css|font\/)/i.test(response.headers.get("content-type") || "")) {
+      const copy = response.clone();
+      event.waitUntil((async () => {
+        try {
+          await cache.put(event.request, copy);
+          const keys = await cache.keys();
+          for (const key of keys.slice(0, Math.max(0, keys.length - MAX_STATIC_ASSETS))) {
+            await cache.delete(key);
+          }
+        } catch (error) {
+          console.warn("Could not retain static asset", error);
+        }
+      })());
+    }
+    return response;
+  })());
+});
+
 self.addEventListener("install", () => {
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys
+      .filter((key) => key.startsWith(STATIC_CACHE_PREFIX) && key !== STATIC_CACHE)
+      .map((key) => caches.delete(key)));
+    await self.clients.claim();
+  })());
 });
 
 self.addEventListener("push", (event) => {
