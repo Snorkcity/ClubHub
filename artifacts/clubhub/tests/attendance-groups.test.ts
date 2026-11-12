@@ -12,7 +12,7 @@ test("responses are grouped by status, then coaches before players, alphabetical
     { status: "going", role: "player", person: { fullName: "Amy" } },
     { status: "maybe", role: "player", person: { fullName: "Conor" } },
   ]);
-  assert.deepEqual(groups.map((g) => g.title), ["Going", "Not going", "Maybe"]);
+  assert.deepEqual(groups.map((g) => g.title), ["Going", "Not going", "Maybe", "Awaiting response"]);
   assert.deepEqual(groups[0].coaches.map((r) => r.person.fullName), ["Alex", "Nic"]);
   assert.deepEqual(groups[0].players.map((r) => r.person.fullName), ["Amy", "Ben"]);
   assert.equal(groups[1].coaches[0].person.fullName, "Scott");
@@ -23,4 +23,17 @@ test("responses are grouped by status, then coaches before players, alphabetical
 
 test("empty responses leave every group empty", () => {
   assert.ok(attendanceGroups([]).every((g) => !g.coaches.length && !g.players.length));
+});
+
+test("awaiting responses follow answered groups and separate staff from players", () => {
+  const groups = attendanceGroups([
+    { status: null, role: "player", person: { fullName: "Zoe" } },
+    { status: "out", role: "player", person: { fullName: "Ben" } },
+    { status: null, role: "coach", person: { fullName: "Scott" } },
+    { status: null, role: "manager", person: { fullName: "Nic" } },
+    { status: null, role: "player", person: { fullName: "Amy" } },
+  ]);
+  assert.deepEqual(groups[3].coaches.map((r) => r.person.fullName), ["Nic", "Scott"]);
+  assert.deepEqual(groups[3].players.map((r) => r.person.fullName), ["Amy", "Zoe"]);
+  assert.equal(groups[1].players.length, 1);
 });

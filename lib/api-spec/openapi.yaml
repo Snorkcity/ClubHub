@@ -2700,10 +2700,23 @@ components:
         personId: { type: integer }
         fullName: { type: string }
         status: { type: [string, "null"], enum: [going, maybe, out, null] }
+    EventAwaitingResponse:
+      type: object
+      required: [personId, fullName, firstName, role]
+      properties:
+        personId: { type: integer }
+        fullName: { type: string }
+        firstName: { type: string }
+        avatarUrl: { type: ["string", "null"] }
+        role: { type: string, enum: [manager, coach, player] }
     EventDetail:
       type: object
       required: [event, rsvps, managedPlayers, canManageRsvps, rsvpPlayers]
       properties:
+        awaitingResponses:
+          type: array
+          description: Invited current team members without an RSVP, visible only to team staff and club admins.
+          items: { $ref: "#/components/schemas/EventAwaitingResponse" }
         canManageRsvps: { type: boolean }
         rsvpPlayers:
           type: array

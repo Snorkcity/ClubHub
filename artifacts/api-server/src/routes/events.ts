@@ -131,8 +131,9 @@ router.get("/events/:eventId", requireAuth, async (req, res) => {
 
   // Team role per user for this event's team (staff roles outrank player).
   const memberRows = await db
-    .select({ userId: teamMembersTable.userId, role: teamMembersTable.role })
+    .select({ userId: teamMembersTable.userId, role: teamMembersTable.role, person: usersTable })
     .from(teamMembersTable)
+    .innerJoin(usersTable, eq(usersTable.id, teamMembersTable.userId))
     .where(eq(teamMembersTable.teamId, event.teamId));
   const rank = (role: string) => (role === "manager" ? 3 : role === "coach" ? 2 : 1);
   const roleByUser = new Map<number, string>();
@@ -178,6 +179,19 @@ router.get("/events/:eventId", requireAuth, async (req, res) => {
 
   return res.json({
     event: built,
+    awaitingResponses: viewerIsStaff ? Array.from(roleByUser, ([personId, role]) => {
+      const member = memberRows.find((m) => m.userId === personId)!;
+      return { member, role };
+    }).filter(({ member, role }) =>
+      !rows.some(({ r }) => r.userId === member.userId) &&
+      event.invitedRoles.split(",").includes(role === "player" ? "players" : "coaches"),
+    ).map(({ member: { person }, role }) => ({
+      personId: person.id,
+      firstName: person.firstName,
+      fullName: `${person.firstName} ${person.lastName}`.trim(),
+      avatarUrl: toPerson(person).avatarUrl,
+      role,
+    })) : [],
     canManageRsvps: viewerIsStaff,
     rsvpPlayers: viewerIsStaff ? (await db.select({
       personId: usersTable.id, firstName: usersTable.firstName, lastName: usersTable.lastName,

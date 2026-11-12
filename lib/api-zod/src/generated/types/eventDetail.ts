@@ -6,11 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Event } from './event';
+import type { EventAwaitingResponse } from './eventAwaitingResponse';
 import type { Person } from './person';
 import type { Rsvp } from './rsvp';
 import type { RsvpRosterPlayer } from './rsvpRosterPlayer';
 
 export interface EventDetail {
+  /** Invited current team members without an RSVP, visible only to team staff and club admins. */
+  awaitingResponses?: EventAwaitingResponse[];
   canManageRsvps: boolean;
   rsvpPlayers: RsvpRosterPlayer[];
   event: Event;

@@ -1,5 +1,5 @@
 type AttendanceResponse = {
-  status: "going" | "out" | "maybe";
+  status: "going" | "out" | "maybe" | null;
   role?: string | null;
   person: { fullName: string };
 };
@@ -9,6 +9,7 @@ export function attendanceGroups<T extends AttendanceResponse>(responses: T[]) {
     { status: "going", title: "Going", accent: "text-green-700 dark:text-green-400" },
     { status: "out", title: "Not going", accent: "text-red-600 dark:text-red-400" },
     { status: "maybe", title: "Maybe", accent: "text-amber-700 dark:text-amber-400" },
+    { status: null, title: "Awaiting response", accent: "text-muted-foreground" },
   ] as const).map((group) => {
     const matching = responses
       .filter((response) => response.status === group.status)

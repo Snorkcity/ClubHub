@@ -1953,6 +1953,13 @@ export const CreateEventResponse = zod.object({
  * @summary Get an event with availability detail
  */
 export const GetEventResponse = zod.object({
+  "awaitingResponses": zod.array(zod.object({
+  "personId": zod.number(),
+  "fullName": zod.string(),
+  "firstName": zod.string(),
+  "avatarUrl": zod.string().nullish(),
+  "role": zod.enum(['manager', 'coach', 'player'])
+})).optional().describe('Invited current team members without an RSVP, visible only to team staff and club admins.'),
   "canManageRsvps": zod.boolean(),
   "rsvpPlayers": zod.array(zod.object({
   "personId": zod.number(),

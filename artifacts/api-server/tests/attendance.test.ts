@@ -78,6 +78,28 @@ beforeAll(async () => {
 afterAll(async () => { await pool.end(); });
 
 describe("RSVP attendance reporting", () => {
+  it("shows staff only the invited current members still awaiting a response", async () => {
+    const detail = await request(app).get(`/api/events/${sessions[0]}`).set(as("coach"));
+    expect(detail.status).toBe(200);
+    expect(detail.body.awaitingResponses.map((p: any) => p.personId).sort((a: number, b: number) => a - b))
+      .toEqual([ids.coach, ids.manager, ids.second].sort((a, b) => a - b));
+    expect(detail.body.awaitingResponses.find((p: any) => p.personId === ids.manager).role).toBe("manager");
+    expect(detail.body.awaitingResponses.every((p: any) => !("email" in p) && !("phone" in p))).toBe(true);
+    for (const actor of ["player", "parent"]) {
+      const view = await request(app).get(`/api/events/${sessions[0]}`).set(as(actor));
+      expect(view.body.awaitingResponses).toEqual([]);
+    }
+    const coachesOnly = await db.select().from(eventsTable);
+    const event = coachesOnly.find((e) => e.teamId === teamId && e.invitedRoles === "coaches")!;
+    const staffView = await request(app).get(`/api/events/${event.id}`).set(as("coach"));
+    expect(staffView.body.awaitingResponses.map((p: any) => p.personId).sort((a: number, b: number) => a - b))
+      .toEqual([ids.coach, ids.manager].sort((a, b) => a - b));
+    expect((await request(app).get(`/api/events/${sessions[0]}`).set(as("foreign"))).status).toBe(403);
+    await request(app).put(`/api/events/${sessions[0]}/rsvp`).set(as("coach")).send({ status: "going" });
+    const updated = await request(app).get(`/api/events/${sessions[0]}`).set(as("coach"));
+    expect(updated.body.awaitingResponses.some((p: any) => p.personId === ids.coach)).toBe(false);
+    expect(updated.body.rsvps.some((r: any) => r.person.id === ids.coach)).toBe(true);
+  });
   it("allows only this team's coaches or its club admin, not manager/parent/player/announcer", async () => {
     expect((await report("coach")).status).toBe(200);
     expect((await report("admin")).status).toBe(200);

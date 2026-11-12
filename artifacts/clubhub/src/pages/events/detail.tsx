@@ -401,13 +401,27 @@ export default function EventDetail() {
           </div>
 
           {(() => {
-            const groups = attendanceGroups(rsvps);
+            const responses = [
+              ...rsvps,
+              ...(eventData.awaitingResponses ?? []).map((member) => ({
+                id: `awaiting-${member.personId}`,
+                status: null,
+                role: member.role,
+                reason: null,
+                person: {
+                  id: member.personId, firstName: member.firstName,
+                  fullName: member.fullName, avatarUrl: member.avatarUrl,
+                },
+              })),
+            ];
+            const groups = attendanceGroups(responses);
             const staffGoing = groups[0].coaches;
             const playersGoing = groups[0].players;
             const unavailable = groups[1].coaches.length + groups[1].players.length;
             const maybe = groups[2].coaches.length + groups[2].players.length;
 
-            const Row = ({ rsvp }: { rsvp: typeof rsvps[number] }) => {
+            const awaiting = groups[3].coaches.length + groups[3].players.length;
+            const Row = ({ rsvp }: { rsvp: typeof responses[number] }) => {
               const isMe = myPersonId != null && rsvp.person.id === myPersonId;
               return (
                 <div
@@ -437,13 +451,13 @@ export default function EventDetail() {
                     <span className="text-[11px] font-bold uppercase text-amber-600 shrink-0">Maybe</span>
                   )}
                   {isMe && (
-                    <span className="text-[11px] font-semibold text-muted-foreground shrink-0">Tap to change</span>
+                    <span className="text-[11px] font-semibold text-muted-foreground shrink-0">{rsvp.status === null ? "Tap to respond" : "Tap to change"}</span>
                   )}
                 </div>
               );
             };
 
-            const Section = ({ title, items, accent }: { title: string; items: typeof rsvps; accent: string }) =>
+            const Section = ({ title, items, accent }: { title: string; items: typeof responses; accent: string }) =>
               items.length === 0 ? null : (
                 <div>
                   <div className={`px-4 py-2 text-[11px] font-bold uppercase tracking-wider ${accent} bg-muted/40 border-y first:border-t-0`}>
@@ -477,13 +491,18 @@ export default function EventDetail() {
                       {maybe} maybe
                     </span>
                   )}
+                  {awaiting > 0 && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-xs font-bold text-muted-foreground">
+                      {awaiting} awaiting response
+                    </span>
+                  )}
                 </div>
                 <div className="bg-card border rounded-3xl overflow-hidden shadow-sm">
                   {groups.map((group) => {
                     const count = group.coaches.length + group.players.length;
                     if (!count) return null;
                     return (
-                      <section key={group.status} aria-label={group.title}>
+                      <section key={group.status ?? "awaiting"} aria-label={group.title}>
                         <h3 className={`px-4 py-2.5 font-bold text-sm border-t first:border-t-0 ${group.accent}`}>
                           {group.title} · {count}
                         </h3>
@@ -492,7 +511,7 @@ export default function EventDetail() {
                       </section>
                     );
                   })}
-                  {rsvps.length === 0 && (
+                  {responses.length === 0 && (
                     <EmptyState title="No RSVPs yet" message="Be the first to respond to this event." icon={FileQuestion} />
                   )}
                 </div>

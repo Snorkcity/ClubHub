@@ -68,6 +68,8 @@ export * from './developmentReportDraftInputCategoriesItem';
 export * from './developmentRubricCategory';
 export * from './error';
 export * from './event';
+export * from './eventAwaitingResponse';
+export * from './eventAwaitingResponseRole';
 export * from './eventCancelInput';
 export * from './eventDetail';
 export * from './eventInput';

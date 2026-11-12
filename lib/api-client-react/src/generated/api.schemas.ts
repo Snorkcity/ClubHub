@@ -896,6 +896,24 @@ export interface RsvpRosterPlayer {
   status: RsvpRosterPlayerStatus;
 }
 
+export type EventAwaitingResponseRole = typeof EventAwaitingResponseRole[keyof typeof EventAwaitingResponseRole];
+
+
+export const EventAwaitingResponseRole = {
+  manager: 'manager',
+  coach: 'coach',
+  player: 'player',
+} as const;
+
+export interface EventAwaitingResponse {
+  personId: number;
+  fullName: string;
+  firstName: string;
+  /** @nullable */
+  avatarUrl?: string | null;
+  role: EventAwaitingResponseRole;
+}
+
 export type RsvpStatus = typeof RsvpStatus[keyof typeof RsvpStatus];
 
 
@@ -931,6 +949,8 @@ export interface Rsvp {
 }
 
 export interface EventDetail {
+  /** Invited current team members without an RSVP, visible only to team staff and club admins. */
+  awaitingResponses?: EventAwaitingResponse[];
   canManageRsvps: boolean;
   rsvpPlayers: RsvpRosterPlayer[];
   event: Event;
