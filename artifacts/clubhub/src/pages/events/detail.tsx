@@ -394,11 +394,6 @@ export default function EventDetail() {
           players={eventData.managedPlayers ?? []} rsvps={rsvps}
           enabled={!isCancelled && invited.includes("players")} />
 
-        {eventData.canManageRsvps && isStaff && (
-          <RsvpCorrection eventId={eventId} teamId={event.teamId}
-            players={eventData.rsvpPlayers ?? []} disabled={isCancelled} />
-        )}
-
         {/* Availability Section */}
         <div className="space-y-6">
           <div className="flex items-center justify-between">
@@ -505,6 +500,11 @@ export default function EventDetail() {
             );
           })()}
         </div>
+
+        {eventData.canManageRsvps && isStaff && (
+          <RsvpCorrection eventId={eventId} teamId={event.teamId}
+            players={eventData.rsvpPlayers ?? []} disabled={isCancelled} />
+        )}
       </div>
     </div>
   );
