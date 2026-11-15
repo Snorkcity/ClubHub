@@ -2079,6 +2079,24 @@ export const DeleteEventResponse = zod.void()
 
 
 /**
+ * @summary Remind selected unanswered players (team staff or club admin only)
+ */
+
+export const sendEventRemindersBodyPersonIdsMax = 500;
+
+
+
+export const SendEventRemindersBody = zod.object({
+  "personIds": zod.array(zod.number().min(1)).min(1).max(sendEventRemindersBodyPersonIdsMax)
+})
+
+export const SendEventRemindersResponse = zod.object({
+  "sentCount": zod.number(),
+  "skippedCount": zod.number()
+})
+
+
+/**
  * @summary Cancel an event with a reason (staff only)
  */
 

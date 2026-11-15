@@ -58,7 +58,7 @@ function configured() {
   return Boolean(VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY && VAPID_SUBJECT);
 }
 
-async function deliverPush(userIds: number[], payload: { title: string; body: string; deepLink: string }) {
+export async function deliverPush(userIds: number[], payload: { title: string; body: string; deepLink: string }) {
   if (!configured() || !userIds.length) return;
   const { VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT } = process.env;
   webpush.setVapidDetails(VAPID_SUBJECT!, VAPID_PUBLIC_KEY!, VAPID_PRIVATE_KEY!);

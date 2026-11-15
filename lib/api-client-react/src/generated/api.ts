@@ -59,6 +59,8 @@ import type {
   EventCancelInput,
   EventDetail,
   EventInput,
+  EventReminderInput,
+  EventReminderResult,
   EventUpdate,
   ExtraSession,
   ExtraSessionInput,
@@ -6248,6 +6250,78 @@ export const useDeleteEvent = <TError = ErrorType<NotFoundResponse>,
         TContext
       > => {
       return useMutation(getDeleteEventMutationOptions(options));
+    }
+
+export const getSendEventRemindersUrl = (eventId: number,) => {
+
+
+
+
+  return `/api/events/${eventId}/reminders`
+}
+
+/**
+ * @summary Remind selected unanswered players (team staff or club admin only)
+ */
+export const sendEventReminders = async (eventId: number,
+    eventReminderInput: EventReminderInput, options?: RequestInit): Promise<EventReminderResult> => {
+
+  return customFetch<EventReminderResult>(getSendEventRemindersUrl(eventId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(eventReminderInput)
+  }
+);}
+
+
+
+
+
+export const getSendEventRemindersMutationOptions = <TError = ErrorType<void | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendEventReminders>>, TError,{eventId: number;data: BodyType<EventReminderInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendEventReminders>>, TError,{eventId: number;data: BodyType<EventReminderInput>}, TContext> => {
+
+const mutationKey = ['sendEventReminders'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendEventReminders>>, {eventId: number;data: BodyType<EventReminderInput>}> = (props) => {
+          const {eventId,data} = props ?? {};
+
+          return  sendEventReminders(eventId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendEventRemindersMutationResult = NonNullable<Awaited<ReturnType<typeof sendEventReminders>>>
+    export type SendEventRemindersMutationBody = BodyType<EventReminderInput>
+    export type SendEventRemindersMutationError = ErrorType<void | NotFoundResponse>
+
+    /**
+ * @summary Remind selected unanswered players (team staff or club admin only)
+ */
+export const useSendEventReminders = <TError = ErrorType<void | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendEventReminders>>, TError,{eventId: number;data: BodyType<EventReminderInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendEventReminders>>,
+        TError,
+        {eventId: number;data: BodyType<EventReminderInput>},
+        TContext
+      > => {
+      return useMutation(getSendEventRemindersMutationOptions(options));
     }
 
 export const getCancelEventUrl = (eventId: number,) => {

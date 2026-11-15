@@ -1383,6 +1383,35 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /events/{eventId}/reminders:
+    post:
+      operationId: sendEventReminders
+      tags: [events]
+      summary: Remind selected unanswered players (team staff or club admin only)
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventReminderInput"
+      responses:
+        "200":
+          description: In-app reminders saved; push attempted where enabled. Responded players and recent reminders are skipped.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventReminderResult"
+        "400":
+          description: Invalid selection
+        "403":
+          description: Team staff or club admin required
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Session has started or is cancelled
+
   /events/{eventId}/cancel:
     post:
       operationId: cancelEvent
@@ -2700,6 +2729,21 @@ components:
         personId: { type: integer }
         fullName: { type: string }
         status: { type: [string, "null"], enum: [going, maybe, out, null] }
+    EventReminderInput:
+      type: object
+      required: [personIds]
+      properties:
+        personIds:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items: { type: integer, minimum: 1 }
+    EventReminderResult:
+      type: object
+      required: [sentCount, skippedCount]
+      properties:
+        sentCount: { type: integer }
+        skippedCount: { type: integer }
     EventAwaitingResponse:
       type: object
       required: [personId, fullName, firstName, role]

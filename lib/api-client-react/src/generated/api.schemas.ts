@@ -896,6 +896,20 @@ export interface RsvpRosterPlayer {
   status: RsvpRosterPlayerStatus;
 }
 
+export interface EventReminderInput {
+  /**
+     * @minItems 1
+     * @maxItems 500
+     * @items.minimum 1
+     */
+  personIds: number[];
+}
+
+export interface EventReminderResult {
+  sentCount: number;
+  skippedCount: number;
+}
+
 export type EventAwaitingResponseRole = typeof EventAwaitingResponseRole[keyof typeof EventAwaitingResponseRole];
 
 

@@ -8,8 +8,10 @@ import { getVisibleTeamIds, canActFor } from "../lib/queries";
 import { canAccessTeam, isTeamStaff, isTeamMember } from "../lib/authz";
 import { toPerson, iso } from "../lib/serialize";
 import { createNotification, resolveTeamRecipients } from "../lib/notifications";
+import eventRemindersRouter from "./event-reminders";
 
 const router: IRouter = Router();
+router.use(eventRemindersRouter);
 
 router.get("/events/past", requireAuth, async (req, res) => {
   const { clubId, localUser, isClubAdmin } = req as AuthedRequest;

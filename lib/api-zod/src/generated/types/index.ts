@@ -77,6 +77,8 @@ export * from './eventInputInvitedRolesItem';
 export * from './eventInputType';
 export * from './eventInvitedRolesItem';
 export * from './eventMyRsvp';
+export * from './eventReminderInput';
+export * from './eventReminderResult';
 export * from './eventType';
 export * from './eventUpdate';
 export * from './eventUpdateInvitedRolesItem';

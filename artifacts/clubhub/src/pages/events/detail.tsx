@@ -20,6 +20,7 @@ import { LoadingScreen, ErrorState, EmptyState } from "@/components/ui/states";
 import { EventEditorDialog, initialFromEvent } from "@/components/schedule/new-event-dialog";
 import { GuardianRsvp } from "@/components/schedule/guardian-rsvp";
 import { RsvpCorrection } from "@/components/schedule/rsvp-correction";
+import { EventReminderDialog } from "@/components/schedule/event-reminder-dialog";
 import {
   Dialog,
   DialogContent,
@@ -503,9 +504,14 @@ export default function EventDetail() {
                     if (!count) return null;
                     return (
                       <section key={group.status ?? "awaiting"} aria-label={group.title}>
-                        <h3 className={`px-4 py-2.5 font-bold text-sm border-t first:border-t-0 ${group.accent}`}>
-                          {group.title} · {count}
-                        </h3>
+                        <div className={`px-4 py-2.5 border-t first:border-t-0 flex flex-wrap items-center justify-between gap-2 ${group.accent}`}>
+                          <h3 className="font-bold text-sm">{group.title} · {count}</h3>
+                          {group.status === null && group.players.length > 0 && isStaff &&
+                            eventData.canManageRsvps && !isCancelled && new Date(event.startsAt) > new Date() && (
+                            <EventReminderDialog eventId={eventId}
+                              players={(eventData.awaitingResponses ?? []).filter((p) => p.role === "player")} />
+                          )}
+                        </div>
                         <Section title={`Coaches · ${group.coaches.length}${staffTotal ? `/${staffTotal}` : ""}`} items={group.coaches} accent="text-muted-foreground" />
                         <Section title={`Players · ${group.players.length}${playerTotal ? `/${playerTotal}` : ""}`} items={group.players} accent="text-muted-foreground" />
                       </section>

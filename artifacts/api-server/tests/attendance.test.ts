@@ -6,10 +6,12 @@ vi.mock("@clerk/express", () => ({
   getAuth: (req: { headers: Record<string, unknown> }) => ({ userId: req.headers["x-test-user"] ?? null }),
   clerkClient: { users: { getUser: async () => { throw new Error("No live Clerk calls"); } } },
 }));
+vi.mock("web-push", () => ({ default: { setVapidDetails: vi.fn(), sendNotification: vi.fn() } }));
 import {
   db, pool, clubsTable, clubMembersTable, usersTable, teamsTable, teamMembersTable,
-  eventsTable, rsvpsTable, guardianshipsTable,
+  eventsTable, rsvpsTable, guardianshipsTable, notificationsTable, notificationRecipientsTable,
 } from "@workspace/db";
+import { and, eq } from "drizzle-orm";
 import app from "../src/app";
 
 const prefix = "attendance_test_";
@@ -76,6 +78,78 @@ beforeAll(async () => {
   });
 });
 afterAll(async () => { await pool.end(); });
+
+describe("Targeted availability reminders", () => {
+  const makeEvent = async (extra = {}) => (await db.insert(eventsTable).values({
+    teamId, createdById: ids.coach, title: "Reminder training", type: "training",
+    startsAt: new Date(Date.now() + 86400000), ...extra,
+  }).returning())[0];
+  const remind = (eventId: number, actor: string, personIds: number[]) =>
+    request(app).post(`/api/events/${eventId}/reminders`).set(as(actor)).send({ personIds });
+  const recipients = async (eventId: number) => db.select({ userId: notificationRecipientsTable.userId })
+    .from(notificationRecipientsTable)
+    .innerJoin(notificationsTable, eq(notificationsTable.id, notificationRecipientsTable.notificationId))
+    .where(and(eq(notificationsTable.deepLink, `/events/${eventId}`), eq(notificationsTable.kind, "event_reminder")));
+
+  it("only notifies selected unanswered players and saves a session link", async () => {
+    const event = await makeEvent();
+    const sent = await remind(event.id, "coach", [ids.player]);
+    expect(sent.status).toBe(200);
+    expect(sent.body).toEqual({ sentCount: 1, skippedCount: 0 });
+    expect(await recipients(event.id)).toEqual([{ userId: ids.player }]);
+    // The second unanswered player was unticked and must not receive anything.
+    const [notice] = await db.select().from(notificationsTable).where(eq(notificationsTable.deepLink, `/events/${event.id}`));
+    expect(notice.title).toBe("Please mark your availability");
+    expect(notice.body).toContain(event.title);
+    expect(notice.clubId).toBe(clubId);
+    expect((await remind(event.id, "manager", [ids.player])).body).toEqual({ sentCount: 0, skippedCount: 1 });
+    expect(await recipients(event.id)).toHaveLength(1);
+  });
+
+  it("rechecks all RSVP statuses and never reminds a player who has replied", async () => {
+    for (const status of ["going", "out", "maybe"]) {
+      const event = await makeEvent();
+      await db.insert(rsvpsTable).values({ eventId: event.id, userId: ids.player, status });
+      const sent = await remind(event.id, "admin", [ids.player, ids.second]);
+      expect(sent.status).toBe(200);
+      expect(sent.body).toEqual({ sentCount: 1, skippedCount: 1 });
+      expect(await recipients(event.id)).toEqual([{ userId: ids.second }]);
+    }
+  });
+
+  it("denies unauthorised staff, foreign users, guardians and players and rejects bad selections", async () => {
+    const event = await makeEvent();
+    for (const actor of ["player", "parent", "announcer", "foreign"]) {
+      expect((await remind(event.id, actor, [ids.second])).status).toBe(403);
+    }
+    expect((await request(app).post(`/api/events/${event.id}/reminders`).send({ personIds: [ids.player] })).status).toBe(401);
+    for (const personIds of [[], [ids.foreign], [ids.coach], [ids.parent], [ids.player, ids.foreign], [1.5]]) {
+      expect((await remind(event.id, "coach", personIds)).status).toBe(400);
+    }
+    const otherEvent = await makeEvent({ teamId: otherTeamId });
+    expect((await remind(otherEvent.id, "manager", [ids.second])).status).toBe(403);
+    expect(await recipients(event.id)).toHaveLength(0);
+  });
+
+  it("prevents reminders for past, cancelled or players-excluded events and deduplicates simultaneous sends", async () => {
+    for (const extra of [{ startsAt: new Date(Date.now() - 60000) }, { cancelledAt: new Date() }]) {
+      const event = await makeEvent(extra);
+      expect((await remind(event.id, "coach", [ids.player])).status).toBe(409);
+      expect(await recipients(event.id)).toHaveLength(0);
+    }
+    const coachesOnly = await makeEvent({ invitedRoles: "coaches" });
+    expect((await remind(coachesOnly.id, "coach", [ids.player])).status).toBe(400);
+    const event = await makeEvent();
+    const sent = await Promise.all([
+      remind(event.id, "coach", [ids.player, ids.player]),
+      remind(event.id, "manager", [ids.player]),
+    ]);
+    expect(sent.every((r) => r.status === 200)).toBe(true);
+    expect(sent.reduce((n, r) => n + r.body.sentCount, 0)).toBe(1);
+    expect(await recipients(event.id)).toEqual([{ userId: ids.player }]);
+    expect((await remind(999999999, "coach", [ids.player])).status).toBe(404);
+  });
+});
 
 describe("RSVP attendance reporting", () => {
   it("shows staff only the invited current members still awaiting a response", async () => {
