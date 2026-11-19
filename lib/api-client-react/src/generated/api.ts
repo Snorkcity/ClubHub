@@ -5421,6 +5421,77 @@ export const useDeletePost = <TError = ErrorType<NotFoundResponse>,
       return useMutation(getDeletePostMutationOptions(options));
     }
 
+export const getMarkPostReadUrl = (postId: number,) => {
+
+
+
+
+  return `/api/posts/${postId}/read`
+}
+
+/**
+ * @summary Record that the signed-in person has viewed this post
+ */
+export const markPostRead = async (postId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getMarkPostReadUrl(postId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getMarkPostReadMutationOptions = <TError = ErrorType<void | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markPostRead>>, TError,{postId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markPostRead>>, TError,{postId: number}, TContext> => {
+
+const mutationKey = ['markPostRead'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markPostRead>>, {postId: number}> = (props) => {
+          const {postId} = props ?? {};
+
+          return  markPostRead(postId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkPostReadMutationResult = NonNullable<Awaited<ReturnType<typeof markPostRead>>>
+
+    export type MarkPostReadMutationError = ErrorType<void | NotFoundResponse>
+
+    /**
+ * @summary Record that the signed-in person has viewed this post
+ */
+export const useMarkPostRead = <TError = ErrorType<void | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markPostRead>>, TError,{postId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markPostRead>>,
+        TError,
+        {postId: number},
+        TContext
+      > => {
+      return useMutation(getMarkPostReadMutationOptions(options));
+    }
+
 export const getAddCommentUrl = (postId: number,) => {
 
 

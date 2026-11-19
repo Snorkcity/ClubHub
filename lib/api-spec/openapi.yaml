@@ -1189,6 +1189,23 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /posts/{postId}/read:
+    post:
+      operationId: markPostRead
+      tags: [feed]
+      summary: Record that the signed-in person has viewed this post
+      parameters:
+        - $ref: "#/components/parameters/PostId"
+      responses:
+        "204":
+          description: Read recorded once per person
+        "400":
+          description: Invalid post ID
+        "403":
+          description: No access to this post
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /posts/{postId}/comments:
     post:
       operationId: addComment
@@ -2613,6 +2630,15 @@ components:
         createdAt: { type: string }
         author: { $ref: "#/components/schemas/Person" }
         commentCount: { type: integer }
+        readCount:
+          type: integer
+          description: Current audience accounts that have viewed this post, excluding its author
+        readerCount:
+          type: integer
+          description: Current signed-up team members, linked guardians and club admins, excluding its author
+        hasRead:
+          type: boolean
+          description: Whether the signed-in person has already viewed this post
         reactions:
           type: array
           items: { $ref: "#/components/schemas/PostReaction" }

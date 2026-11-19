@@ -20,6 +20,7 @@ if (Number.isNaN(port) || port <= 0) {
 // Additive, transactional schema setup and one-time owner bootstrap run in
 // each deployment's own database. ON CONFLICT never restores revoked access.
 await pool.query(await readFile(new URL("./club-setup-access.sql", import.meta.url), "utf8"));
+await pool.query(await readFile(new URL("./post-reads.sql", import.meta.url), "utf8"));
 const ownerConfig = JSON.parse(await readFile(new URL("./nahreo-owner.json", import.meta.url), "utf8"));
 if (typeof ownerConfig.email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ownerConfig.email))
   throw new Error("A valid, explicitly configured Nahreo owner email is required");

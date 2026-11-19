@@ -6,6 +6,7 @@ import {
   postPhotosTable,
   commentsTable,
   postReactionsTable,
+  postReadsTable,
   usersTable,
   teamsTable,
   teamReadsTable,
@@ -366,6 +367,21 @@ router.get("/posts/:postId/photos/:photoId", async (req, res) => {
   // Photos are immutable per id; modest TTL keeps caches tidy after deletes.
   res.setHeader("Cache-Control", "private, max-age=3600");
   return res.send(Buffer.from(photo.image, "base64"));
+});
+
+router.post("/posts/:postId/read", requireAuth, async (req, res) => {
+  const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
+  const postId = Number(req.params.postId);
+  if (!Number.isSafeInteger(postId) || postId <= 0)
+    return res.status(400).json({ error: "Invalid post" });
+  const [post] = await db.select().from(postsTable).where(eq(postsTable.id, postId));
+  if (!post) return res.status(404).json({ error: "Post not found" });
+  if (!(await canAccessTeam(localUser.id, post.teamId, clubId, isClubAdmin)))
+    return res.status(403).json({ error: "You cannot view this post" });
+  if (post.authorId !== localUser.id) {
+    await db.insert(postReadsTable).values({ postId, userId: localUser.id }).onConflictDoNothing();
+  }
+  return res.status(204).end();
 });
 
 router.post("/posts/:postId/comments", requireAuth, async (req, res) => {

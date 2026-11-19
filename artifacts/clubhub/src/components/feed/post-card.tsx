@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { format } from "date-fns";
 import { Pin, PinOff } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiImageUrl } from "@/lib/team-banner";
 import { PhotoLightbox } from "@/components/feed/photo-lightbox";
 import { PostInteractions } from "@/components/feed/post-interactions";
+import { PostReadStatus } from "@/components/feed/post-read-status";
 
 /** Photo attachments: single photo full-width, several in a tight grid. Tap to view full-screen. */
 function PhotoGrid({ photos }: { photos: { id: number; url: string }[] }) {
@@ -74,6 +75,7 @@ function PhotoGrid({ photos }: { photos: { id: number; url: string }[] }) {
 
 export function PostCard({ post }: { post: any }) {
   const [expanded, setExpanded] = useState(false);
+  const headingRef = useRef<HTMLDivElement>(null);
   // Rough check for whether the body is long enough to need a "Read more".
   const isLong = post.body.length > 400 || post.body.split("\n").length > 10;
   return (
@@ -81,7 +83,7 @@ export function PostCard({ post }: { post: any }) {
       data-testid={`card-post-${post.id}`}
       className="p-3 md:p-5 rounded-xl md:rounded-2xl"
     >
-      <div className="flex items-start gap-2.5 md:gap-3 mb-2 md:mb-3">
+      <div ref={headingRef} className="flex items-start gap-2.5 md:gap-3 mb-2 md:mb-3">
         <Avatar className="h-8 w-8 md:h-10 md:w-10 border shadow-sm">
           <AvatarImage src={post.author.avatarUrl} />
           <AvatarFallback>{post.author.firstName?.charAt(0)}</AvatarFallback>
@@ -129,6 +131,7 @@ export function PostCard({ post }: { post: any }) {
 
       <PhotoGrid photos={post.photos ?? []} />
       <PostInteractions post={post} />
+      <PostReadStatus key={post.id} post={post} headingRef={headingRef} />
     </Card>
   );
 }

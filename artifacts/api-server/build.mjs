@@ -119,6 +119,7 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
     },
   });
   await copyFile(path.resolve(artifactDir, "../../lib/db/migrations/20261025_club_setup_access.sql"), path.join(distDir, "club-setup-access.sql"));
+  await copyFile(path.resolve(artifactDir, "../../lib/db/migrations/20261120_post_reads.sql"), path.join(distDir, "post-reads.sql"));
   await copyFile(path.resolve(artifactDir, "../../config/nahreo-owner.json"), path.join(distDir, "nahreo-owner.json"));
 }
 

@@ -31,6 +31,12 @@ export DATABASE_URL="postgresql://postgres@localhost:$PGPORT/clubhub_test?host=$
 # Create the schema from the drizzle definitions.
 pnpm --filter @workspace/db run push-force >/dev/null
 
+# Read tracking is additive and must also be safe for repeated API startups.
+psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+  -f "$ARTIFACT_DIR/../../lib/db/migrations/20261120_post_reads.sql" >/dev/null
+psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+  -f "$ARTIFACT_DIR/../../lib/db/migrations/20261120_post_reads.sql" >/dev/null
+
 # New-club access migration is additive and safe to run on every API startup.
 psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
   -f "$ARTIFACT_DIR/../../lib/db/migrations/20261025_club_setup_access.sql" >/dev/null

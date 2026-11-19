@@ -800,6 +800,12 @@ export interface Post {
   createdAt: string;
   author: Person;
   commentCount: number;
+  /** Current audience accounts that have viewed this post, excluding its author */
+  readCount?: number;
+  /** Current signed-up team members, linked guardians and club admins, excluding its author */
+  readerCount?: number;
+  /** Whether the signed-in person has already viewed this post */
+  hasRead?: boolean;
   reactions: PostReaction[];
   photos?: PostPhoto[];
 }

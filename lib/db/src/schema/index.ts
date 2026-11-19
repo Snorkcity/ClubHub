@@ -10,6 +10,7 @@ export * from "./posts";
 export * from "./postPhotos";
 export * from "./comments";
 export * from "./postReactions";
+export * from "./postReads";
 export * from "./events";
 export * from "./rsvps";
 export * from "./chats";

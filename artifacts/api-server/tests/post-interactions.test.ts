@@ -9,7 +9,7 @@ vi.mock("@clerk/express", () => ({
 
 import {
   db, pool, clubsTable, teamsTable, usersTable, clubMembersTable, teamMembersTable,
-  postsTable, commentsTable, postReactionsTable, guardianshipsTable,
+  postsTable, commentsTable, postReactionsTable, guardianshipsTable, postReadsTable,
 } from "@workspace/db";
 import app from "../src/app";
 
@@ -60,6 +60,70 @@ afterAll(async () => {
 });
 
 describe("Team news reactions and comments", () => {
+  it("records views once, never counts an author, and includes linked guardians in the audience", async () => {
+    const before = await request(app).get(`/api/posts/${postId}`).set(as("coach"));
+    expect(before.status).toBe(200);
+    expect(before.body.post).toMatchObject({ readerCount: 3, readCount: 0, hasRead: true });
+    // Merely fetching the feed/detail must not mark unseen cards as read.
+    const playerBefore = await request(app).get("/api/feed").set(as("player"));
+    expect(playerBefore.body.find((p: { id: number }) => p.id === postId).hasRead).toBe(false);
+    const mark = (name: string) => request(app).post(`/api/posts/${postId}/read`).set(as(name));
+    expect((await mark("coach")).status).toBe(204);
+    const attempts = await Promise.all([mark("player"), mark("player"), mark("guardian")]);
+    expect(attempts.map(r => r.status)).toEqual([204, 204, 204]);
+    const after = await request(app).get(`/api/posts/${postId}`).set(as("player"));
+    expect(after.body.post).toMatchObject({ readerCount: 3, readCount: 2, hasRead: true });
+    const rows = await db.select().from(postReadsTable).where(eq(postReadsTable.postId, postId));
+    expect(rows).toHaveLength(2);
+    const feed = await request(app).get("/api/feed").set(as("coach"));
+    expect(feed.body.find((p: { id: number }) => p.id === postId)).toMatchObject({ readerCount: 3, readCount: 2 });
+  });
+
+  it("protects read receipts across teams and clubs and rejects invalid IDs", async () => {
+    expect((await request(app).post(`/api/posts/${postId}/read`)).status).toBe(401);
+    expect((await request(app).post(`/api/posts/${postId}/read`).set(as("outsider"))).status).toBe(403);
+    expect((await request(app).post(`/api/posts/${foreignPost}/read`).set(as("player"))).status).toBe(403);
+    expect((await request(app).post("/api/posts/999999999/read").set(as("player"))).status).toBe(404);
+    for (const id of ["0", "-1", "NaN", "1.5"])
+      expect((await request(app).post(`/api/posts/${id}/read`).set(as("player"))).status).toBe(400);
+    const [separateTeam] = await db.insert(teamsTable).values({ clubId, name: "Separate team", ageGroup: "U14" }).returning();
+    const [separatePost] = await db.insert(postsTable).values({ teamId: separateTeam.id, authorId: people.coach, body: "Separate" }).returning();
+    expect((await request(app).post(`/api/posts/${separatePost.id}/read`).set(as("player"))).status).toBe(403);
+    await db.delete(postsTable).where(eq(postsTable.id, separatePost.id));
+    await db.delete(teamsTable).where(eq(teamsTable.id, separateTeam.id));
+  });
+
+  it("deduplicates audience roles and removes former members from both read totals", async () => {
+    const [extraRole] = await db.insert(teamMembersTable).values({ teamId, userId: people.player, role: "coach" }).returning();
+    const [secondChild] = await db.insert(guardianshipsTable).values({
+      guardianId: people.guardian, playerId: people.peer, relationship: "parent", canManage: true,
+    }).returning();
+    const summary = await request(app).get(`/api/posts/${postId}`).set(as("coach"));
+    expect(summary.body.post).toMatchObject({ readerCount: 3, readCount: 2 });
+    await db.delete(teamMembersTable).where(eq(teamMembersTable.id, extraRole.id));
+    await db.delete(guardianshipsTable).where(eq(guardianshipsTable.id, secondChild.id));
+    await db.delete(clubMembersTable).where(eq(clubMembersTable.userId, people.guardian));
+    const left = await request(app).get(`/api/posts/${postId}`).set(as("coach"));
+    expect(left.body.post).toMatchObject({ readerCount: 2, readCount: 1 });
+    await db.insert(clubMembersTable).values({ clubId, userId: people.guardian, role: "member" });
+  });
+
+  it("counts a club admin once without team membership and excludes unclaimed roster records", async () => {
+    const [admin, unclaimed] = await db.insert(usersTable).values([
+      { clubId, clerkUserId: "post_interaction_admin", firstName: "Admin", lastName: "Test" },
+      { clubId, firstName: "Unclaimed", lastName: "Test" },
+    ]).returning();
+    await db.insert(clubMembersTable).values({ clubId, userId: admin.id, role: "admin" });
+    await db.insert(teamMembersTable).values({ teamId, userId: unclaimed.id, role: "player" });
+    expect((await request(app).post(`/api/posts/${postId}/read`).set(as("admin"))).status).toBe(204);
+    const summary = await request(app).get(`/api/posts/${postId}`).set(as("coach"));
+    expect(summary.body.post).toMatchObject({ readerCount: 4, readCount: 3 });
+    await db.delete(postReadsTable).where(eq(postReadsTable.userId, admin.id));
+    await db.delete(teamMembersTable).where(eq(teamMembersTable.userId, unclaimed.id));
+    await db.delete(clubMembersTable).where(eq(clubMembersTable.userId, admin.id));
+    await db.delete(usersTable).where(inArray(usersTable.id, [admin.id, unclaimed.id]));
+  });
+
   it("requires sign-in, denies other teams and validates emoji", async () => {
     expect((await request(app).put(`/api/posts/${postId}/reaction`).send({ emoji: "👍" })).status).toBe(401);
     expect((await react("outsider", "👍")).status).toBe(403);
@@ -117,7 +181,9 @@ describe("Team news reactions and comments", () => {
   it("cleans up reactions when team staff delete the post", async () => {
     const [p] = await db.insert(postsTable).values({ teamId, authorId: people.coach, body: "Temporary" }).returning();
     await react("player", "👍", p.id);
+    expect((await request(app).post(`/api/posts/${p.id}/read`).set(as("player"))).status).toBe(204);
     expect((await request(app).delete(`/api/posts/${p.id}`).set(as("coach"))).status).toBe(204);
     expect(await db.select().from(postReactionsTable).where(eq(postReactionsTable.postId, p.id))).toEqual([]);
+    expect(await db.select().from(postReadsTable).where(eq(postReadsTable.postId, p.id))).toEqual([]);
   });
 });

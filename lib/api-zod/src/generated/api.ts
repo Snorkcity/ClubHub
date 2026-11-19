@@ -474,6 +474,9 @@ export const GetClubOverviewResponse = zod.object({
   "hasLogin": zod.boolean().optional()
 }),
   "commentCount": zod.number(),
+  "readCount": zod.number().optional().describe('Current audience accounts that have viewed this post, excluding its author'),
+  "readerCount": zod.number().optional().describe('Current signed-up team members, linked guardians and club admins, excluding its author'),
+  "hasRead": zod.boolean().optional().describe('Whether the signed-in person has already viewed this post'),
   "reactions": zod.array(zod.object({
   "emoji": zod.string(),
   "count": zod.number(),
@@ -1447,6 +1450,9 @@ export const GetFeedResponseItem = zod.object({
   "hasLogin": zod.boolean().optional()
 }),
   "commentCount": zod.number(),
+  "readCount": zod.number().optional().describe('Current audience accounts that have viewed this post, excluding its author'),
+  "readerCount": zod.number().optional().describe('Current signed-up team members, linked guardians and club admins, excluding its author'),
+  "hasRead": zod.boolean().optional().describe('Whether the signed-in person has already viewed this post'),
   "reactions": zod.array(zod.object({
   "emoji": zod.string(),
   "count": zod.number(),
@@ -1509,6 +1515,9 @@ export const ListTeamPostsResponseItem = zod.object({
   "hasLogin": zod.boolean().optional()
 }),
   "commentCount": zod.number(),
+  "readCount": zod.number().optional().describe('Current audience accounts that have viewed this post, excluding its author'),
+  "readerCount": zod.number().optional().describe('Current signed-up team members, linked guardians and club admins, excluding its author'),
+  "hasRead": zod.boolean().optional().describe('Whether the signed-in person has already viewed this post'),
   "reactions": zod.array(zod.object({
   "emoji": zod.string(),
   "count": zod.number(),
@@ -1563,6 +1572,9 @@ export const CreatePostResponse = zod.object({
   "hasLogin": zod.boolean().optional()
 }),
   "commentCount": zod.number(),
+  "readCount": zod.number().optional().describe('Current audience accounts that have viewed this post, excluding its author'),
+  "readerCount": zod.number().optional().describe('Current signed-up team members, linked guardians and club admins, excluding its author'),
+  "hasRead": zod.boolean().optional().describe('Whether the signed-in person has already viewed this post'),
   "reactions": zod.array(zod.object({
   "emoji": zod.string(),
   "count": zod.number(),
@@ -1604,6 +1616,9 @@ export const GetPostResponse = zod.object({
   "hasLogin": zod.boolean().optional()
 }),
   "commentCount": zod.number(),
+  "readCount": zod.number().optional().describe('Current audience accounts that have viewed this post, excluding its author'),
+  "readerCount": zod.number().optional().describe('Current signed-up team members, linked guardians and club admins, excluding its author'),
+  "hasRead": zod.boolean().optional().describe('Whether the signed-in person has already viewed this post'),
   "reactions": zod.array(zod.object({
   "emoji": zod.string(),
   "count": zod.number(),
@@ -1677,6 +1692,9 @@ export const UpdatePostResponse = zod.object({
   "hasLogin": zod.boolean().optional()
 }),
   "commentCount": zod.number(),
+  "readCount": zod.number().optional().describe('Current audience accounts that have viewed this post, excluding its author'),
+  "readerCount": zod.number().optional().describe('Current signed-up team members, linked guardians and club admins, excluding its author'),
+  "hasRead": zod.boolean().optional().describe('Whether the signed-in person has already viewed this post'),
   "reactions": zod.array(zod.object({
   "emoji": zod.string(),
   "count": zod.number(),
@@ -1693,6 +1711,12 @@ export const UpdatePostResponse = zod.object({
  * @summary Delete a post
  */
 export const DeletePostResponse = zod.void()
+
+
+/**
+ * @summary Record that the signed-in person has viewed this post
+ */
+export const MarkPostReadResponse = zod.void()
 
 
 /**
@@ -1763,6 +1787,9 @@ export const SetPostReactionResponse = zod.object({
   "hasLogin": zod.boolean().optional()
 }),
   "commentCount": zod.number(),
+  "readCount": zod.number().optional().describe('Current audience accounts that have viewed this post, excluding its author'),
+  "readerCount": zod.number().optional().describe('Current signed-up team members, linked guardians and club admins, excluding its author'),
+  "hasRead": zod.boolean().optional().describe('Whether the signed-in person has already viewed this post'),
   "reactions": zod.array(zod.object({
   "emoji": zod.string(),
   "count": zod.number(),

@@ -15,6 +15,7 @@ import { postPhotosTable, postReactionsTable } from "@workspace/db";
 import { iso, toPerson } from "./serialize";
 import { signedBannerPath } from "./bannerToken";
 import { signedPostPhotoPath } from "./photoToken";
+import { postReadSummaries } from "./post-reads";
 
 async function teamNameMap(teamIds: number[]): Promise<Record<number, string>> {
   if (teamIds.length === 0) return {};
@@ -125,7 +126,7 @@ export async function buildPosts(posts: Post[], viewerId?: number) {
   const teamIds = Array.from(new Set(posts.map((p) => p.teamId)));
   const authorIds = Array.from(new Set(posts.map((p) => p.authorId)));
   const postIds = posts.map((p) => p.id);
-  const [authors, comments, names, photos, reactions] = await Promise.all([
+  const [authors, comments, names, photos, reactions, readSummaries] = await Promise.all([
     db.select().from(usersTable).where(inArray(usersTable.id, authorIds)),
     db
       .select()
@@ -141,6 +142,7 @@ export async function buildPosts(posts: Post[], viewerId?: number) {
       .from(postPhotosTable)
       .where(inArray(postPhotosTable.postId, postIds)),
     db.select().from(postReactionsTable).where(inArray(postReactionsTable.postId, postIds)),
+    postReadSummaries(posts, viewerId),
   ]);
   const reactionsByPost: Record<number, Record<string, { emoji: string; count: number; reacted: boolean }>> = {};
   for (const r of reactions) {
@@ -172,6 +174,7 @@ export async function buildPosts(posts: Post[], viewerId?: number) {
     createdAt: iso(p.createdAt) as string,
     author: toPerson(authorById[p.authorId]),
     commentCount: countByPost[p.id] ?? 0,
+    ...readSummaries.get(p.id),
     reactions: Object.values(reactionsByPost[p.id] ?? {}).sort((a, b) => a.emoji.localeCompare(b.emoji)),
     photos: (photosByPost[p.id] ?? [])
       .sort((a, b) => a.position - b.position)
