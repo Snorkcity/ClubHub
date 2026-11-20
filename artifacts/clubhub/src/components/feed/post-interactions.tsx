@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Loader2, MessageSquare, RotateCw, Send, SmilePlus, Trash2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -46,7 +46,7 @@ function refreshRelated(queryClient: ReturnType<typeof useQueryClient>, postId: 
   void queryClient.invalidateQueries({ queryKey: getGetPostQueryKey(postId) });
 }
 
-export function PostInteractions({ post }: { post: PostLike }) {
+export function PostInteractions({ post, readStatus }: { post: PostLike; readStatus?: ReactNode }) {
   const [expanded, setExpanded] = useState(false);
   const [reactionPickerOpen, setReactionPickerOpen] = useState(false);
   const [lastReaction, setLastReaction] = useState<ReactionEmoji | null>(null);
@@ -105,7 +105,9 @@ export function PostInteractions({ post }: { post: PostLike }) {
 
   return (
     <section className="mt-2 md:mt-4 border-t pt-1.5 md:pt-3" aria-label="Post reactions and comments" data-testid={`post-interactions-${post.id}`}>
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-1.5">
         <Popover open={reactionPickerOpen} onOpenChange={setReactionPickerOpen}>
           <PopoverTrigger asChild>
             <button
@@ -153,17 +155,20 @@ export function PostInteractions({ post }: { post: PostLike }) {
             <span>{reaction.count}</span>
           </span>
         ))}
+          </div>
         <button
           type="button"
           data-testid={`button-toggle-comments-${post.id}`}
           aria-expanded={expanded}
           aria-label={expanded ? "Close comment editor" : "Add a comment"}
           onClick={() => setExpanded((open) => !open)}
-          className="ml-auto inline-flex min-h-9 items-center gap-2 rounded-full px-3 text-sm font-medium text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+          className="inline-flex min-h-9 items-center gap-2 rounded-full px-1 text-sm font-medium text-muted-foreground hover:bg-muted/70 hover:text-foreground"
         >
           <MessageSquare className="h-4 w-4" />
           <span className="text-xs">{expanded ? "Close editor" : "Add a comment"}</span>
         </button>
+        </div>
+        <div className="shrink-0">{readStatus}</div>
       </div>
       {setReaction.isError && (
         <div className="mt-2 flex items-center justify-between gap-3 text-xs text-destructive" role="alert">

@@ -23,7 +23,6 @@ export function PostReadersDialog({ postId, readCount, readerCount }: {
   });
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <div className="mt-1 flex justify-end pr-16 md:pr-0">
         <DialogTrigger asChild>
           <button
             type="button"
@@ -34,7 +33,6 @@ export function PostReadersDialog({ postId, readCount, readerCount }: {
             <span>{readCount}/{readerCount} read</span>
           </button>
         </DialogTrigger>
-      </div>
       <DialogContent className="max-w-sm p-4">
         <DialogHeader>
           <DialogTitle>Read by</DialogTitle>

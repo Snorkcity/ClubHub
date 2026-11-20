@@ -130,8 +130,10 @@ export function PostCard({ post }: { post: any }) {
       )}
 
       <PhotoGrid photos={post.photos ?? []} />
-      <PostInteractions post={post} />
-      <PostReadStatus key={post.id} post={post} headingRef={headingRef} />
+      <PostInteractions
+        post={post}
+        readStatus={<PostReadStatus key={post.id} post={post} headingRef={headingRef} />}
+      />
     </Card>
   );
 }
