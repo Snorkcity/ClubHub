@@ -108,7 +108,7 @@ export function PostComposer({
               position: "fixed",
               right: "1rem",
               left: "auto",
-              bottom: "calc(4.25rem + env(safe-area-inset-bottom))",
+              bottom: "calc(3.75rem + env(safe-area-inset-bottom))",
               zIndex: 50,
             }}
           >
