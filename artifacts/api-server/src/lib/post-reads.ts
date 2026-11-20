@@ -1,4 +1,4 @@
-import { and, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { db, teamsTable, usersTable, postReadsTable, type Post } from "@workspace/db";
 
 /** Same viewing access as the feed: direct members, linked guardians and club
@@ -7,21 +7,7 @@ import { db, teamsTable, usersTable, postReadsTable, type Post } from "@workspac
 export async function postReadSummaries(posts: Post[], viewerId?: number) {
   const teamIds = [...new Set(posts.map(p => p.teamId))];
   const [audience, reads] = await Promise.all([
-    db.select({ teamId: teamsTable.id, userId: usersTable.id })
-      .from(teamsTable)
-      .innerJoin(usersTable, and(
-        isNotNull(usersTable.clerkUserId),
-        personBelongsToClubSql(),
-        sql`(
-          EXISTS (SELECT 1 FROM club_members cm WHERE cm.club_id = ${teamsTable.clubId}
-            AND cm.user_id = ${usersTable.id} AND cm.role = 'admin')
-          OR EXISTS (SELECT 1 FROM team_members tm WHERE tm.team_id = ${teamsTable.id}
-            AND tm.user_id = ${usersTable.id})
-          OR EXISTS (SELECT 1 FROM guardianships g JOIN team_members tm ON tm.user_id = g.player_id
-            WHERE g.guardian_id = ${usersTable.id} AND tm.team_id = ${teamsTable.id})
-        )`,
-      ))
-      .where(inArray(teamsTable.id, teamIds)),
+    postAudience(teamIds),
     db.select({ postId: postReadsTable.postId, userId: postReadsTable.userId })
       .from(postReadsTable).where(inArray(postReadsTable.postId, posts.map(p => p.id))),
   ]);
@@ -44,6 +30,41 @@ export async function postReadSummaries(posts: Post[], viewerId?: number) {
       hasRead: viewerId === post.authorId || (viewerId !== undefined && !!seen?.has(viewerId)),
     }];
   }));
+}
+
+/** Reuse precisely the same audience policy as the aggregate read count.
+ * Never serialize a full person/profile: reader lists expose names only. */
+export async function postReaders(post: Post) {
+  const [audience, reads] = await Promise.all([
+    postAudience([post.teamId]),
+    db.select({ userId: postReadsTable.userId }).from(postReadsTable)
+      .where(eq(postReadsTable.postId, post.id)),
+  ]);
+  const seen = new Set(reads.map(r => r.userId));
+  return audience.filter(p => p.userId !== post.authorId && seen.has(p.userId))
+    .map(p => ({ id: p.userId, fullName: `${p.firstName} ${p.lastName}`.trim() }))
+    .sort((a, b) => a.fullName.localeCompare(b.fullName) || a.id - b.id);
+}
+
+function postAudience(teamIds: number[]) {
+  return db.select({
+    teamId: teamsTable.id, userId: usersTable.id,
+    firstName: usersTable.firstName, lastName: usersTable.lastName,
+  })
+      .from(teamsTable)
+      .innerJoin(usersTable, and(
+        isNotNull(usersTable.clerkUserId),
+        personBelongsToClubSql(),
+        sql`(
+          EXISTS (SELECT 1 FROM club_members cm WHERE cm.club_id = ${teamsTable.clubId}
+            AND cm.user_id = ${usersTable.id} AND cm.role = 'admin')
+          OR EXISTS (SELECT 1 FROM team_members tm WHERE tm.team_id = ${teamsTable.id}
+            AND tm.user_id = ${usersTable.id})
+          OR EXISTS (SELECT 1 FROM guardianships g JOIN team_members tm ON tm.user_id = g.player_id
+            WHERE g.guardian_id = ${usersTable.id} AND tm.team_id = ${teamsTable.id})
+        )`,
+      ))
+      .where(inArray(teamsTable.id, teamIds));
 }
 
 function personBelongsToClubSql() {

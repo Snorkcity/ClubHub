@@ -15,7 +15,7 @@ import {
   messagesTable,
 } from "@workspace/db";
 import { and, gt, ne } from "drizzle-orm";
-import { CreatePostBody, CreateClubPostBody, UpdatePostBody, AddCommentBody, SetPostReactionBody } from "@workspace/api-zod";
+import { CreatePostBody, CreateClubPostBody, UpdatePostBody, AddCommentBody, SetPostReactionBody, ListPostReadersResponse } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
 import { buildPosts } from "../lib/build";
 import { getVisibleTeamIds } from "../lib/queries";
@@ -23,6 +23,7 @@ import { canAccessTeam, isTeamStaff } from "../lib/authz";
 import { toPerson, iso } from "../lib/serialize";
 import { verifyPostPhotoToken } from "../lib/photoToken";
 import { createNotification, resolvePostRecipients } from "../lib/notifications";
+import { postReaders } from "../lib/post-reads";
 
 const router: IRouter = Router();
 
@@ -367,6 +368,18 @@ router.get("/posts/:postId/photos/:photoId", async (req, res) => {
   // Photos are immutable per id; modest TTL keeps caches tidy after deletes.
   res.setHeader("Cache-Control", "private, max-age=3600");
   return res.send(Buffer.from(photo.image, "base64"));
+});
+
+router.get("/posts/:postId/readers", requireAuth, async (req, res) => {
+  const { clubId, localUser, isClubAdmin } = req as AuthedRequest;
+  const postId = Number(req.params.postId);
+  if (!Number.isSafeInteger(postId) || postId <= 0)
+    return res.status(400).json({ error: "Invalid post" });
+  const [post] = await db.select().from(postsTable).where(eq(postsTable.id, postId));
+  if (!post) return res.status(404).json({ error: "Post not found" });
+  if (!(await canAccessTeam(localUser.id, post.teamId, clubId, isClubAdmin)))
+    return res.status(403).json({ error: "You cannot view this post" });
+  return res.json(ListPostReadersResponse.parse(await postReaders(post)));
 });
 
 router.post("/posts/:postId/read", requireAuth, async (req, res) => {

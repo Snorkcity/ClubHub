@@ -142,6 +142,7 @@ export * from './postPhoto';
 export * from './postReaction';
 export * from './postReactionInput';
 export * from './postReactionInputEmoji';
+export * from './postReader';
 export * from './postUpdate';
 export * from './previewTeamInvitationParams';
 export * from './profileUpdate';

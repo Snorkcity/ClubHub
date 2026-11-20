@@ -810,6 +810,11 @@ export interface Post {
   photos?: PostPhoto[];
 }
 
+export interface PostReader {
+  id: number;
+  fullName: string;
+}
+
 /**
  * @nullable
  */

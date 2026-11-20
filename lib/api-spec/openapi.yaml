@@ -1189,6 +1189,28 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /posts/{postId}/readers:
+    get:
+      operationId: listPostReaders
+      tags: [feed]
+      summary: List current audience members who have viewed a post
+      parameters:
+        - $ref: "#/components/parameters/PostId"
+      responses:
+        "200":
+          description: Names only, excluding the author and former audience members
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/PostReader" }
+        "400":
+          description: Invalid post ID
+        "403":
+          description: No access to this post
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /posts/{postId}/read:
     post:
       operationId: markPostRead
@@ -2645,6 +2667,13 @@ components:
         photos:
           type: array
           items: { $ref: "#/components/schemas/PostPhoto" }
+
+    PostReader:
+      type: object
+      required: [id, fullName]
+      properties:
+        id: { type: integer }
+        fullName: { type: string }
 
     PostReaction:
       type: object

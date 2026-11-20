@@ -98,6 +98,7 @@ import type {
   PostDetail,
   PostInput,
   PostReactionInput,
+  PostReader,
   PostUpdate,
   PreviewTeamInvitationParams,
   ProfileUpdate,
@@ -5420,6 +5421,83 @@ export const useDeletePost = <TError = ErrorType<NotFoundResponse>,
       > => {
       return useMutation(getDeletePostMutationOptions(options));
     }
+
+export const getListPostReadersUrl = (postId: number,) => {
+
+
+
+
+  return `/api/posts/${postId}/readers`
+}
+
+/**
+ * @summary List current audience members who have viewed a post
+ */
+export const listPostReaders = async (postId: number, options?: RequestInit): Promise<PostReader[]> => {
+
+  return customFetch<PostReader[]>(getListPostReadersUrl(postId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPostReadersQueryKey = (postId: number,) => {
+    return [
+    `/api/posts/${postId}/readers`
+    ] as const;
+    }
+
+
+export const getListPostReadersQueryOptions = <TData = Awaited<ReturnType<typeof listPostReaders>>, TError = ErrorType<void | NotFoundResponse>>(postId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPostReaders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPostReadersQueryKey(postId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPostReaders>>> = ({ signal }) => listPostReaders(postId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: postId !== null && postId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPostReaders>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPostReadersQueryResult = NonNullable<Awaited<ReturnType<typeof listPostReaders>>>
+export type ListPostReadersQueryError = ErrorType<void | NotFoundResponse>
+
+
+/**
+ * @summary List current audience members who have viewed a post
+ */
+
+export function useListPostReaders<TData = Awaited<ReturnType<typeof listPostReaders>>, TError = ErrorType<void | NotFoundResponse>>(
+ postId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPostReaders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPostReadersQueryOptions(postId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getMarkPostReadUrl = (postId: number,) => {
 

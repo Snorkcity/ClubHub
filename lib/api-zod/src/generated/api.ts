@@ -1714,6 +1714,16 @@ export const DeletePostResponse = zod.void()
 
 
 /**
+ * @summary List current audience members who have viewed a post
+ */
+export const ListPostReadersResponseItem = zod.object({
+  "id": zod.number(),
+  "fullName": zod.string()
+})
+export const ListPostReadersResponse = zod.array(ListPostReadersResponseItem)
+
+
+/**
  * @summary Record that the signed-in person has viewed this post
  */
 export const MarkPostReadResponse = zod.void()

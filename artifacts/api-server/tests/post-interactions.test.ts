@@ -64,6 +64,7 @@ describe("Team news reactions and comments", () => {
     const before = await request(app).get(`/api/posts/${postId}`).set(as("coach"));
     expect(before.status).toBe(200);
     expect(before.body.post).toMatchObject({ readerCount: 3, readCount: 0, hasRead: true });
+    expect((await request(app).get(`/api/posts/${postId}/readers`).set(as("coach"))).body).toEqual([]);
     // Merely fetching the feed/detail must not mark unseen cards as read.
     const playerBefore = await request(app).get("/api/feed").set(as("player"));
     expect(playerBefore.body.find((p: { id: number }) => p.id === postId).hasRead).toBe(false);
@@ -79,6 +80,17 @@ describe("Team news reactions and comments", () => {
     expect(feed.body.find((p: { id: number }) => p.id === postId)).toMatchObject({ readerCount: 3, readCount: 2 });
   });
 
+  it("lists each reader once alphabetically, without exposing contact details or profiles", async () => {
+    for (const viewer of ["coach", "player", "guardian"]) {
+      const readers = await request(app).get(`/api/posts/${postId}/readers`).set(as(viewer));
+      expect(readers.status).toBe(200);
+      expect(readers.body).toEqual([
+        { id: people.guardian, fullName: "guardian Test" },
+        { id: people.player, fullName: "player Test" },
+      ]);
+    }
+  });
+
   it("protects read receipts across teams and clubs and rejects invalid IDs", async () => {
     expect((await request(app).post(`/api/posts/${postId}/read`)).status).toBe(401);
     expect((await request(app).post(`/api/posts/${postId}/read`).set(as("outsider"))).status).toBe(403);
@@ -86,9 +98,16 @@ describe("Team news reactions and comments", () => {
     expect((await request(app).post("/api/posts/999999999/read").set(as("player"))).status).toBe(404);
     for (const id of ["0", "-1", "NaN", "1.5"])
       expect((await request(app).post(`/api/posts/${id}/read`).set(as("player"))).status).toBe(400);
+    expect((await request(app).get(`/api/posts/${postId}/readers`)).status).toBe(401);
+    expect((await request(app).get(`/api/posts/${postId}/readers`).set(as("outsider"))).status).toBe(403);
+    expect((await request(app).get(`/api/posts/${foreignPost}/readers`).set(as("player"))).status).toBe(403);
+    expect((await request(app).get("/api/posts/999999999/readers").set(as("coach"))).status).toBe(404);
+    for (const id of ["0", "-1", "NaN", "1.5"])
+      expect((await request(app).get(`/api/posts/${id}/readers`).set(as("coach"))).status).toBe(400);
     const [separateTeam] = await db.insert(teamsTable).values({ clubId, name: "Separate team", ageGroup: "U14" }).returning();
     const [separatePost] = await db.insert(postsTable).values({ teamId: separateTeam.id, authorId: people.coach, body: "Separate" }).returning();
     expect((await request(app).post(`/api/posts/${separatePost.id}/read`).set(as("player"))).status).toBe(403);
+    expect((await request(app).get(`/api/posts/${separatePost.id}/readers`).set(as("player"))).status).toBe(403);
     await db.delete(postsTable).where(eq(postsTable.id, separatePost.id));
     await db.delete(teamsTable).where(eq(teamsTable.id, separateTeam.id));
   });
@@ -100,11 +119,15 @@ describe("Team news reactions and comments", () => {
     }).returning();
     const summary = await request(app).get(`/api/posts/${postId}`).set(as("coach"));
     expect(summary.body.post).toMatchObject({ readerCount: 3, readCount: 2 });
+    expect((await request(app).get(`/api/posts/${postId}/readers`).set(as("coach"))).body).toHaveLength(2);
     await db.delete(teamMembersTable).where(eq(teamMembersTable.id, extraRole.id));
     await db.delete(guardianshipsTable).where(eq(guardianshipsTable.id, secondChild.id));
     await db.delete(clubMembersTable).where(eq(clubMembersTable.userId, people.guardian));
     const left = await request(app).get(`/api/posts/${postId}`).set(as("coach"));
     expect(left.body.post).toMatchObject({ readerCount: 2, readCount: 1 });
+    expect((await request(app).get(`/api/posts/${postId}/readers`).set(as("coach"))).body).toEqual([
+      { id: people.player, fullName: "player Test" },
+    ]);
     await db.insert(clubMembersTable).values({ clubId, userId: people.guardian, role: "member" });
   });
 

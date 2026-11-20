@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
-import { CheckCheck } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useMarkPostRead,
@@ -7,8 +6,10 @@ import {
   getGetClubOverviewQueryKey,
   getListTeamPostsQueryKey,
   getGetPostQueryKey,
+  getListPostReadersQueryKey,
   type Post,
 } from "@workspace/api-client-react";
+import { PostReadersDialog } from "./post-readers-dialog";
 
 /** Loading a card isn't reading it. Its heading must be on screen for one
  * continuous second while the app is visible. Do not mark off-screen cards or
@@ -43,6 +44,7 @@ export function PostReadStatus({ post, headingRef }: {
             void queryClient.invalidateQueries({ queryKey: getGetClubOverviewQueryKey() });
             void queryClient.invalidateQueries({ queryKey: getListTeamPostsQueryKey(post.teamId) });
             void queryClient.invalidateQueries({ queryKey: getGetPostQueryKey(post.id) });
+            void queryClient.invalidateQueries({ queryKey: getListPostReadersQueryKey(post.id) });
           },
           onError: () => { recorded.current = false; },
         });
@@ -66,13 +68,6 @@ export function PostReadStatus({ post, headingRef }: {
   // Show the successful read immediately while the shared feed refreshes.
   const readCount = Math.min(post.readerCount, post.readCount + (justRead && !post.hasRead ? 1 : 0));
   return (
-    <div
-      className="mt-2 flex items-center justify-end gap-1 text-[11px] text-muted-foreground"
-      title="Accounts in this team's current audience that have viewed the post. Excludes the author. A view does not confirm they read the full message."
-      aria-label={`${readCount} of ${post.readerCount} people have viewed this post`}
-    >
-      <CheckCheck aria-hidden="true" className="h-3.5 w-3.5" />
-      <span>{readCount}/{post.readerCount} read</span>
-    </div>
+    <PostReadersDialog postId={post.id} readCount={readCount} readerCount={post.readerCount} />
   );
 }
