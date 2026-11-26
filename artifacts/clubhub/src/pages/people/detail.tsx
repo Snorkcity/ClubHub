@@ -81,13 +81,14 @@ export default function PersonDetail() {
       {/* Cover Profile */}
       <div className="h-32 md:h-48 w-full bg-gradient-to-r from-primary to-primary/80 shrink-0 relative overflow-hidden">
         <div className="absolute inset-0 bg-black/10" />
+        <div className="container relative mx-auto px-4 py-3 md:px-8 lg:max-w-4xl">
+          <Link href={backLink.href} className="inline-flex min-h-10 items-center gap-1 rounded-lg px-2 text-sm font-bold text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
+            <ArrowLeft className="h-4 w-4" /> {backLink.label}
+          </Link>
+        </div>
       </div>
       
-      <div className="container mx-auto px-4 md:px-8 pb-12 lg:max-w-4xl -mt-16 md:-mt-20">
-        <Link href={backLink.href} className="inline-flex items-center text-sm font-bold text-white/80 hover:text-white mb-6 relative z-10 transition-colors drop-shadow-md">
-          <ArrowLeft className="h-4 w-4 mr-1" /> {backLink.label}
-        </Link>
-        
+      <div className="container mx-auto px-4 md:px-8 pb-12 lg:max-w-4xl -mt-8 md:-mt-12">
         <div className="bg-card border rounded-3xl p-6 shadow-sm mb-8 relative">
           <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
             <Avatar className="h-24 w-24 md:h-32 md:w-32 rounded-3xl border-4 border-card shadow-md z-10 -mt-12 md:-mt-16 bg-card">
